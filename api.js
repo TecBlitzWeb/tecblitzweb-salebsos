@@ -47,29 +47,11 @@
     }
   }
 
-  async function insertLoginLogSafe(row){
+  async function insertLoginLogSafe(_row){
     try{
-      if(window._loginLogsTableMissing) return;
-      var cfg = getConfig();
-      if(!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) return;
-      var url = cfg.SUPABASE_URL + "/rest/v1/login_logs";
-      var hdr = getBaseHeaders();
-      var body = JSON.stringify(Array.isArray(row) ? row : [row]);
-      var res = await fetch(url, { method: "POST", headers: hdr, body: body });
-      if(res.status === 404 || res.status === 406){
-        window._loginLogsTableMissing = true;
-        return;
-      }
-      if(!res.ok){
-        var txt = "";
-        try{ txt = await res.text(); }catch(_t){}
-        if(res.status === 400 || /relation|does not exist|not find/i.test(txt || "")){
-          window._loginLogsTableMissing = true;
-        }
-      }
-    }catch(_e){
-      /* silent — login_logs is optional */
-    }
+      /* login_logs disabled — no network calls (avoids 400/404 from missing or misconfigured table). */
+      return;
+    }catch(_e){}
   }
 
   function createClient(){
