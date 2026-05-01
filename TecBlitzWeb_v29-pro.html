@@ -2200,11 +2200,27 @@
         width: 52px; height: 52px;
         border-color: rgba(34,211,238,.86);
     }
+    #cursor-glow{
+        position:fixed;
+        top:0;
+        left:0;
+        width:300px;
+        height:300px;
+        border-radius:50%;
+        pointer-events:none;
+        z-index:9999;
+        opacity:0;
+        transform:translate(-50%, -50%);
+        background:radial-gradient(circle, rgba(124,58,237,0.12) 0%, rgba(124,58,237,0) 70%);
+        transition:opacity .25s ease;
+        will-change:transform, opacity;
+    }
 
     @media (max-width: 767px), (pointer: coarse) {
         .ui-theme-fab { width: 52px; height: 52px; right: 12px; bottom: 12px; }
         .cmd-bar { bottom: 76px; }
         .cursor-dot, .cursor-ring { display: none !important; }
+        #cursor-glow{ display:none !important; }
         .btn, .btn-primary, .tm-edit-btn { min-height: 44px; }
     }
 
@@ -2522,6 +2538,7 @@
 
     </head>
     <body>
+    <div id="cursor-glow" aria-hidden="true"></div>
     <div id="splash-screen">
     <div class="splash-bg-orb splash-orb1"></div>
     <div class="splash-bg-orb splash-orb2"></div>
@@ -9270,6 +9287,36 @@
     } else {
     attachLoginTilt();
     }
+    })();
+
+    (function(){
+    const glow = document.getElementById('cursor-glow');
+    if(!glow) return;
+    if(window.matchMedia('(pointer: coarse)').matches) return;
+    let targetX = window.innerWidth / 2;
+    let targetY = window.innerHeight / 2;
+    let currentX = targetX;
+    let currentY = targetY;
+    let raf = null;
+    const ease = 0.12;
+    function step(){
+        currentX += (targetX - currentX) * ease;
+        currentY += (targetY - currentY) * ease;
+        glow.style.transform = 'translate(' + currentX + 'px,' + currentY + 'px) translate(-50%, -50%)';
+        raf = requestAnimationFrame(step);
+    }
+    document.addEventListener('mousemove', function(e){
+        targetX = e.clientX;
+        targetY = e.clientY;
+        glow.style.opacity = '1';
+        if(!raf) raf = requestAnimationFrame(step);
+    }, { passive:true });
+    document.addEventListener('mouseleave', function(){
+        glow.style.opacity = '0';
+    }, { passive:true });
+    document.addEventListener('mouseenter', function(){
+        glow.style.opacity = '1';
+    }, { passive:true });
     })();
     </script>
     <script>
