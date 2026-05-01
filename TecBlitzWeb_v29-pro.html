@@ -104,7 +104,7 @@
     position:absolute;
     inset:0;
     background:linear-gradient(135deg,#0a0a0f 0%,#12091a 50%,#0d1520 100%) !important;
-    z-index:0;
+    z-index:-1;
     pointer-events:none;
     }
     body.dark #login-screen,
@@ -115,6 +115,7 @@
     body.dark #login-screen::before,
     body:not(.light) #login-screen::before{
     background:linear-gradient(135deg,#0a0a0f 0%,#12091a 50%,#0d1520 100%) !important;
+    z-index:-1;
     }
     .login-orb{
     position:absolute;
@@ -617,9 +618,13 @@
         linear-gradient(160deg, #ECEEF2 0%, #F4F5F8 45%, #E8EBF2 100%);
     }
     body.light::after { display: none; }
-    body.light #login-screen{background:#f5f3ff;}
+    body.light #login-screen{
+    background:linear-gradient(160deg,#ede9fe 0%,#f0ebff 45%,#e8e0ff 100%) !important;
+    background-color:#ede9fe !important;
+    }
     body.light #login-screen::before{
-    background:linear-gradient(135deg,#f0ebff 0%,#e8f4ff 50%,#f5f3ff 100%);
+    background:linear-gradient(135deg,rgba(237,233,254,0.95) 0%,rgba(232,244,255,0.92) 50%,rgba(237,224,255,0.95) 100%) !important;
+    z-index:-1;
     }
     body.light .login-orb1{background:radial-gradient(circle,rgba(124,58,237,0.12),transparent 70%);}
     body.light .login-orb2{background:radial-gradient(circle,rgba(34,211,238,0.08),transparent 70%);}
@@ -4862,6 +4867,7 @@
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     const u = USERS[currentUser];
+    if(!u){ console.warn('renderDashboard: USERS['+String(currentUser)+'] is undefined'); return; }
     const allCalls = getCalls();
     const visibleReps = getVisibleRepUIDs();
     let myCalls;
