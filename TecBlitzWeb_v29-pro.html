@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TecBlitzWeb Sales OS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
     <!-- EmailJS removed: login notifications are console-only (no template/network errors). -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./config.js"></script>
@@ -2174,10 +2174,153 @@
         .cursor-dot, .cursor-ring { display: none !important; }
         .btn, .btn-primary, .tm-edit-btn { min-height: 44px; }
     }
+
+    /* ── SPLASH SCREEN (2026) ── */
+    #splash-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: linear-gradient(135deg, #0a0a0f 0%, #12091a 50%, #0d1520 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    overflow: hidden;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    #splash-screen.splash-hide {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    }
+    .splash-bg-orb {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: splashOrbPulse 2.5s ease-in-out infinite alternate;
+    }
+    .splash-orb1 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(168,85,247,0.2), transparent 70%);
+    top: -150px; right: -100px;
+    animation-delay: 0s;
+    }
+    .splash-orb2 {
+    width: 350px; height: 350px;
+    background: radial-gradient(circle, rgba(34,211,238,0.12), transparent 70%);
+    bottom: -100px; left: -80px;
+    animation-delay: 0.4s;
+    }
+    .splash-orb3 {
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(168,85,247,0.1), transparent 70%);
+    bottom: 100px; right: 150px;
+    animation-delay: 0.8s;
+    }
+    @keyframes splashOrbPulse {
+    from { transform: scale(1); opacity: 0.7; }
+    to   { transform: scale(1.15); opacity: 1; }
+    }
+    .splash-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    position: relative;
+    z-index: 1;
+    animation: splashContentIn 0.6s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+    @keyframes splashContentIn {
+    from { opacity: 0; transform: translateY(24px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .splash-logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    }
+    .splash-logo-text {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 6vw, 52px);
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    }
+    .splash-accent { color: #A855F7; }
+    .splash-logo-sub {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    color: rgba(168,85,247,0.7);
+    text-transform: uppercase;
+    }
+    .splash-bar-wrap {
+    width: 180px;
+    height: 2px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 100px;
+    overflow: hidden;
+    }
+    .splash-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #A855F7, #22D3EE);
+    border-radius: 100px;
+    animation: splashBarFill 2s cubic-bezier(0.4,0,0.2,1) 0.3s forwards;
+    box-shadow: 0 0 8px rgba(168,85,247,0.6);
+    }
+    @keyframes splashBarFill {
+    0%   { width: 0%; opacity: 1; }
+    85%  { width: 95%; opacity: 1; }
+    100% { width: 100%; opacity: 1; }
+    }
+    .splash-tagline {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.04em;
+    animation: splashTagIn 0.5s ease 0.8s both;
+    }
+    @keyframes splashTagIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+    }
     </style>
 
     </head>
     <body>
+    <div id="splash-screen">
+    <div class="splash-bg-orb splash-orb1"></div>
+    <div class="splash-bg-orb splash-orb2"></div>
+    <div class="splash-bg-orb splash-orb3"></div>
+    <div class="splash-content">
+    <div class="splash-logo">
+    <span class="splash-logo-text">Tec<span class="splash-accent">Blitz</span>Web</span>
+    <span class="splash-logo-sub">SALES OS</span>
+    </div>
+    <div class="splash-bar-wrap">
+    <div class="splash-bar"></div>
+    </div>
+    <span class="splash-tagline">Track every call. Close every deal.</span>
+    </div>
+    </div>
+    <script>
+    (function() {
+    setTimeout(function() {
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+        splash.classList.add('splash-hide');
+        setTimeout(function() {
+            splash.style.display = 'none';
+        }, 500);
+        }
+    }, 2500);
+    })();
+    </script>
+
     <script>
     (function(){
     try{
