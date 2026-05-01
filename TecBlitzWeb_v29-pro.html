@@ -143,6 +143,14 @@
     radial-gradient(ellipse 50% 50% at 50% 50%,rgba(99,102,241,0.2) 0%,transparent 60%),
     radial-gradient(ellipse 40% 40% at 20% 20%,rgba(168,85,247,0.2) 0%,transparent 60%);
     }
+    #login-canvas{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    z-index:0;
+    pointer-events:none;
+    }
     .login-left{
     flex:1;
     display:flex;
@@ -2542,6 +2550,91 @@
     }, 2500);
     })();
     </script>
+    <script>
+    (function(){
+    const canvas = document.getElementById('login-canvas');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let W, H, particles = [], animId;
+    function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    }
+    function isLight(){ return document.body.classList.contains('light'); }
+    function Particle(){
+    this.x = Math.random() * W;
+    this.y = Math.random() * H;
+    this.r = Math.random() * 180 + 80;
+    this.vx = (Math.random() - 0.5) * 0.4;
+    this.vy = (Math.random() - 0.5) * 0.4;
+    this.hue = Math.random() > 0.5 ? 270 : 190;
+    this.alpha = Math.random() * 0.12 + 0.06;
+    }
+    Particle.prototype.update = function(){
+    this.x += this.vx;
+    this.y += this.vy;
+    if(this.x < -this.r) this.x = W + this.r;
+    if(this.x > W + this.r) this.x = -this.r;
+    if(this.y < -this.r) this.y = H + this.r;
+    if(this.y > H + this.r) this.y = -this.r;
+    };
+    Particle.prototype.draw = function(){
+    const light = isLight();
+    const alpha = light ? this.alpha * 2.5 : this.alpha;
+    const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.r);
+    grad.addColorStop(0, 'hsla('+this.hue+', 80%, '+(light?50:65)+'%, '+alpha+')');
+    grad.addColorStop(1, 'hsla('+this.hue+', 80%, '+(light?50:65)+'%, 0)');
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    };
+    function initParticles(){
+    particles = [];
+    for(let i = 0; i < 7; i++) particles.push(new Particle());
+    }
+    function loop(){
+    const light = isLight();
+    ctx.fillStyle = light ? 'rgba(240,235,255,0.25)' : 'rgba(10,10,15,0.25)';
+    ctx.fillRect(0, 0, W, H);
+    particles.forEach(function(p){ p.update(); p.draw(); });
+    animId = requestAnimationFrame(loop);
+    }
+    function startCanvas(){
+    const screen = document.getElementById('login-screen');
+    if(!screen || screen.style.display === 'none' || getComputedStyle(screen).display === 'none') return;
+    resize();
+    initParticles();
+    if(animId) cancelAnimationFrame(animId);
+    loop();
+    }
+    function stopCanvas(){
+    if(animId) cancelAnimationFrame(animId);
+    animId = null;
+    }
+    window.addEventListener('resize', resize);
+    const origShowLogin = window.showLogin;
+    window.showLogin = function(){
+    if(typeof origShowLogin === 'function') origShowLogin.apply(this, arguments);
+    setTimeout(startCanvas, 50);
+    };
+    const origShowApp = window.showApp;
+    window.showApp = function(){
+    stopCanvas();
+    if(typeof origShowApp === 'function') origShowApp.apply(this, arguments);
+    };
+    const loginScreenNode = document.getElementById('login-screen');
+    if(loginScreenNode && typeof MutationObserver !== 'undefined'){
+    new MutationObserver(function(){
+    if(loginScreenNode.style.display === 'none' || getComputedStyle(loginScreenNode).display === 'none') stopCanvas();
+    else setTimeout(startCanvas, 50);
+    }).observe(loginScreenNode, { attributes: true, attributeFilter: ['style'] });
+    }
+    if(loginScreenNode && loginScreenNode.style.display !== 'none' && getComputedStyle(loginScreenNode).display !== 'none'){
+    setTimeout(startCanvas, 100);
+    }
+    })();
+    </script>
 
     <script>
     (function(){
@@ -2591,6 +2684,7 @@
 
     <!-- LOGIN -->
     <div id="login-screen">
+    <canvas id="login-canvas"></canvas>
     <div class="login-left">
         <div class="login-card">
         <div class="login-logo">
