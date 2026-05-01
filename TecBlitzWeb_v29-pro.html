@@ -487,6 +487,14 @@
     .stat-num.stat-num-cyan{color:var(--cyan);-webkit-text-fill-color:var(--cyan);background:none;}
     body:not(.light) .stat-num.stat-num-cyan{filter:drop-shadow(0 0 14px rgba(34,211,238,0.45));}
     .stat-sub{font-size:13px;color:var(--text-2);margin-top:6px;line-height:1.4;}
+    /* Stat / dashboard numerals — normal figures + smoothing (avoids odd glyphs on some mobile WebKit builds) */
+    .stat-num, .ac-stat-num, .stat-value, .stat-number, .dashboard-number{
+    font-family:'Syne','Outfit',system-ui,sans-serif;
+    font-variant-numeric:normal;
+    font-feature-settings:normal;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    }
 
     /* ── TABLES ── */
     .table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(16px);box-shadow:0 4px 24px rgba(0,0,0,0.25);}
@@ -816,6 +824,21 @@
         .card{padding:18px;}
         .stat-card{padding:20px 18px;min-height:0;}
         .stat-num{font-size:clamp(26px,8vw,32px);}
+        /* iOS/WebKit: gradient text + drop-shadow often draws digits as blobs; use solid colors on small screens */
+        .stat-num,.ac-stat-num{
+        background:none !important;
+        -webkit-background-clip:unset !important;
+        background-clip:unset !important;
+        -webkit-text-fill-color:unset !important;
+        filter:none !important;
+        }
+        .stat-num:not(.stat-num-solid):not(.stat-num-cyan){color:var(--purple-mid);}
+        .stat-num.stat-num-solid{color:var(--purple-mid) !important;}
+        .stat-num.stat-num-cyan{color:var(--cyan) !important;}
+        .ac-stat-num{color:var(--purple-mid);}
+        body.light .stat-num:not(.stat-num-cyan){color:#7C3AED !important;}
+        body.light .stat-num.stat-num-cyan{color:#0891B2 !important;}
+        body.light .ac-stat-num{color:#7C3AED !important;}
 
         /* Modal — full width sheet on mobile */
         .modal-overlay{align-items:flex-end;padding:0;}
