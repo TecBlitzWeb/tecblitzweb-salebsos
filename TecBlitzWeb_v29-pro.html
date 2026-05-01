@@ -805,11 +805,14 @@
     .stat-num.stat-num-cyan{color:var(--cyan);-webkit-text-fill-color:var(--cyan);background:none;}
     body:not(.light) .stat-num.stat-num-cyan{filter:drop-shadow(0 0 14px rgba(34,211,238,0.45));}
     .stat-sub{font-size:13px;color:var(--text-2);margin-top:6px;line-height:1.4;}
-    /* Stat / dashboard numerals — normal figures + smoothing (avoids odd glyphs on some mobile WebKit builds) */
-    .stat-num, .ac-stat-num, .stat-value, .stat-number, .dashboard-number{
-    font-family:'Syne','Outfit',system-ui,sans-serif;
-    font-variant-numeric:normal;
-    font-feature-settings:normal;
+    /* Stat / dashboard numerals — Syne + normal variants (fixes blob/shape glyphs on mobile WebKit) */
+    .stat-value,.stat-num,.stat-count,[class*="stat-val"],[class*="stat-number"],
+    .ac-stat-num,.dashboard-number{
+    font-family:'Syne',sans-serif !important;
+    font-style:normal !important;
+    font-variant:normal !important;
+    font-variant-numeric:lining-nums !important;
+    font-feature-settings:normal !important;
     -webkit-font-smoothing:antialiased;
     -moz-osx-font-smoothing:grayscale;
     }
@@ -1114,6 +1117,26 @@
         /* Page header */
         .page-header{margin-bottom:20px;}
         .page-header h2{font-size:clamp(20px,5vw,24px);}
+        /* Dashboard — keep Refresh / Log Call fully visible (no horizontal clip) */
+        #page-dashboard .page-header{
+        flex-direction:column !important;
+        align-items:stretch !important;
+        gap:14px;
+        }
+        #page-dashboard .page-header > div:nth-child(2){
+        width:100%;
+        min-width:0;
+        display:flex !important;
+        flex-wrap:wrap;
+        gap:8px;
+        justify-content:flex-start;
+        }
+        #page-dashboard .page-header #dash-refresh-btn,
+        #page-dashboard .page-header .btn-header-log-call{
+        flex:1 1 auto;
+        min-width:0;
+        max-width:100%;
+        }
 
         /* Search / filters — stack vertically, readable (16px avoids iOS input zoom) */
         .search-bar{
@@ -1143,20 +1166,30 @@
         .stat-card{padding:20px 18px;min-height:0;}
         .stat-num{font-size:clamp(26px,8vw,32px);}
         /* iOS/WebKit: gradient text + drop-shadow often draws digits as blobs; use solid colors on small screens */
-        .stat-num,.ac-stat-num{
+        .stat-num,.ac-stat-num,.ac-stat-num.ac-count-anim{
         background:none !important;
+        background-image:none !important;
         -webkit-background-clip:unset !important;
         background-clip:unset !important;
         -webkit-text-fill-color:unset !important;
         filter:none !important;
         }
+        .stat-value,.stat-num,.stat-count,[class*="stat-val"],[class*="stat-number"],
+        .ac-stat-num,.ac-count-anim{
+        font-family:'Syne',sans-serif !important;
+        font-style:normal !important;
+        font-variant:normal !important;
+        font-variant-numeric:lining-nums !important;
+        -webkit-font-smoothing:antialiased;
+        -moz-osx-font-smoothing:grayscale;
+        }
         .stat-num:not(.stat-num-solid):not(.stat-num-cyan){color:var(--purple-mid);}
         .stat-num.stat-num-solid{color:var(--purple-mid) !important;}
         .stat-num.stat-num-cyan{color:var(--cyan) !important;}
-        .ac-stat-num{color:var(--purple-mid);}
+        .ac-stat-num,.ac-stat-num.ac-count-anim{color:var(--purple-mid);}
         body.light .stat-num:not(.stat-num-cyan){color:#7C3AED !important;}
         body.light .stat-num.stat-num-cyan{color:#0891B2 !important;}
-        body.light .ac-stat-num{color:#7C3AED !important;}
+        body.light .ac-stat-num,body.light .ac-stat-num.ac-count-anim{color:#7C3AED !important;}
 
         /* Modal — full width sheet on mobile */
         .modal-overlay{align-items:flex-end;padding:0;}
