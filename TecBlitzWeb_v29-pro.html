@@ -2362,6 +2362,164 @@
     @media (max-width: 768px) {
     #theme-fab { bottom: 80px; right: 16px; width: 44px; height: 44px; }
     }
+    .hero-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 2rem 0 2.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    }
+    .hero-text {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    max-width: 420px;
+    }
+    .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(168,85,247,0.1);
+    border: 1px solid rgba(168,85,247,0.25);
+    padding: 5px 12px;
+    border-radius: 100px;
+    width: fit-content;
+    font-size: 11px;
+    font-weight: 600;
+    color: #A855F7;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    }
+    .hero-badge-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #A855F7;
+    animation: heroPulse 2s ease-in-out infinite;
+    }
+    @keyframes heroPulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+    }
+    .hero-headline {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    margin: 0;
+    }
+    .hero-accent { color: #A855F7; }
+    .hero-sub {
+    font-size: 14px;
+    color: var(--text-2);
+    line-height: 1.6;
+    margin: 0;
+    }
+    .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #A855F7, #7C3AED);
+    color: white;
+    border: none;
+    padding: 11px 22px;
+    border-radius: 100px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    width: fit-content;
+    transition: opacity 0.2s, transform 0.2s;
+    box-shadow: 0 4px 16px rgba(168,85,247,0.3);
+    }
+    .hero-cta:hover { opacity: 0.9; transform: translateY(-1px); }
+    .hero-illustration {
+    position: relative;
+    width: 280px;
+    height: 260px;
+    flex-shrink: 0;
+    }
+    .hero-avatar-wrap {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    animation: heroFloat 4s ease-in-out infinite;
+    }
+    @keyframes heroFloat {
+    0%,100% { transform: translate(-50%, -50%) translateY(0); }
+    50% { transform: translate(-50%, -50%) translateY(-10px); }
+    }
+    .hero-avatar-svg { width: 160px; height: 176px; position: relative; z-index: 2; }
+    .hero-avatar-ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    border: 1px solid rgba(168,85,247,0.2);
+    animation: heroRing 3s ease-in-out infinite;
+    z-index: 1;
+    }
+    .hero-ring2 {
+    width: 220px; height: 220px;
+    border-color: rgba(34,211,238,0.12);
+    animation-delay: 0.8s;
+    animation-duration: 4s;
+    }
+    @keyframes heroRing {
+    0%,100% { transform: translate(-50%,-50%) scale(1); opacity: 0.6; }
+    50% { transform: translate(-50%,-50%) scale(1.06); opacity: 1; }
+    }
+    .hero-float-card {
+    position: absolute;
+    background: var(--glass-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 3;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    white-space: nowrap;
+    }
+    .hero-card1 { top: 10px; left: -20px; animation: floatCard1 5s ease-in-out infinite; }
+    .hero-card2 { top: 10px; right: -20px; animation: floatCard2 5s ease-in-out infinite 0.8s; }
+    .hero-card3 { bottom: 20px; left: 50%; transform: translateX(-50%); animation: floatCard3 5s ease-in-out infinite 1.4s; }
+    @keyframes floatCard1 {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+    }
+    @keyframes floatCard2 {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+    }
+    @keyframes floatCard3 {
+    0%,100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-5px); }
+    }
+    .hfc-icon { font-size: 18px; }
+    .hfc-info { display: flex; flex-direction: column; gap: 1px; }
+    .hfc-label { font-size: 10px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; }
+    .hfc-val { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); }
+    body.light .hero-float-card { background: #fff; border-color: rgba(124,58,237,0.12); }
+    body.light .hero-headline { color: #0F172A; }
+    @media (max-width: 768px) {
+    .hero-section { flex-direction: column; text-align: center; padding: 1.5rem 0; }
+    .hero-illustration { width: 220px; height: 200px; }
+    .hero-badge { margin: 0 auto; }
+    .hero-cta { margin: 0 auto; }
+    .hero-card1 { left: 0; }
+    .hero-card2 { right: 0; }
+    }
     </style>
 
     </head>
@@ -2564,6 +2722,61 @@
 
         <!-- DASHBOARD -->
         <div id="page-dashboard" class="page active">
+            <div class="hero-section" id="hero-section">
+            <div class="hero-text">
+            <div class="hero-badge">
+            <span class="hero-badge-dot"></span>
+            <span>TecBlitzWeb Sales OS</span>
+            </div>
+            <h1 class="hero-headline">Close Every<br><span class="hero-accent">Deal.</span></h1>
+            <p class="hero-sub">Track calls. Manage leads. Grow revenue.</p>
+            <button class="hero-cta" onclick="document.getElementById('btn-log-call')?.click()">+ Log a Call</button>
+            </div>
+            <div class="hero-illustration">
+            <div class="hero-float-card hero-card1">
+            <div class="hfc-icon">📞</div>
+            <div class="hfc-info"><span class="hfc-label">Calls Today</span><span class="hfc-val" id="hero-calls-val">—</span></div>
+            </div>
+            <div class="hero-float-card hero-card2">
+            <div class="hfc-icon">⭐</div>
+            <div class="hfc-info"><span class="hfc-label">Interested</span><span class="hfc-val" id="hero-leads-val">—</span></div>
+            </div>
+            <div class="hero-float-card hero-card3">
+            <div class="hfc-icon">👥</div>
+            <div class="hfc-info"><span class="hfc-label">Prospects</span><span class="hfc-val" id="hero-prospects-val">—</span></div>
+            </div>
+            <div class="hero-avatar-wrap">
+            <div class="hero-avatar-ring"></div>
+            <div class="hero-avatar-ring hero-ring2"></div>
+            <svg class="hero-avatar-svg" viewBox="0 0 200 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="60" r="36" fill="#A855F7" opacity="0.15"/>
+            <circle cx="100" cy="58" r="28" fill="#C084FC"/>
+            <ellipse cx="100" cy="57" rx="16" ry="18" fill="#F5D0FE"/>
+            <ellipse cx="93" cy="52" rx="3" ry="3.5" fill="#1e1b4b"/>
+            <ellipse cx="107" cy="52" rx="3" ry="3.5" fill="#1e1b4b"/>
+            <path d="M93 62 Q100 68 107 62" stroke="#1e1b4b" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <rect x="72" y="88" width="56" height="64" rx="12" fill="#7C3AED"/>
+            <rect x="78" y="94" width="44" height="52" rx="8" fill="#A855F7"/>
+            <rect x="82" y="98" width="36" height="4" rx="2" fill="white" opacity="0.5"/>
+            <rect x="82" y="106" width="28" height="3" rx="1.5" fill="white" opacity="0.3"/>
+            <rect x="82" y="113" width="32" height="3" rx="1.5" fill="white" opacity="0.3"/>
+            <rect x="60" y="92" width="14" height="44" rx="7" fill="#C084FC"/>
+            <rect x="126" y="92" width="14" height="44" rx="7" fill="#C084FC"/>
+            <rect x="58" y="152" width="20" height="36" rx="10" fill="#A855F7"/>
+            <rect x="122" y="152" width="20" height="36" rx="10" fill="#A855F7"/>
+            <rect x="50" y="130" width="100" height="12" rx="6" fill="#7C3AED" opacity="0.4"/>
+            <rect x="70" y="152" width="60" height="8" rx="4" fill="#6D28D9" opacity="0.5"/>
+            <rect x="72" y="155" width="56" height="52" rx="8" fill="#22D3EE" opacity="0.15"/>
+            <rect x="76" y="158" width="48" height="36" rx="6" fill="#0E7490" opacity="0.8"/>
+            <rect x="79" y="161" width="42" height="2" rx="1" fill="#22D3EE" opacity="0.6"/>
+            <rect x="79" y="166" width="34" height="1.5" rx="0.75" fill="white" opacity="0.3"/>
+            <rect x="79" y="170" width="38" height="1.5" rx="0.75" fill="white" opacity="0.3"/>
+            <rect x="79" y="174" width="30" height="1.5" rx="0.75" fill="white" opacity="0.2"/>
+            <rect x="68" y="196" width="64" height="4" rx="2" fill="#6D28D9" opacity="0.3"/>
+            </svg>
+            </div>
+            </div>
+            </div>
             <div class="page-header dash-page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;overflow:visible;">
             <div>
                 <h2>Dashboard</h2>
@@ -2571,7 +2784,7 @@
             </div>
             <div class="dash-header-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;overflow:visible;min-width:0;">
                 <button class="btn btn-outline" onclick="dashboardRefreshNow()" id="dash-refresh-btn" style="min-width:0;white-space:normal;">Refresh Now</button>
-                <button class="btn btn-purple btn-header-log-call" onclick="openModal('call-modal')" style="min-width:0;white-space:normal;">+ Log Call</button>
+                <button type="button" class="btn btn-purple btn-header-log-call" id="btn-log-call" onclick="openModal('call-modal')" style="min-width:0;white-space:normal;">+ Log Call</button>
             </div>
             </div>
             <div class="stat-grid stat-grid-bento" id="dash-stats"></div>
@@ -4923,6 +5136,13 @@
 
     // Render recent calls history section
     renderDashRecentCalls();
+
+    const heroC = document.getElementById('hero-calls-val');
+    const heroL = document.getElementById('hero-leads-val');
+    const heroP = document.getElementById('hero-prospects-val');
+    if(heroC) heroC.textContent = getCalls().filter(c=>c.date===new Date().toISOString().split('T')[0]).length;
+    if(heroL) heroL.textContent = (getLeads ? getLeads() : []).length;
+    if(heroP) heroP.textContent = getProspects ? getProspects().length : '—';
     }
 
     async function dashboardRefreshNow(){
