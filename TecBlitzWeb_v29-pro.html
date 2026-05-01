@@ -4756,6 +4756,10 @@
             <span class="prospect-pkg">${esc(p.pkg)}</span>
             <span class="prospect-rep">${repName}</span>
         </div>
+        ${p.lastCalledAt ? `<div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:var(--text-2);">Last called: ${fmt(p.lastCalledAt)}</span>
+            ${outcomeBadge(p.lastCallOutcome||'')}
+        </div>` : ''}
         <div style="display:flex;gap:8px;align-items:center;">
             <span class="info-row"><strong>${esc(p.phone)}</strong></span>
             <button class="btn btn-cyan btn-sm" style="margin-left:auto;" onclick='openCallModalForProspect("${p.name}")'>Log Call</button>
@@ -4826,8 +4830,8 @@
     function normalizeCloudCallRow(c){
     if(!c) return null;
     var id = (c.id != null && c.id !== '') ? String(c.id) : ('call_' + String(c.createdat || c.createdAt || Date.now()) + '_' + Math.random().toString(36).slice(2, 9));
-    var rawDate = c.date || (c.created_at != null ? String(c.created_at) : '') || (c.createdat != null ? String(c.createdat) : '') || (c.createdAt != null ? String(c.createdAt) : '');
     var dateYmd = '';
+    var rawDate = c.date || (c.createdat ? String(c.createdat) : '') || (c.created_at ? String(c.created_at) : '');
     if(rawDate){
         var mm = String(rawDate).match(/^(\d{4}-\d{2}-\d{2})/);
         dateYmd = mm ? mm[1] : '';
@@ -4852,7 +4856,7 @@
         id: row.id,
         biz: row.biz || 'Unknown',
         phone: c.phone || '—',
-        date: row.date || (c.created_at ? String(c.created_at).split('T')[0] : ''),
+        date: row.date || (c.created_at ? String(c.created_at).split('T')[0] : '') || (c.createdat ? String(c.createdat).split('T')[0] : '') || c.date || '',
         time: row.time || '09:00',
         duration: row.duration || 0,
         outcome: row.outcome || 'No Answer',
@@ -4987,12 +4991,29 @@
     if(id){ calls = calls.map(c=>c.id===id?{...c,...obj,createdAt:c.createdAt}:c); }
     else { calls.push(obj); }
     ls('calls', calls);
+    // Update prospect lastCalled indicator
+    const allProspects = getProspects();
+    const matchIdx = allProspects.findIndex(p => 
+        p.name && p.name.trim().toLowerCase() === obj.biz.trim().toLowerCase()
+    );
+    if(matchIdx !== -1){
+        allProspects[matchIdx].lastCalledAt = obj.date;
+        allProspects[matchIdx].lastCallOutcome = obj.outcome;
+        ls('prospects', allProspects);
+        if(sbReady && sbClient){
+            sbClient.from('prospects').upsert([{
+                id: allProspects[matchIdx].id,
+                lastCalledAt: obj.date,
+                lastCallOutcome: obj.outcome
+            }]).then(({error}) => { if(error) console.error('prospect lastCalled sync:', error.message); });
+        }
+    }
     
     // SYNC TO SUPABASE
     if(sbReady && sbClient){
         sbClient.from('calls').upsert([{
         id: obj.id,
-        prospect: obj.biz,   // biz stored in prospect column (actual DB column name)
+        prospect: obj.biz,
         date: obj.date,
         time: obj.time,
         duration: obj.duration,
