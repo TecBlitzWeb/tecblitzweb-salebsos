@@ -91,38 +91,36 @@
     #login-screen{
     display:flex;
     min-height:100vh;
+    width:100vw;
     align-items:center;
     justify-content:center;
-    position:relative;
+    position:fixed;
+    top:0;left:0;
     overflow:hidden;
-    background:linear-gradient(135deg,#ede9fe 0%,#c7d2fe 30%,#bae6fd 60%,#e0f2fe 100%);
-    background-size:400% 400%;
-    animation:meshMove 10s ease-in-out infinite alternate;
-    }
-    @keyframes meshMove{
-    0%{background-position:0% 0%;}
-    25%{background-position:100% 0%;}
-    50%{background-position:100% 100%;}
-    75%{background-position:0% 100%;}
-    100%{background-position:50% 50%;}
+    background:#0a0a0f;
     }
     #login-screen::before{
     content:'';
     position:absolute;
-    inset:0;
+    inset:-50%;
+    width:200%;
+    height:200%;
     z-index:0;
     pointer-events:none;
     background:
-    radial-gradient(ellipse 60% 50% at 80% 20%,rgba(124,58,237,0.4) 0%,transparent 70%),
-    radial-gradient(ellipse 50% 60% at 10% 80%,rgba(34,211,238,0.35) 0%,transparent 70%),
-    radial-gradient(ellipse 40% 40% at 50% 50%,rgba(168,85,247,0.2) 0%,transparent 70%);
-    animation:orbDrift 8s ease-in-out infinite alternate;
+    radial-gradient(ellipse 70% 60% at 80% 20%,rgba(168,85,247,0.45) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 70% at 10% 80%,rgba(34,211,238,0.3) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 50% at 50% 50%,rgba(99,102,241,0.2) 0%,transparent 60%),
+    radial-gradient(ellipse 40% 40% at 20% 20%,rgba(168,85,247,0.2) 0%,transparent 60%);
+    animation:fullWalk 12s ease-in-out infinite;
     }
-    @keyframes orbDrift{
-    0%{transform:translate(0px,0px) scale(1);}
-    33%{transform:translate(-30px,20px) scale(1.05);}
-    66%{transform:translate(20px,-25px) scale(0.97);}
-    100%{transform:translate(-15px,15px) scale(1.03);}
+    @keyframes fullWalk{
+    0%{transform:translate(0%,0%) rotate(0deg) scale(1);}
+    20%{transform:translate(-8%,6%) rotate(3deg) scale(1.05);}
+    40%{transform:translate(6%,-8%) rotate(-2deg) scale(0.97);}
+    60%{transform:translate(-5%,-5%) rotate(4deg) scale(1.08);}
+    80%{transform:translate(8%,4%) rotate(-3deg) scale(0.96);}
+    100%{transform:translate(0%,0%) rotate(0deg) scale(1);}
     }
     #login-screen::after{
     content:'';
@@ -130,28 +128,20 @@
     inset:0;
     z-index:0;
     pointer-events:none;
-    opacity:0.35;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    opacity:0.08;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)'/%3E%3C/svg%3E");
     background-size:200px 200px;
-    mix-blend-mode:soft-light;
+    mix-blend-mode:overlay;
     }
-    body.dark #login-screen,
-    body:not(.light) #login-screen{
-    background:linear-gradient(135deg,#0a0a0f 0%,#12091a 30%,#0d1520 60%,#0a0a0f 100%);
-    background-size:400% 400%;
-    animation:meshMoveDark 10s ease-in-out infinite alternate;
+    body.light #login-screen{
+    background:#f0ebff;
     }
-    body.dark #login-screen::before,
-    body:not(.light) #login-screen::before{
+    body.light #login-screen::before{
     background:
-    radial-gradient(ellipse 60% 50% at 80% 20%,rgba(168,85,247,0.3) 0%,transparent 70%),
-    radial-gradient(ellipse 50% 60% at 10% 80%,rgba(34,211,238,0.2) 0%,transparent 70%),
-    radial-gradient(ellipse 40% 40% at 50% 50%,rgba(124,58,237,0.15) 0%,transparent 70%);
-    }
-    @keyframes meshMoveDark{
-    0%{background-position:0% 0%;}
-    50%{background-position:100% 100%;}
-    100%{background-position:50% 0%;}
+    radial-gradient(ellipse 70% 60% at 80% 20%,rgba(124,58,237,0.35) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 70% at 10% 80%,rgba(34,211,238,0.25) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 50% at 50% 50%,rgba(99,102,241,0.2) 0%,transparent 60%),
+    radial-gradient(ellipse 40% 40% at 20% 20%,rgba(168,85,247,0.2) 0%,transparent 60%);
     }
     .login-left{
     flex:1;
