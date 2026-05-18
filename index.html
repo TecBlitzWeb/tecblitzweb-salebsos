@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TecBlitzWeb Sales OS</title>
+    <link rel="icon" href="favicon.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
@@ -9124,7 +9125,7 @@
     <script>
     if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/tecblitzweb-salebsos/sw.js')
+        navigator.serviceWorker.register('/sw.js')
         .then(function(reg) { console.log('SW registered:', reg.scope); })
         .catch(function(err) { console.log('SW failed:', err); });
     });

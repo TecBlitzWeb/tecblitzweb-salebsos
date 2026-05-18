@@ -1,10 +1,10 @@
 const CACHE = 'tecblitzweb-sos-v1';
 const ASSETS = [
-  '/tecblitzweb-salebsos/',
-  '/tecblitzweb-salebsos/index.html',
-  '/tecblitzweb-salebsos/main.js',
-  '/tecblitzweb-salebsos/api.js',
-  '/tecblitzweb-salebsos/config.js'
+  '/',
+  '/index.html',
+  '/main.js',
+  '/api.js',
+  '/config.js'
 ];
 
 self.addEventListener('install', e => {

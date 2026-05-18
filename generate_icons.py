@@ -1,31 +1,18 @@
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 import os
 
 os.makedirs('icons', exist_ok=True)
 
+favicon = Image.open('favicon.png').convert('RGBA')
+
 for size in [192, 512]:
-    img = Image.new('RGB', (size, size), '#0a0a0f')
-    draw = ImageDraw.Draw(img)
-
-    # Purple circle background
-    margin = size // 8
-    draw.ellipse([margin, margin, size - margin, size - margin], fill='#A855F7')
-
-    # "TB" text
-    font_size = size // 3
-    try:
-        font = ImageFont.truetype("arial.ttf", font_size)
-    except OSError:
-        try:
-            font = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", font_size)
-        except OSError:
-            font = ImageFont.load_default()
-
-    text = "TB"
-    bbox = draw.textbbox((0, 0), text, font=font)
-    tw = bbox[2] - bbox[0]
-    th = bbox[3] - bbox[1]
-    draw.text(((size - tw) // 2, (size - th) // 2 - size // 12), text, fill='white', font=font)
-
-    img.save(f'icons/icon-{size}.png')
+    img = Image.new('RGBA', (size, size), '#0a0a0f')
+    padding = size // 6
+    max_dim = size - 2 * padding
+    bolt = favicon.copy()
+    bolt.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+    x = (size - bolt.width) // 2
+    y = (size - bolt.height) // 2
+    img.paste(bolt, (x, y), bolt)
+    img.convert('RGB').save(f'icons/icon-{size}.png')
     print(f'Created icon-{size}.png')
