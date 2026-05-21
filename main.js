@@ -209,11 +209,33 @@
     return [canon(currentUid)];
   }
 
+  function assignKeysEqual(a, b){
+    return String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+  }
+
   function getAssignedKey(record, assignField){
     if(assignField === 'assignedTo'){
-      return canon(record.assignedTo || record.assigned_rep_id || record.assignee || '');
+      return canon(
+        record.assignedTo || record.assignedto || record.assigned_to
+        || record.assigned_rep_id || record.assignee || ''
+      );
     }
-    return canon(record.rep || record.assignedTo || '');
+    return canon(record.rep || record.assignedTo || record.assignedto || '');
+  }
+
+  function repTokensForUser(currentUid, USERS){
+    var u = getUser(currentUid, USERS);
+    var k = canon(currentUid);
+    var tokens = [];
+    if(k) tokens.push(k);
+    if(u && u.name && String(u.name).trim()) tokens.push(String(u.name).trim());
+    var seen = {};
+    return tokens.filter(function(t){
+      var low = String(t).toLowerCase();
+      if(!low || seen[low]) return false;
+      seen[low] = true;
+      return true;
+    });
   }
 
   function canSeeAssignedRecord(record, currentUid, USERS, assignField){
@@ -228,7 +250,11 @@
     }
     var selfId = getRepIdForKey(currentUid, USERS);
     if(assignId != null && selfId != null) return assignId === selfId;
-    return key === canon(currentUid);
+    var mine = repTokensForUser(currentUid, USERS);
+    for(var i = 0; i < mine.length; i++){
+      if(assignKeysEqual(key, mine[i])) return true;
+    }
+    return false;
   }
 
   function filterRecords(records, currentUid, USERS, assignField){

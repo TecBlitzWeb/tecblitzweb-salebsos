@@ -97,13 +97,26 @@
     return out;
   }
 
+  function lookupIdMapCaseInsensitive(map, key){
+    if(!map || key == null || key === "") return null;
+    if(map[key] != null) return map[key];
+    var low = String(key).toLowerCase();
+    var found = null;
+    Object.keys(map).forEach(function(k){
+      if(found != null) return;
+      if(String(k).toLowerCase() === low) found = map[k];
+    });
+    return found;
+  }
+
   function getSalesUserIdForKey(key, USERS){
     var id = toBigintId(key);
     if(id != null) return id;
     var k = canonRep(key);
     if(!k) return null;
-    if(window._salesUserIdByKey && window._salesUserIdByKey[k] != null){
-      return toBigintId(window._salesUserIdByKey[k]);
+    var mapped = lookupIdMapCaseInsensitive(window._salesUserIdByKey, k);
+    if(mapped != null){
+      return toBigintId(mapped);
     }
     if(typeof window.getRepSalesUserId === "function"){
       return toBigintId(window.getRepSalesUserId(k));
@@ -151,6 +164,30 @@
     return owned;
   }
 
+  /** Sales/Rep: match assignedto/rep by username (ilike) and optional numeric id. */
+  function buildSalesRepAssigneeFilter(col, currentUid, USERS){
+    var u = getUser(currentUid, USERS);
+    var k = canonRep(currentUid);
+    var tokens = [];
+    if(k) tokens.push(String(k));
+    if(u && u.name && String(u.name).trim()) tokens.push(String(u.name).trim());
+    var seen = {};
+    tokens = tokens.filter(function(t){
+      var low = String(t).toLowerCase();
+      if(!low || seen[low]) return false;
+      seen[low] = true;
+      return true;
+    });
+    if(!tokens.length) return "&" + col + "=eq.-1";
+
+    var parts = tokens.map(function(t){
+      return col + ".ilike." + encodeURIComponent(String(t));
+    });
+    var selfId = getSalesUserIdForKey(currentUid, USERS);
+    if(selfId != null) parts.push(col + ".eq." + selfId);
+    return parts.length === 1 ? "&" + parts[0] : "&or=(" + parts.join(",") + ")";
+  }
+
   function buildRoleFilterQuery(table, currentUid, USERS){
     var col = TABLE_ASSIGNED_COL[table];
     if(!col || !currentUid) return "";
@@ -162,9 +199,7 @@
       if(!owned.length) return "&" + col + "=eq.-1";
       return "&" + col + "=in.(" + owned.join(",") + ")";
     }
-    var selfId = getSalesUserIdForKey(currentUid, USERS);
-    if(selfId == null) return "&" + col + "=eq.-1";
-    return "&" + col + "=eq." + selfId;
+    return buildSalesRepAssigneeFilter(col, currentUid, USERS);
   }
 
   async function fetchRoleFilteredTable(table, currentUid, USERS){
