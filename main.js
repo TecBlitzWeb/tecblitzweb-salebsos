@@ -915,14 +915,19 @@
   function setSidebarOpen(open){
     var els = getSidebarEls();
     if(!els.sidebar) return;
-    els.sidebar.classList.toggle("open", open);
-    if(els.overlay) els.overlay.classList.toggle("open", open);
-    if(els.hamburger) els.hamburger.classList.toggle("open", open);
-    els.sidebar.style.willChange = open ? "transform" : "auto";
-    document.body.classList.toggle("mobile-sidebar-open", open && isMobile());
+    var mobile = isMobile();
+    var show = open && mobile;
+    els.sidebar.classList.toggle("open", show);
     if(els.overlay){
-      els.overlay.setAttribute("aria-hidden", open ? "false" : "true");
+      els.overlay.classList.toggle("open", show);
+      els.overlay.style.display = show ? "block" : "none";
+      els.overlay.style.opacity = show ? "1" : "0";
+      els.overlay.style.pointerEvents = show ? "auto" : "none";
+      els.overlay.setAttribute("aria-hidden", show ? "false" : "true");
     }
+    if(els.hamburger) els.hamburger.classList.toggle("open", show);
+    els.sidebar.style.willChange = show ? "transform" : "auto";
+    document.body.classList.toggle("mobile-sidebar-open", show);
   }
 
   function openSidebar(){
@@ -954,8 +959,19 @@
   function bindOverlay(){
     var overlay = document.getElementById("sidebar-overlay");
     if(!overlay) return;
-    overlay.addEventListener("click", function(e){
-      if(e.target === overlay) closeSidebar();
+    overlay.style.display = "none";
+    overlay.addEventListener("click", function(){
+      closeSidebar();
+    });
+  }
+
+  function bindMobileSignOut(){
+    var btn = document.getElementById("mobile-sign-out-btn");
+    if(!btn || btn._mobileLogoutBound) return;
+    btn._mobileLogoutBound = true;
+    btn.addEventListener("click", function(){
+      closeSidebar();
+      if(typeof window.doLogout === "function") window.doLogout();
     });
   }
 
@@ -973,6 +989,7 @@
 
   function init(){
     bindOverlay();
+    bindMobileSignOut();
     bindSidebarNavClose();
     document.addEventListener("keydown", function(e){
       if(e.key === "Escape" && isMobile()) closeSidebar();
