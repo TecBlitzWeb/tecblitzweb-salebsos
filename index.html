@@ -4111,10 +4111,16 @@
     }
     function filterCallsForCurrentUser(allCalls){
     allCalls = allCalls || [];
+    if(window.SALES_OS && typeof SALES_OS.filterRecords === 'function'){
+        return SALES_OS.filterRecords(allCalls, currentUser, USERS, 'rep');
+    }
     if(isDirectorCEO(currentUser)) return allCalls;
     if(isScopedManager(currentUser)){
         var owned = getOwnedRepUIDs(currentUser);
-        return allCalls.filter(function(c){ return owned.includes(canonicalRepKey(c.rep)); });
+        return allCalls.filter(function(c){
+            var repId = getRepSalesUserId(c.rep);
+            return repId != null && owned.indexOf(repId) !== -1;
+        });
     }
     return allCalls.filter(function(c){ return canonicalRepKey(c.rep)===canonicalRepKey(currentUser); });
     }
@@ -4142,23 +4148,44 @@
     if(window.SALES_OS) return SALES_OS.getVisibleRepUIDs(currentUser,USERS);
     return [currentUser];
     }
+    window._salesUserIdByKey = window._salesUserIdByKey || {};
+    window._salesUserKeyById = window._salesUserKeyById || {};
+    function getRepSalesUserId(repKey){
+    var k = canonicalRepKey(repKey);
+    if(!k) return null;
+    if(window._salesUserIdByKey[k] != null) return Number(window._salesUserIdByKey[k]);
+    var tm = ls('tm_rep_'+k) || {};
+    if(tm.supabaseId != null && tm.supabaseId !== '') return Number(tm.supabaseId);
+    return null;
+    }
+    function repKeysToOwnedRepIds(keys){
+    return (keys || []).map(function(k){ return getRepSalesUserId(k); }).filter(function(n){ return n != null && isFinite(n); });
+    }
     function mergeTeamMembersIntoUsers(rows){
     if(!Array.isArray(rows)) return;
     var extra = ls('tm_extra_reps') || {};
+    window._salesUserIdByKey = {};
+    window._salesUserKeyById = {};
     rows.forEach(function(r){
-        var key = canonicalRepKey(String(r.name || r.username || ''));
+        var key = canonicalRepKey(String(r.username || r.name || ''));
         if(!key) return;
+        var displayName = (r.name && String(r.name).trim()) ? String(r.name).trim() : key;
+        var rowId = (r.id != null && window.APP_API) ? APP_API.toBigintId(r.id) : (r.id != null ? parseInt(r.id, 10) : null);
+        if(rowId != null){
+        window._salesUserIdByKey[key] = rowId;
+        window._salesUserKeyById[rowId] = key;
+        }
         if(!USERS[key]){
         var role = r.role || 'Sales';
         var tier = tmTierFromRole(role);
-        USERS[key] = { name: key, role: role, tier: tier, email: r.email || '' };
-        extra[key] = { name: key, role: role, tier: tier, email: r.email || '', source: 'cloud' };
+        USERS[key] = { name: displayName, role: role, tier: tier, email: r.email || '' };
+        extra[key] = { name: displayName, role: role, tier: tier, email: r.email || '', source: 'cloud' };
         }
-        var owned = window.SALES_OS ? SALES_OS.normalizeOwnedReps(r.owned_reps) : (r.owned_reps||[]);
+        var owned = window.SALES_OS ? SALES_OS.normalizeOwnedReps(r.owned_reps) : (window.APP_API ? APP_API.normalizeOwnedRepsBigint(r.owned_reps) : []);
         USERS[key].owned_reps = owned;
         var tm = getTMRepData(key)||{};
         tm.owned_reps = owned;
-        if(r.id) tm.supabaseId = String(r.id);
+        if(rowId != null) tm.supabaseId = rowId;
         ls('tm_rep_'+key, Object.assign({}, tm, { owned_reps: owned, supabaseId: tm.supabaseId }));
     });
     ls('tm_extra_reps', extra);
@@ -4175,20 +4202,23 @@
         if(typeof cooRenderTable==='function') cooRenderTable();
     });
     }
-    function saveOwnedRepsForMember(uid, ownedReps){
-    var owned = window.SALES_OS ? SALES_OS.normalizeOwnedReps(ownedReps) : ownedReps;
-    if(USERS[uid]) USERS[uid].owned_reps = owned;
+    function loadTeamMembers(){ loadTeamMembersFromCloud(); }
+    function saveOwnedRepsForMember(uid, ownedRepKeys){
+    var ownedIds = Array.isArray(ownedRepKeys) && ownedRepKeys.length && typeof ownedRepKeys[0] === 'number'
+        ? (window.APP_API ? APP_API.normalizeOwnedRepsBigint(ownedRepKeys) : ownedRepKeys)
+        : repKeysToOwnedRepIds(ownedRepKeys);
+    if(USERS[uid]) USERS[uid].owned_reps = ownedIds;
     var tm = getTMRepData(uid)||{};
-    tm.owned_reps = owned;
-    ls('tm_rep_'+uid, Object.assign({}, tm, { owned_reps: owned }));
+    tm.owned_reps = ownedIds;
+    ls('tm_rep_'+uid, Object.assign({}, tm, { owned_reps: ownedIds }));
     var cooMap = ls('tm_coo_reps')||{};
     if(isCOO(uid)||isCoCEO(uid)){
-        cooMap[uid] = owned.slice();
+        cooMap[uid] = (ownedRepKeys || []).slice();
         ls('tm_coo_reps', cooMap);
     }
     if(window.APP_API&&typeof APP_API.upsertTeamMemberOwnedReps==='function'){
-        var rowId = (getTMRepData(uid)||{}).supabaseId || uid;
-        APP_API.upsertTeamMemberOwnedReps(rowId, owned).catch(function(e){ console.warn('owned_reps sync', e); });
+        var rowId = (getTMRepData(uid)||{}).supabaseId;
+        if(rowId != null) APP_API.upsertTeamMemberOwnedReps(rowId, ownedIds).catch(function(e){ console.warn('owned_reps sync', e); });
     }
     }
 
@@ -4484,7 +4514,13 @@
     try {
         const HDR = window.BASE_HDR;
         if(!window.SB_URL || !HDR) return null;
-        const r = await fetch(window.SB_URL + '/rest/v1/' + table + '?select=*', { headers: HDR });
+        var roleFilter = '';
+        if(currentUser && window.APP_API && typeof APP_API.buildRoleFilterQuery === 'function'){
+        if(table === 'prospects' || table === 'calls' || table === 'interested_leads'){
+            roleFilter = APP_API.buildRoleFilterQuery(table, currentUser, USERS);
+        }
+        }
+        const r = await fetch(window.SB_URL + '/rest/v1/' + table + '?select=*' + roleFilter, { headers: HDR });
         if(r.status === 404 || r.status === 400){
         if(table === 'closed_deals') window._closedDealsTableMissing = true;
         return null;
@@ -4661,7 +4697,7 @@
         var user;
         try{
         const res = await fetch(window.SB_URL + '/rest/v1/sales_users' +
-        '?email=eq.' + encodeURIComponent(email) + '&select=name,email,role', {
+        '?email=eq.' + encodeURIComponent(email) + '&select=id,name,username,email,role,owned_reps', {
         headers: window.BASE_HDR
         });
         var users = [];
@@ -4679,8 +4715,26 @@
             role: 'User'
         };
         }
-        currentUser = canonicalRepKey(user.name);
+        var loginKey = canonicalRepKey(user.username || user.name);
+        currentUser = loginKey;
         sessionStorage.setItem('sos_user', currentUser);
+        if(USERS[currentUser]){
+        if(user.role) USERS[currentUser].role = user.role;
+        if(user.email) USERS[currentUser].email = user.email;
+        if(user.owned_reps && window.SALES_OS) USERS[currentUser].owned_reps = SALES_OS.normalizeOwnedReps(user.owned_reps);
+        if(user.id != null){
+            var rowId = window.APP_API ? APP_API.toBigintId(user.id) : parseInt(user.id, 10);
+            if(rowId != null){
+            window._salesUserIdByKey = window._salesUserIdByKey || {};
+            window._salesUserKeyById = window._salesUserKeyById || {};
+            window._salesUserIdByKey[currentUser] = rowId;
+            window._salesUserKeyById[rowId] = currentUser;
+            var tmLogin = getTMRepData(currentUser) || {};
+            tmLogin.supabaseId = rowId;
+            ls('tm_rep_'+currentUser, tmLogin);
+            }
+        }
+        }
     
         sendLoginEmailNotification(user);
         void tryInsertLoginLog(user);
@@ -5156,22 +5210,21 @@
         if(window.APP_API && typeof window.APP_API.insertLoginLogSafe === 'function') await window.APP_API.insertLoginLogSafe(null);
     }catch(_e){}
     }
+    async function loadCallsFromCloud(){
+    if(window.SALES_OS && typeof SALES_OS.loadCalls === 'function' && currentUser){
+        var res = await SALES_OS.loadCalls(currentUser, USERS);
+        if(res && res.error) return null;
+        return Array.isArray(res) ? res : (res && res.data);
+    }
+    if(typeof loadFromCloud === 'function') return await loadFromCloud('calls');
+    return null;
+    }
     async function loadDashboard(){
     try{
-        if(sbReady && sbClient){
-        var res = await sbClient.from('calls').select('*');
-        var data = res && res.data;
-        var err = res && res.error;
-        if(!err && Array.isArray(data)){
-            var calls = data.map(normalizeCloudCallRow).filter(Boolean);
-            ls('calls', mergeByIdPreserveLocal(calls, getCalls()));
-        }
-        } else if(typeof loadFromCloud === 'function' && window.SB_URL && window.BASE_HDR){
-        var cloudCalls = await loadFromCloud('calls');
+        var cloudCalls = await loadCallsFromCloud();
         if(cloudCalls && cloudCalls.length){
             var calls2 = cloudCalls.map(normalizeCloudCallRow).filter(Boolean);
             ls('calls', mergeByIdPreserveLocal(calls2, getCalls()));
-        }
         }
     }catch(e){
         console.warn('loadDashboard cloud pull failed:', e);
@@ -5259,8 +5312,8 @@
     // Refresh All Calls live data if page is active
     const allCallsPage = document.getElementById('page-allcalls');
     if (allCallsPage && allCallsPage.classList.contains('active') && _acInited) {
-        window.supabase.from('calls').select('*').then(({ data, error }) => {
-        if (!error && data) {
+        loadCallsFromCloud().then(function(data){
+        if (data && data.length) {
             acAllData = data.map(mapCloudRowToAcRow).filter(Boolean);
             acAllData.sort((a, b) => b.ts - a.ts);
             acLastUpdated = Date.now();
@@ -5479,9 +5532,9 @@
         showToast('Cloud sync not ready yet','error');
         return;
         }
-        const { data, error } = await sbClient.from('calls').select('*');
-        if(error){ throw error; }
-        const calls = (data || []).map(normalizeCloudCallRow).filter(Boolean);
+        const cloudCalls = await loadCallsFromCloud();
+        if(!cloudCalls){ throw new Error('Could not load calls'); }
+        const calls = cloudCalls.map(normalizeCloudCallRow).filter(Boolean);
         ls('calls', mergeByIdPreserveLocal(calls, getCalls()));
         renderDashboard();
         if(typeof _acInited !== 'undefined' && _acInited && typeof acApplyFilters === 'function'){
@@ -6315,7 +6368,13 @@
     }
     function tmPopulateOwnedRepsSelect(selectEl, selected){
     if(!selectEl) return;
-    var selectedCanon = (selected||[]).map(canonicalRepKey);
+    var selectedIds = window.APP_API ? APP_API.normalizeOwnedRepsBigint(selected) : [];
+    var selectedCanon = selectedIds.map(function(id){
+        return (window._salesUserKeyById && _salesUserKeyById[id]) ? _salesUserKeyById[id] : '';
+    }).filter(Boolean);
+    if(!selectedCanon.length && Array.isArray(selected)){
+        selectedCanon = selected.map(canonicalRepKey);
+    }
     selectEl.innerHTML = tmListSalesRepUids().map(function(uid){
         var sel = selectedCanon.indexOf(canonicalRepKey(uid)) !== -1 ? ' selected' : '';
         return '<option value="'+uid+'"'+sel+'>'+esc(userLabel(uid))+'</option>';
@@ -6652,14 +6711,12 @@
         showToast('API not ready','error'); return;
     }
 
-    const rowId = (window.APP_API.newRowId && APP_API.newRowId()) || ('su_' + Date.now());
     const result = await APP_API.insertSalesUser({
-        id: rowId,
         username: uid,
-        name: uid,
+        name: displayName,
         email: email,
         role: role,
-        owned_reps: []
+        password: password
     });
     if(result.error){
         showToast(result.error.message || 'Failed to add rep in Supabase','error');
@@ -6667,7 +6724,13 @@
         return;
     }
 
-    const supabaseId = (result.data && result.data.id) ? result.data.id : rowId;
+    const supabaseId = (result.data && result.data.id != null) ? Number(result.data.id) : null;
+    if(supabaseId != null){
+        window._salesUserIdByKey = window._salesUserIdByKey || {};
+        window._salesUserKeyById = window._salesUserKeyById || {};
+        window._salesUserIdByKey[uid] = supabaseId;
+        window._salesUserKeyById[supabaseId] = uid;
+    }
     const extra = ls('tm_extra_reps') || {};
     extra[uid] = { name: displayName, role, tier, email, source: 'cloud' };
     ls('tm_extra_reps', extra);
@@ -6681,17 +6744,19 @@
     }
 
     if(tmAddPendingDP){
-        setTMRepData(uid, { dp: tmAddPendingDP, supabaseId: supabaseId, displayName: displayName });
+        setTMRepData(uid, { dp: tmAddPendingDP, supabaseId: supabaseId, name: displayName });
     } else {
-        setTMRepData(uid, { supabaseId: supabaseId, displayName: displayName });
+        setTMRepData(uid, { supabaseId: supabaseId, name: displayName });
     }
 
     USERS[uid] = { name: displayName, role, tier, email, owned_reps: [] };
+    USERS[uid].handle = '@' + String(uid).toLowerCase();
 
     tmCloseModal('tm-add-modal');
     tmRenderStats();
     tmRenderTable();
     if(typeof cooRenderTable === 'function') cooRenderTable();
+    loadTeamMembersFromCloud();
     showToast('New rep added ✓','success');
     }
 
@@ -6968,8 +7033,8 @@
         if(ownedSel){
         var picked = Array.from(ownedSel.selectedOptions).map(function(o){ return o.value; });
         saveOwnedRepsForMember(uid, picked);
-        newData.owned_reps = picked;
-        ls('tm_rep_'+uid, Object.assign({}, verify, { owned_reps: picked }));
+        newData.owned_reps = repKeysToOwnedRepIds(picked);
+        ls('tm_rep_'+uid, Object.assign({}, verify, { owned_reps: newData.owned_reps }));
         }
     }
 
@@ -7331,26 +7396,31 @@
 
     showConfirm('Are you sure you want to remove '+name+'?', async function(){
         const tm = getTMRepData(uid) || {};
-        const supabaseId = tm.supabaseId;
+        const supabaseId = tm.supabaseId != null ? Number(tm.supabaseId) : null;
+        var cloudErr = null;
 
         if(window.APP_API){
-            if(supabaseId && typeof APP_API.deleteSalesUser === 'function'){
-                const res = await APP_API.deleteSalesUser(supabaseId);
-                if(res.error){
-                    console.warn('deleteSalesUser by id:', res.error);
-                    showToast('Could not delete from cloud: '+(res.error.message||'error'),'error');
-                    return;
-                }
+            var res = null;
+            if(supabaseId != null && typeof APP_API.removeRep === 'function'){
+                res = await APP_API.removeRep(supabaseId, true);
+            } else if(typeof APP_API.deleteSalesUserByUsername === 'function'){
+                res = await APP_API.deleteSalesUserByUsername(uid);
             } else if(typeof APP_API.deleteSalesUserByName === 'function'){
-                const res = await APP_API.deleteSalesUserByName(uid);
-                if(res.error){
-                    console.warn('deleteSalesUserByName:', res.error);
-                }
+                res = await APP_API.deleteSalesUserByName(uid);
+            }
+            if(res && res.error && res.error.message !== 'Cancelled'){
+                cloudErr = res.error.message || 'Delete failed';
             }
         }
 
+        if(cloudErr){
+            showToast('Error removing rep: '+cloudErr,'error');
+            return;
+        }
+
         tmRemoveRepLocal(uid);
-        showToast('Rep removed successfully','success');
+        showToast('Rep removed successfully ✓','success');
+        loadTeamMembersFromCloud();
         tmCloseModal('tm-edit-modal');
         tmRenderStats();
         tmRenderTable();
@@ -7640,26 +7710,37 @@
     // Update pipeline badge on load
     setTimeout(updatePipelineNavBadge, 300);
     // LOAD DATA FROM SUPABASE CLOUD — runs immediately if ready, else waits up to 2s
-    function runCloudLoad(){
+    async function runCloudLoad(){
         if(!sbReady || !sbClient) return;
-        sbClient.from('prospects').select('*').then(({ data, error }) => {
+        var loadProspectsFn = (window.SALES_OS && SALES_OS.loadProspects) ? SALES_OS.loadProspects(currentUser, USERS) : loadFromCloud('prospects');
+        var loadCallsFn = (window.SALES_OS && SALES_OS.loadCalls) ? SALES_OS.loadCalls(currentUser, USERS) : loadFromCloud('calls');
+        var loadLeadsFn = (window.SALES_OS && SALES_OS.loadLeads) ? SALES_OS.loadLeads(currentUser, USERS) : loadFromCloud('interested_leads');
+
+        loadProspectsFn.then(function(res){
+        var data = Array.isArray(res) ? res : (res && res.data);
+        var error = res && res.error;
         if(!error && data) {
             const prospects = data.map(normalizeProspectFromCloud).filter(Boolean);
             ls('prospects', prospects);
-            console.log('✓ Loaded', prospects.length, 'prospects from cloud');
+            console.log('✓ Loaded', prospects.length, 'prospects from cloud (role-filtered)');
         }
         });
-        sbClient.from('calls').select('*').then(({ data, error }) => {
+
+        loadCallsFn.then(function(res){
+        var data = Array.isArray(res) ? res : (res && res.data);
+        var error = res && res.error;
         if(error){ console.error('calls load error:', error.message || error); return; }
         if(data) {
             const calls = (data || []).map(normalizeCloudCallRow).filter(Boolean);
             ls('calls', mergeByIdPreserveLocal(calls, getCalls()));
-            console.log('✓ Loaded', calls.length, 'calls from cloud');
+            console.log('✓ Loaded', calls.length, 'calls from cloud (role-filtered)');
             if(document.getElementById('page-dashboard')?.classList.contains('active')) renderDashboard();
         }
         });
-        // Load interested leads from cloud (best-effort — table may not exist)
-        sbClient.from('interested_leads').select('*').then(async ({ data, error }) => {
+
+        loadLeadsFn.then(async function(res){
+        var data = Array.isArray(res) ? res : (res && res.data);
+        var error = res && res.error;
         if(error){ console.error('❌ interested_leads load error:', error.message, '| code:', error.code); return; }
         if(data){
             // Normalise Supabase rows → internal lead shape (guards against column-name drift)
@@ -7734,8 +7815,10 @@
         if(!currentUser || !sbReady || !sbClient) return;
         const dashPage = document.getElementById('page-dashboard');
         if(!dashPage || !dashPage.classList.contains('active')) return;
-        sbClient.from('calls').select('*').then(function(res){
-        const data = res.data; const error = res.error;
+        var pollCalls = (window.SALES_OS && SALES_OS.loadCalls) ? SALES_OS.loadCalls(currentUser, USERS) : loadFromCloud('calls');
+        pollCalls.then(function(res){
+        const data = Array.isArray(res) ? res : (res && res.data);
+        const error = res && res.error;
         if(error || !data) return;
         const calls = data.map(normalizeCloudCallRow).filter(Boolean);
         ls('calls', mergeByIdPreserveLocal(calls, getCalls()));
@@ -7747,8 +7830,10 @@
     if(window._leadsPollTimer) clearInterval(window._leadsPollTimer);
     window._leadsPollTimer = setInterval(function(){
         if(!currentUser || !sbReady || !sbClient) return;
-        sbClient.from('interested_leads').select('*').then(function(res){
-        const data = res.data; const error = res.error;
+        var pollLeads = (window.SALES_OS && SALES_OS.loadLeads) ? SALES_OS.loadLeads(currentUser, USERS) : loadFromCloud('interested_leads');
+        pollLeads.then(function(res){
+        const data = Array.isArray(res) ? res : (res && res.data);
+        const error = res && res.error;
         if(error || !data) return;
         // Normalise field names (same mapping used in launchApp + _doFocusSync)
         const leads = data.map(function(r){ return {
@@ -8157,8 +8242,11 @@
     if(!isMgmt(currentUser)){
         leads = [];
     } else if(!isDirectorCEO(currentUser)){
-        const owned = getOwnedRepUIDs(currentUser);
-        leads = leads.filter(l => owned.includes(canonicalRepKey(l.rep)));
+        leads = leads.filter(function(l){
+            return window.SALES_OS
+                ? SALES_OS.canSeeAssignedRecord(l, currentUser, USERS, 'rep')
+                : false;
+        });
     }
 
     // Show/populate rep filter for management

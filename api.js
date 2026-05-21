@@ -1,204 +1,364 @@
-(function(){
-  /** Team/user rows — same table used at login (see index.html sales_users fetch). */
-  var TEAM_TABLE = "sales_users";
-
-  function getConfig(){
-    const cfg = window.APP_CONFIG || {};
-    const { SUPABASE_URL, SUPABASE_ANON_KEY } = cfg;
-    if(!SUPABASE_URL || !SUPABASE_ANON_KEY){
-      console.warn("Missing APP_CONFIG Supabase values in config.js");
-    }
-    return {
-      SUPABASE_URL: SUPABASE_URL || "",
-      SUPABASE_ANON_KEY: SUPABASE_ANON_KEY || "",
-      TEAM_TABLE: TEAM_TABLE
-    };
-  }
-
-  function getBaseHeaders(){
-    var cfg = getConfig();
-    return {
-      "Content-Type": "application/json",
-      "apikey": cfg.SUPABASE_ANON_KEY || "",
-      "Authorization": "Bearer " + (cfg.SUPABASE_ANON_KEY || "")
-    };
-  }
-
-  function teamUrl(query){
-    var cfg = getConfig();
-    return (cfg.SUPABASE_URL || "") + "/rest/v1/" + TEAM_TABLE + (query || "");
-  }
-
-  async function safeFetch(url, options){
-    try{
-      var res = await fetch(url, options || {});
-      var text = await res.text();
-      var payload = null;
-      try { payload = text ? JSON.parse(text) : null; } catch(e){ payload = text; }
-      if(!res.ok){
-        return { data: null, error: payload || { message: "Request failed", status: res.status } };
-      }
-      return { data: payload, error: null };
-    } catch(err){
-      return { data: null, error: { message: err && err.message ? err.message : "Network error" } };
-    }
-  }
-
-  async function loginWithEmailPassword(email, password){
-    try{
-      const authClient = window.APP_SUPABASE_CLIENT;
-      if(!authClient || !authClient.auth || typeof authClient.auth.signInWithPassword !== 'function'){
-        return { data: null, error: { message: "Supabase auth not initialized" } };
-      }
-      const result = await authClient.auth.signInWithPassword({ email, password });
-      if(result && result.error){
-        return { data: null, error: result.error };
-      }
-      return { data: result ? result.data : null, error: null };
-    } catch(err){
-      return { data: null, error: { message: err && err.message ? err.message : "Auth login failed" } };
-    }
-  }
-
-  async function insertLoginLogSafe(_row){
-    try{
-      return;
-    }catch(_e){}
-  }
-
-  function createClient(){
-    var cfg = getConfig();
-    var baseHeaders = getBaseHeaders();
-    var upsertHeaders = Object.assign({}, baseHeaders, { "Prefer": "resolution=merge-duplicates,return=minimal" });
-    var deleteHeaders = Object.assign({}, baseHeaders, { "Prefer": "return=minimal" });
-
-    return {
-      from: function(table){
-        var base = (cfg.SUPABASE_URL || "") + "/rest/v1/" + table;
-        return {
-          select: function(cols){
-            return safeFetch(base + "?select=" + encodeURIComponent(cols || "*"), { headers: baseHeaders });
-          },
-          upsert: function(rows){
-            var body = Array.isArray(rows) ? rows : [rows];
-            return safeFetch(base, { method: "POST", headers: upsertHeaders, body: JSON.stringify(body) });
-          },
-          insert: function(rows){
-            return this.upsert(rows);
-          },
-          delete: function(id){
-            return safeFetch(base + "?id=eq." + encodeURIComponent(id), { method: "DELETE", headers: deleteHeaders });
-          }
-        };
-      }
-    };
-  }
-
-  function newRowId(){
-    if(typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
-    return "su_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
-  }
-
-  function generatePassword8(){
-    var chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
-    var out = "";
-    for(var i = 0; i < 8; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
-    return out;
-  }
-
-  /** Insert a new sales user (no Auth admin — client-safe). */
-  async function insertSalesUser(repData){
-    var cfg = getConfig();
-    if(!cfg.SUPABASE_URL) return { data: null, error: { message: "Missing SUPABASE_URL" } };
-
-    var username = (repData.username || repData.name || "").trim();
-    var email = (repData.email || "").trim();
-    var role = repData.role || "Sales";
-    if(!username) return { data: null, error: { message: "Username is required" } };
-    if(!email) return { data: null, error: { message: "Email is required" } };
-
-    var row = {
-      id: repData.id || newRowId(),
-      name: username,
-      email: email,
-      role: role
-    };
-    if(repData.owned_reps) row.owned_reps = repData.owned_reps;
-
-    var res = await safeFetch(teamUrl(), {
-      method: "POST",
-      headers: Object.assign({}, getBaseHeaders(), { "Prefer": "return=representation" }),
-      body: JSON.stringify(row)
-    });
-    if(res.error){
-      var msg = res.error.message || res.error.msg || res.error.hint || "Insert failed";
-      return { data: null, error: { message: msg, details: res.error } };
-    }
-    return {
-      data: {
-        id: row.id,
-        row: Array.isArray(res.data) ? res.data[0] : res.data
-      },
-      error: null
-    };
-  }
-
-  async function fetchTeamMembers(){
-    var cfg = getConfig();
-    if(!cfg.SUPABASE_URL) return { data: [], error: { message: "Missing SUPABASE_URL" } };
-    return safeFetch(teamUrl("?select=*"), { headers: getBaseHeaders() });
-  }
-
-  async function deleteSalesUser(memberId){
-    var cfg = getConfig();
-    if(!cfg.SUPABASE_URL) return { data: null, error: { message: "Missing SUPABASE_URL" } };
-    if(!memberId) return { data: null, error: { message: "Missing user id" } };
-    return safeFetch(teamUrl("?id=eq." + encodeURIComponent(memberId)), {
-      method: "DELETE",
-      headers: Object.assign({}, getBaseHeaders(), { "Prefer": "return=minimal" })
-    });
-  }
-
-  /** Fallback when only login name is known (no uuid stored). */
-  async function deleteSalesUserByName(loginName){
-    var cfg = getConfig();
-    if(!cfg.SUPABASE_URL || !loginName) return { data: null, error: { message: "Missing name" } };
-    return safeFetch(teamUrl("?name=eq." + encodeURIComponent(loginName)), {
-      method: "DELETE",
-      headers: Object.assign({}, getBaseHeaders(), { "Prefer": "return=minimal" })
-    });
-  }
-
-  async function upsertTeamMemberOwnedReps(memberKey, ownedReps){
-    var cfg = getConfig();
-    if(!cfg.SUPABASE_URL) return { data: null, error: { message: "Missing SUPABASE_URL" } };
-    var reps = Array.isArray(ownedReps) ? ownedReps : [];
-    var key = encodeURIComponent(memberKey || "");
-    var body = JSON.stringify({ owned_reps: reps });
-    var headers = Object.assign({}, getBaseHeaders(), { "Prefer": "return=minimal" });
-    var byName = await safeFetch(teamUrl("?name=eq." + key), { method: "PATCH", headers: headers, body: body });
-    if(!byName.error) return byName;
-    return safeFetch(teamUrl("?id=eq." + key), { method: "PATCH", headers: headers, body: body });
-  }
-
-  async function upsertTeamMemberRow(row){
-    return insertSalesUser(row);
-  }
-
-  window.APP_API = {
-    TEAM_TABLE: TEAM_TABLE,
-    createClient: createClient,
-    safeFetch: safeFetch,
-    baseHeaders: getBaseHeaders,
-    loginWithEmailPassword: loginWithEmailPassword,
-    insertLoginLogSafe: insertLoginLogSafe,
-    insertSalesUser: insertSalesUser,
-    fetchTeamMembers: fetchTeamMembers,
-    deleteSalesUser: deleteSalesUser,
-    deleteSalesUserByName: deleteSalesUserByName,
-    upsertTeamMemberOwnedReps: upsertTeamMemberOwnedReps,
-    upsertTeamMemberRow: upsertTeamMemberRow,
-    generatePassword8: generatePassword8,
-    newRowId: newRowId
-  };
-})();
+(function(){
+  /** Team/user rows — same table used at login (see index.html sales_users fetch). */
+  var TEAM_TABLE = "sales_users";
+
+  var TABLE_ASSIGNED_COL = {
+    prospects: "assignedto",
+    calls: "rep",
+    interested_leads: "rep"
+  };
+
+  function getConfig(){
+    const cfg = window.APP_CONFIG || {};
+    const { SUPABASE_URL, SUPABASE_ANON_KEY } = cfg;
+    if(!SUPABASE_URL || !SUPABASE_ANON_KEY){
+      console.warn("Missing APP_CONFIG Supabase values in config.js");
+    }
+    return {
+      SUPABASE_URL: SUPABASE_URL || "",
+      SUPABASE_ANON_KEY: SUPABASE_ANON_KEY || "",
+      TEAM_TABLE: TEAM_TABLE
+    };
+  }
+
+  function getBaseHeaders(){
+    var cfg = getConfig();
+    return {
+      "Content-Type": "application/json",
+      "apikey": cfg.SUPABASE_ANON_KEY || "",
+      "Authorization": "Bearer " + (cfg.SUPABASE_ANON_KEY || "")
+    };
+  }
+
+  function teamUrl(query){
+    var cfg = getConfig();
+    return (cfg.SUPABASE_URL || "") + "/rest/v1/" + TEAM_TABLE + (query || "");
+  }
+
+  function tableUrl(table, query){
+    var cfg = getConfig();
+    return (cfg.SUPABASE_URL || "") + "/rest/v1/" + table + (query || "");
+  }
+
+  async function safeFetch(url, options){
+    try{
+      var res = await fetch(url, options || {});
+      var text = await res.text();
+      var payload = null;
+      try { payload = text ? JSON.parse(text) : null; } catch(e){ payload = text; }
+      if(!res.ok){
+        return { data: null, error: payload || { message: "Request failed", status: res.status } };
+      }
+      return { data: payload, error: null };
+    } catch(err){
+      return { data: null, error: { message: err && err.message ? err.message : "Network error" } };
+    }
+  }
+
+  function canonRep(rep){
+    if(typeof window.canonicalRepKey === "function") return window.canonicalRepKey(rep);
+    return rep == null ? "" : String(rep).trim();
+  }
+
+  /** Coerce to bigint serial id (sales_users.id). */
+  function toBigintId(val){
+    if(val == null || val === "") return null;
+    if(typeof val === "number" && isFinite(val) && val > 0) return Math.floor(val);
+    var s = String(val).trim();
+    if(/^\d+$/.test(s)){
+      var n = parseInt(s, 10);
+      return isFinite(n) && n > 0 ? n : null;
+    }
+    return null;
+  }
+
+  /** owned_reps column: bigint[] of sales_users.id values. */
+  function normalizeOwnedRepsBigint(raw){
+    if(raw == null) return [];
+    var list = raw;
+    if(typeof raw === "string"){
+      try{
+        var j = JSON.parse(raw);
+        list = Array.isArray(j) ? j : raw.split(",");
+      }catch(_e){
+        list = raw.split(",");
+      }
+    }
+    if(!Array.isArray(list)) return [];
+    var seen = {};
+    var out = [];
+    list.forEach(function(x){
+      var id = toBigintId(x);
+      if(id != null && !seen[id]){
+        seen[id] = true;
+        out.push(id);
+      }
+    });
+    return out;
+  }
+
+  function getSalesUserIdForKey(key, USERS){
+    var id = toBigintId(key);
+    if(id != null) return id;
+    var k = canonRep(key);
+    if(!k) return null;
+    if(window._salesUserIdByKey && window._salesUserIdByKey[k] != null){
+      return toBigintId(window._salesUserIdByKey[k]);
+    }
+    if(typeof window.getRepSalesUserId === "function"){
+      return toBigintId(window.getRepSalesUserId(k));
+    }
+    if(typeof window.ls === "function"){
+      var tm = window.ls("tm_rep_" + k) || {};
+      return toBigintId(tm.supabaseId);
+    }
+    return null;
+  }
+
+  function getUser(uid, USERS){
+    return (USERS || window.USERS || {})[uid];
+  }
+
+  function isDirectorCEO(uid, USERS){
+    var u = getUser(uid, USERS);
+    return !!(u && u.role === "CEO");
+  }
+
+  function isCoCEO(uid, USERS){
+    return getUser(uid, USERS)?.role === "Co-CEO";
+  }
+
+  function isCOORole(uid, USERS){
+    var u = getUser(uid, USERS);
+    return !!(u && (u.role === "COO" || u.role === "Chief Operating Officer" || u.tier === "coo"));
+  }
+
+  function isScopedManager(uid, USERS){
+    return isCoCEO(uid, USERS) || isCOORole(uid, USERS);
+  }
+
+  function getOwnedRepIds(uid, USERS){
+    if(window.SALES_OS && typeof window.SALES_OS.getOwnedRepIds === "function"){
+      return window.SALES_OS.getOwnedRepIds(uid, USERS);
+    }
+    var u = getUser(uid, USERS);
+    if(!u) return [];
+    var owned = normalizeOwnedRepsBigint(u.owned_reps);
+    if(!owned.length && typeof window.ls === "function"){
+      var tm = window.ls("tm_rep_" + uid) || {};
+      owned = normalizeOwnedRepsBigint(tm.owned_reps);
+    }
+    return owned;
+  }
+
+  function buildRoleFilterQuery(table, currentUid, USERS){
+    var col = TABLE_ASSIGNED_COL[table];
+    if(!col || !currentUid) return "";
+    var u = getUser(currentUid, USERS);
+    if(!u) return "";
+    if(isDirectorCEO(currentUid, USERS) || u.role === "CEO") return "";
+    if(isCoCEO(currentUid, USERS) || isCOORole(currentUid, USERS)){
+      var owned = getOwnedRepIds(currentUid, USERS);
+      if(!owned.length) return "&" + col + "=eq.-1";
+      return "&" + col + "=in.(" + owned.join(",") + ")";
+    }
+    var selfId = getSalesUserIdForKey(currentUid, USERS);
+    if(selfId == null) return "&" + col + "=eq.-1";
+    return "&" + col + "=eq." + selfId;
+  }
+
+  async function fetchRoleFilteredTable(table, currentUid, USERS){
+    var cfg = getConfig();
+    if(!cfg.SUPABASE_URL) return { data: [], error: { message: "Missing SUPABASE_URL" } };
+    var filter = buildRoleFilterQuery(table, currentUid, USERS);
+    return safeFetch(tableUrl(table, "?select=*" + filter), { headers: getBaseHeaders() });
+  }
+
+  async function loginWithEmailPassword(email, password){
+    try{
+      const authClient = window.APP_SUPABASE_CLIENT;
+      if(!authClient || !authClient.auth || typeof authClient.auth.signInWithPassword !== "function"){
+        return { data: null, error: { message: "Supabase auth not initialized" } };
+      }
+      const result = await authClient.auth.signInWithPassword({ email, password });
+      if(result && result.error){
+        return { data: null, error: result.error };
+      }
+      return { data: result ? result.data : null, error: null };
+    } catch(err){
+      return { data: null, error: { message: err && err.message ? err.message : "Auth login failed" } };
+    }
+  }
+
+  async function insertLoginLogSafe(_row){
+    try{ return; }catch(_e){}
+  }
+
+  function createClient(){
+    var cfg = getConfig();
+    var baseHeaders = getBaseHeaders();
+    var upsertHeaders = Object.assign({}, baseHeaders, { "Prefer": "resolution=merge-duplicates,return=minimal" });
+    var deleteHeaders = Object.assign({}, baseHeaders, { "Prefer": "return=minimal" });
+
+    return {
+      from: function(table){
+        var base = (cfg.SUPABASE_URL || "") + "/rest/v1/" + table;
+        return {
+          select: function(cols, opts){
+            var q = "?select=" + encodeURIComponent(cols || "*");
+            if(opts && opts.filter) q += opts.filter;
+            return safeFetch(base + q, { headers: baseHeaders });
+          },
+          upsert: function(rows){
+            var body = Array.isArray(rows) ? rows : [rows];
+            return safeFetch(base, { method: "POST", headers: upsertHeaders, body: JSON.stringify(body) });
+          },
+          insert: function(rows){
+            return this.upsert(rows);
+          },
+          delete: function(id){
+            var numId = toBigintId(id);
+            if(numId == null) return Promise.resolve({ data: null, error: { message: "Invalid id" } });
+            return safeFetch(base + "?id=eq." + numId, { method: "DELETE", headers: deleteHeaders });
+          }
+        };
+      }
+    };
+  }
+
+  function generatePassword8(){
+    var chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    var out = "";
+    for(var i = 0; i < 8; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
+    return out;
+  }
+
+  /** Insert sales_users row — id is auto-generated bigint; do not send id. */
+  async function insertSalesUser(repData){
+    var cfg = getConfig();
+    if(!cfg.SUPABASE_URL) return { data: null, error: { message: "Missing SUPABASE_URL" } };
+
+    var username = (repData.username || "").trim();
+    var name = (repData.name || repData.displayName || repData.fullName || username).trim();
+    var email = (repData.email || "").trim();
+    var role = repData.role || "Sales";
+    var password = repData.password || "";
+    if(!username) return { data: null, error: { message: "Username is required" } };
+    if(!name) return { data: null, error: { message: "Name is required" } };
+    if(!email) return { data: null, error: { message: "Email is required" } };
+
+    var row = {
+      name: name,
+      username: username,
+      email: email,
+      role: role,
+      password: password,
+      created_at: repData.created_at || new Date().toISOString()
+    };
+
+    var res = await safeFetch(teamUrl(), {
+      method: "POST",
+      headers: Object.assign({}, getBaseHeaders(), { "Prefer": "return=representation" }),
+      body: JSON.stringify(row)
+    });
+    if(res.error){
+      var msg = res.error.message || res.error.msg || res.error.hint || "Insert failed";
+      return { data: null, error: { message: msg, details: res.error } };
+    }
+    var inserted = Array.isArray(res.data) ? res.data[0] : res.data;
+    var newId = inserted && inserted.id != null ? toBigintId(inserted.id) : null;
+    return { data: { id: newId, row: inserted }, error: null };
+  }
+
+  async function addNewRep(formData){
+    return insertSalesUser(formData);
+  }
+
+  async function fetchTeamMembers(){
+    var cfg = getConfig();
+    if(!cfg.SUPABASE_URL) return { data: [], error: { message: "Missing SUPABASE_URL" } };
+    return safeFetch(teamUrl("?select=*"), { headers: getBaseHeaders() });
+  }
+
+  async function removeRep(userId, skipConfirm){
+    var cfg = getConfig();
+    if(!cfg.SUPABASE_URL) return { data: null, error: { message: "Missing SUPABASE_URL" } };
+    var id = toBigintId(userId);
+    if(id == null) return { data: null, error: { message: "Missing or invalid user id (bigint)" } };
+    if(!skipConfirm && typeof window.confirm === "function"){
+      if(!window.confirm("Are you sure you want to remove this rep?")){
+        return { data: null, error: { message: "Cancelled" } };
+      }
+    }
+    return safeFetch(teamUrl("?id=eq." + id), {
+      method: "DELETE",
+      headers: Object.assign({}, getBaseHeaders(), { "Prefer": "return=minimal" })
+    });
+  }
+
+  async function deleteSalesUser(memberId){
+    return removeRep(memberId, true);
+  }
+
+  async function deleteSalesUserByUsername(loginName){
+    var cfg = getConfig();
+    if(!cfg.SUPABASE_URL || !loginName) return { data: null, error: { message: "Missing username" } };
+    return safeFetch(teamUrl("?username=eq." + encodeURIComponent(loginName)), {
+      method: "DELETE",
+      headers: Object.assign({}, getBaseHeaders(), { "Prefer": "return=minimal" })
+    });
+  }
+
+  async function deleteSalesUserByName(loginName){
+    var byUser = await deleteSalesUserByUsername(loginName);
+    if(!byUser.error) return byUser;
+    var cfg = getConfig();
+    if(!cfg.SUPABASE_URL || !loginName) return { data: null, error: { message: "Missing name" } };
+    return safeFetch(teamUrl("?name=eq." + encodeURIComponent(loginName)), {
+      method: "DELETE",
+      headers: Object.assign({}, getBaseHeaders(), { "Prefer": "return=minimal" })
+    });
+  }
+
+  async function upsertTeamMemberOwnedReps(memberId, ownedReps){
+    var cfg = getConfig();
+    if(!cfg.SUPABASE_URL) return { data: null, error: { message: "Missing SUPABASE_URL" } };
+    var id = toBigintId(memberId);
+    if(id == null) return { data: null, error: { message: "Invalid member id (bigint)" } };
+    var reps = normalizeOwnedRepsBigint(ownedReps);
+    var body = JSON.stringify({ owned_reps: reps });
+    var headers = Object.assign({}, getBaseHeaders(), { "Prefer": "return=minimal" });
+    return safeFetch(teamUrl("?id=eq." + id), { method: "PATCH", headers: headers, body: body });
+  }
+
+  async function upsertTeamMemberRow(row){
+    return insertSalesUser(row);
+  }
+
+  window.APP_API = {
+    TEAM_TABLE: TEAM_TABLE,
+    TABLE_ASSIGNED_COL: TABLE_ASSIGNED_COL,
+    createClient: createClient,
+    safeFetch: safeFetch,
+    baseHeaders: getBaseHeaders,
+    loginWithEmailPassword: loginWithEmailPassword,
+    insertLoginLogSafe: insertLoginLogSafe,
+    insertSalesUser: insertSalesUser,
+    addNewRep: addNewRep,
+    fetchTeamMembers: fetchTeamMembers,
+    fetchRoleFilteredTable: fetchRoleFilteredTable,
+    buildRoleFilterQuery: buildRoleFilterQuery,
+    deleteSalesUser: deleteSalesUser,
+    removeRep: removeRep,
+    deleteSalesUserByUsername: deleteSalesUserByUsername,
+    deleteSalesUserByName: deleteSalesUserByName,
+    upsertTeamMemberOwnedReps: upsertTeamMemberOwnedReps,
+    upsertTeamMemberRow: upsertTeamMemberRow,
+    generatePassword8: generatePassword8,
+    toBigintId: toBigintId,
+    normalizeOwnedRepsBigint: normalizeOwnedRepsBigint,
+    getSalesUserIdForKey: getSalesUserIdForKey,
+    getOwnedRepIds: getOwnedRepIds
+  };
+})();
+

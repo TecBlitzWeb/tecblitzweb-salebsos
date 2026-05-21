@@ -120,16 +120,19 @@
   }
 
   function normalizeOwnedReps(raw){
-    if(raw == null) return [];
-    if(Array.isArray(raw)) return raw.map(function(x){ return String(x).trim(); }).filter(Boolean);
-    if(typeof raw === 'string'){
-      try{
-        var j = JSON.parse(raw);
-        if(Array.isArray(j)) return j.map(function(x){ return String(x).trim(); }).filter(Boolean);
-      }catch(_e){}
-      return raw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    if(window.APP_API && typeof window.APP_API.normalizeOwnedRepsBigint === 'function'){
+      return window.APP_API.normalizeOwnedRepsBigint(raw);
     }
-    return [];
+    if(raw == null) return [];
+    if(!Array.isArray(raw)) return [];
+    return raw.map(function(x){ return parseInt(x, 10); }).filter(function(n){ return isFinite(n) && n > 0; });
+  }
+
+  function getRepIdForKey(key, USERS){
+    if(window.APP_API && typeof window.APP_API.getSalesUserIdForKey === 'function'){
+      return window.APP_API.getSalesUserIdForKey(key, USERS);
+    }
+    return null;
   }
 
   function getUser(uid, USERS){
@@ -167,7 +170,7 @@
     return out;
   }
 
-  function getOwnedRepUIDs(uid, USERS){
+  function getOwnedRepIds(uid, USERS){
     var u = getUser(uid, USERS);
     if(!u) return [];
     var owned = normalizeOwnedReps(u.owned_reps);
@@ -176,14 +179,19 @@
       owned = normalizeOwnedReps(tm.owned_reps);
     }
     if(!owned.length && (isCOOTier(uid, USERS) || isCoCEO(uid, USERS)) && typeof window.getCOORepUIDs === 'function'){
-      owned = window.getCOORepUIDs(uid) || [];
+      var legacy = window.getCOORepUIDs(uid) || [];
+      owned = legacy.map(function(k){ return getRepIdForKey(k, USERS); }).filter(function(n){ return n != null; });
     }
     var seen = {};
-    return owned.map(canon).filter(function(k){
-      if(!k || seen[k]) return false;
-      seen[k] = true;
+    return owned.filter(function(n){
+      if(n == null || seen[n]) return false;
+      seen[n] = true;
       return true;
     });
+  }
+
+  function getOwnedRepUIDs(uid, USERS){
+    return getOwnedRepIds(uid, USERS);
   }
 
   function getVisibleRepUIDs(currentUid, USERS){
@@ -203,10 +211,14 @@
     if(!currentUid || !record) return false;
     if(isDirectorCEO(currentUid, USERS)) return true;
     var key = getAssignedKey(record, assignField);
+    var assignId = getRepIdForKey(key, USERS) || ( /^\d+$/.test(key) ? parseInt(key, 10) : null );
     if(!key && assignField === 'assignedTo') return false;
     if(isScopedManager(currentUid, USERS)){
-      return getOwnedRepUIDs(currentUid, USERS).indexOf(key) !== -1;
+      if(assignId != null) return getOwnedRepIds(currentUid, USERS).indexOf(assignId) !== -1;
+      return false;
     }
+    var selfId = getRepIdForKey(currentUid, USERS);
+    if(assignId != null && selfId != null) return assignId === selfId;
     return key === canon(currentUid);
   }
 
@@ -216,8 +228,38 @@
     });
   }
 
+  function buildRoleFilterQuery(table, currentUid, USERS){
+    if(window.APP_API && typeof window.APP_API.buildRoleFilterQuery === "function"){
+      return window.APP_API.buildRoleFilterQuery(table, currentUid, USERS);
+    }
+    return "";
+  }
+
+  async function loadProspects(currentUid, USERS){
+    if(window.APP_API && typeof window.APP_API.fetchRoleFilteredTable === "function"){
+      return window.APP_API.fetchRoleFilteredTable("prospects", currentUid, USERS);
+    }
+    return { data: [], error: { message: "APP_API not ready" } };
+  }
+
+  async function loadCalls(currentUid, USERS){
+    if(window.APP_API && typeof window.APP_API.fetchRoleFilteredTable === "function"){
+      return window.APP_API.fetchRoleFilteredTable("calls", currentUid, USERS);
+    }
+    return { data: [], error: { message: "APP_API not ready" } };
+  }
+
+  async function loadLeads(currentUid, USERS){
+    if(window.APP_API && typeof window.APP_API.fetchRoleFilteredTable === "function"){
+      return window.APP_API.fetchRoleFilteredTable("interested_leads", currentUid, USERS);
+    }
+    return { data: [], error: { message: "APP_API not ready" } };
+  }
+
   window.SALES_OS = {
     normalizeOwnedReps: normalizeOwnedReps,
+    getOwnedRepIds: getOwnedRepIds,
+    getRepIdForKey: getRepIdForKey,
     isDirectorCEO: isDirectorCEO,
     isCoCEO: isCoCEO,
     isCOOTier: isCOOTier,
@@ -227,6 +269,10 @@
     getSalesRepUids: getSalesRepUids,
     canSeeAssignedRecord: canSeeAssignedRecord,
     filterRecords: filterRecords,
-    getAssignedKey: getAssignedKey
+    getAssignedKey: getAssignedKey,
+    buildRoleFilterQuery: buildRoleFilterQuery,
+    loadProspects: loadProspects,
+    loadCalls: loadCalls,
+    loadLeads: loadLeads
   };
 })();
