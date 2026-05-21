@@ -395,20 +395,150 @@
     return row;
   }
 
-  async function bootstrapAll(){
+  function validCloudKeysFromRows(rows){
+    var valid = {};
+    (rows || []).forEach(function(row){
+      var k = canonKey(row.username || row.name || "");
+      if(k) valid[k] = true;
+    });
+    return valid;
+  }
+
+  /** Replace in-place window.USERS with only sales_users rows (drops deleted ghosts). */
+  function rebuildUsersRegistryFromRows(rows){
     window.USERS = window.USERS || {};
-    var data = [];
+    Object.keys(window.USERS).forEach(function(k){ delete window.USERS[k]; });
+    window._salesUserIdByKey = {};
+    window._salesUserKeyById = {};
+    (rows || []).forEach(function(row){ registerFromRow(row, window.USERS); });
+    return window.USERS;
+  }
+
+  function pruneStaleRepLocalCaches(rows){
+    var valid = validCloudKeysFromRows(rows);
+    if(typeof window.ls !== "function") return;
+    var extra = {};
+    (rows || []).forEach(function(row){
+      var k = canonKey(row.username || row.name || "");
+      if(!k || !window.USERS[k]) return;
+      var u = window.USERS[k];
+      extra[k] = {
+        name: u.name,
+        role: u.role,
+        tier: u.tier,
+        email: u.email || "",
+        source: "cloud"
+      };
+    });
+    window.ls("tm_extra_reps", extra);
+    var coo = window.ls("tm_coo_reps") || {};
+    var cooChanged = false;
+    Object.keys(coo).forEach(function(mid){
+      var list = (coo[mid] || []).filter(function(uid){
+        var k = canonKey(uid);
+        return valid[k] || valid[uid];
+      });
+      if(list.length !== (coo[mid] || []).length){
+        coo[mid] = list;
+        cooChanged = true;
+      }
+    });
+    if(cooChanged) window.ls("tm_coo_reps", coo);
+    try{
+      for(var i = localStorage.length - 1; i >= 0; i--){
+        var key = localStorage.key(i);
+        if(!key || key.indexOf("tm_rep_") !== 0) continue;
+        var uid = key.slice(7);
+        var ck = canonKey(uid);
+        if(!valid[ck] && !valid[uid]) localStorage.removeItem(key);
+      }
+    }catch(_e){}
+  }
+
+  function userExistsInRegistry(uid){
+    if(!uid) return false;
+    var k = canonKey(uid);
+    return !!(window.USERS && (window.USERS[uid] || window.USERS[k]));
+  }
+
+  function buildProspectAssigneeFilterOptions(selectedValue){
+    var users = window.USERS || {};
+    var cooMap = typeof window.ls === "function" ? (window.ls("tm_coo_reps") || {}) : {};
+    var esc = typeof window.esc === "function" ? window.esc : function(s){ return String(s == null ? "" : s); };
+    var label = typeof window.userLabel === "function" ? window.userLabel : function(uid){ return uid; };
+    var sel = selectedValue != null ? String(selectedValue) : "";
+    var opts = '<option value="">All Assignees</option>';
+    var managers = Object.entries(users).filter(function(entry){
+      var u = entry[1];
+      return u && (u.tier === "coo" || (u.tier === "ceo" && u.role !== "CEO"));
+    });
+    managers.forEach(function(entry){
+      var mid = entry[0];
+      var m = entry[1];
+      opts += '<option value="' + esc(mid) + '"' + (sel === mid ? " selected" : "") + ">" +
+        esc(label(mid)) + " (" + esc(m.role) + ")</option>";
+      (cooMap[mid] || []).forEach(function(uid){
+        if(!userExistsInRegistry(uid)) return;
+        opts += '<option value="' + esc(uid) + '"' + (sel === uid ? " selected" : "") + ">&nbsp;&nbsp;↳ " +
+          esc(label(uid)) + "</option>";
+      });
+    });
+    var assignedReps = {};
+    Object.keys(cooMap).forEach(function(mid){
+      (cooMap[mid] || []).forEach(function(uid){
+        if(userExistsInRegistry(uid)) assignedReps[uid] = true;
+      });
+    });
+    Object.entries(users).forEach(function(entry){
+      var uid = entry[0];
+      var u = entry[1];
+      if(!u || u.tier !== "rep" || assignedReps[uid]) return;
+      opts += '<option value="' + esc(uid) + '"' + (sel === uid ? " selected" : "") + ">" +
+        esc(label(uid)) + "</option>";
+    });
+    return opts;
+  }
+
+  async function fetchFreshSalesUsersRows(){
     if(typeof window.fetchTeamMembersFresh === "function"){
-      var res = await window.fetchTeamMembersFresh();
-      if(!res.error) data = res.data || [];
-    } else {
-      var client = window.APP_SUPABASE_CLIENT;
-      if(client && typeof client.from === "function"){
+      return window.fetchTeamMembersFresh();
+    }
+    if(window.APP_API && typeof window.APP_API.fetchTeamMembers === "function"){
+      return window.APP_API.fetchTeamMembers();
+    }
+    var client = window.APP_SUPABASE_CLIENT;
+    if(client && typeof client.from === "function"){
+      try{
         var result = await client.from(TABLE).select("*").order("id", { ascending: true });
-        data = result.data || [];
+        return { data: result.data || [], error: result.error || null };
+      }catch(err){
+        return { data: [], error: { message: err && err.message ? err.message : "Fetch failed" } };
       }
     }
-    (data || []).forEach(function(row){ registerFromRow(row); });
+    return { data: [], error: { message: "Supabase client not ready" } };
+  }
+
+  async function refreshSalesUsersForProspects(){
+    var res = await fetchFreshSalesUsersRows();
+    if(res.error){
+      console.warn("refreshSalesUsersForProspects:", res.error.message || res.error);
+      return res;
+    }
+    var rows = Array.isArray(res.data) ? res.data : [];
+    rebuildUsersRegistryFromRows(rows);
+    pruneStaleRepLocalCaches(rows);
+    window._teamMembersLive = rows;
+    if(typeof window.mergeTeamMembersIntoUsers === "function"){
+      window.mergeTeamMembersIntoUsers(rows);
+    }
+    return res;
+  }
+
+  async function bootstrapAll(){
+    var res = await fetchFreshSalesUsersRows();
+    var data = res.error ? [] : (res.data || []);
+    if(!res.error) rebuildUsersRegistryFromRows(data);
+    else (data || []).forEach(function(row){ registerFromRow(row); });
     return data;
   }
 
@@ -513,8 +643,16 @@
     resolveLoginKey: resolveLoginKey,
     persistSessionUser: persistSessionUser,
     restoreSessionUserFromStorage: restoreSessionUserFromStorage,
-    performSalesLogin: performSalesLogin
+    performSalesLogin: performSalesLogin,
+    rebuildUsersRegistryFromRows: rebuildUsersRegistryFromRows,
+    refreshSalesUsersForProspects: refreshSalesUsersForProspects,
+    buildProspectAssigneeFilterOptions: buildProspectAssigneeFilterOptions
   };
+  window.PROSPECTS_ASSIGNEES = {
+    refresh: refreshSalesUsersForProspects,
+    buildOptions: buildProspectAssigneeFilterOptions
+  };
+  window.refreshSalesUsersForProspects = refreshSalesUsersForProspects;
   window.performSalesLogin = performSalesLogin;
   window.restoreSessionUserFromStorage = restoreSessionUserFromStorage;
 })();

@@ -5046,7 +5046,10 @@
     if(typeof closeSidebar === 'function') closeSidebar();
     const renders = {
         dashboard: renderDashboard,
-        prospects: renderProspects,
+        prospects: function(){
+        const out = renderProspects();
+        if(out && typeof out.catch === 'function') out.catch(function(e){ console.error(e); });
+        },
         jobs: renderJobsPage,
         pipeline: renderPipeline,
         mycalls: renderMyCalls,
@@ -5230,7 +5233,24 @@
     });
     }
 
-    function renderProspects(){
+    async function refreshProspectsAssigneeDropdown(){
+    if(window.PROSPECTS_ASSIGNEES && typeof PROSPECTS_ASSIGNEES.refresh === 'function'){
+        await PROSPECTS_ASSIGNEES.refresh();
+    } else if(typeof refreshSalesUsersForProspects === 'function'){
+        await refreshSalesUsersForProspects();
+    }
+    const assignEl = document.getElementById('prospect-filter-assign');
+    if(!assignEl) return;
+    const curA = assignEl.value;
+    if(window.PROSPECTS_ASSIGNEES && typeof PROSPECTS_ASSIGNEES.buildOptions === 'function'){
+        assignEl.innerHTML = PROSPECTS_ASSIGNEES.buildOptions(curA);
+    } else if(typeof USER_REGISTRY !== 'undefined' && USER_REGISTRY.buildProspectAssigneeFilterOptions){
+        assignEl.innerHTML = USER_REGISTRY.buildProspectAssigneeFilterOptions(curA);
+    }
+    }
+
+    async function renderProspects(){
+    await refreshProspectsAssigneeDropdown();
     const grid = document.getElementById('prospect-grid');
     let ps = getProspects();
     const u = USERS[currentUser];
@@ -5263,24 +5283,6 @@
     if(areaEl){
         const cur = areaEl.value;
         areaEl.innerHTML='<option value="">All Areas</option>'+areas.map(a=>`<option ${a===cur?'selected':''}>${a}</option>`).join('');
-    }
-
-    // populate assignee filter
-    const assignEl = document.getElementById('prospect-filter-assign');
-    if(assignEl){
-        const curA = assignEl.value;
-        const cooMap = ls('tm_coo_reps')||{};
-        const managers = Object.entries(USERS).filter(([,u])=>u.tier==='coo'||(u.tier==='ceo'&&u.role!=='CEO'));
-        let opts = '<option value="">All Assignees</option>';
-        managers.forEach(([mid,m])=>{
-        opts+=`<option value="${mid}" ${curA===mid?'selected':''}>${esc(userLabel(mid))} (${m.role})</option>`;
-        (cooMap[mid]||[]).forEach(uid=>{ const u=USERS[uid]; if(u) opts+=`<option value="${uid}" ${curA===uid?'selected':''}>&nbsp;&nbsp;↳ ${esc(userLabel(uid))}</option>`; });
-        });
-        const assignedReps = Object.values(cooMap).flat();
-        Object.entries(USERS).filter(([uid,u])=>u.tier==='rep'&&!assignedReps.includes(uid)).forEach(([uid,u])=>{
-        opts+=`<option value="${uid}" ${curA===uid?'selected':''}>${esc(userLabel(uid))}</option>`;
-        });
-        assignEl.innerHTML = opts;
     }
 
     if(!ps.length){
