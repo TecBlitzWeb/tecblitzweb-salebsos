@@ -4095,13 +4095,13 @@
     }
     return null;
     }
-    /** Remove button visibility — role only; never compare ids/names/emails to current user. */
     function tmShowRemoveButton(rep){
     if(!rep) return false;
+    if(window.TEAM_MEMBERS && typeof TEAM_MEMBERS.showRemoveForRep === 'function'){
+        return TEAM_MEMBERS.showRemoveForRep({ name: rep.name, role: rep.role, id: null, uid: '' });
+    }
     var role = (USERS[currentUser] || {}).role;
-    if(role === 'CEO') return true;
-    if(role === 'Co-CEO' || role === 'COO') return ['Sales', 'Rep'].includes(rep.role);
-    return false;
+    return role === 'CEO' || (['Co-CEO','COO'].includes(role) && ['Sales','Rep'].includes(rep.role));
     }
     function tmCanDeleteRep(actorUid, targetUid){
     var reps = getTMRepsFresh();
@@ -4109,11 +4109,14 @@
     return tmShowRemoveButton(target);
     }
     function tmBuildRemoveBtn(uid, r){
-    if(!tmShowRemoveButton(r)) return '';
-    var repId = getRepNumericId(uid);
-    var actorRole = (USERS[currentUser] || {}).role;
-    if(actorRole !== 'CEO' && repId == null) return '<span class="tm-muted">—</span>';
-    var idArg = repId != null ? repId : 0;
+    if(window.TEAM_MEMBERS && typeof TEAM_MEMBERS.buildRemoveBtnHtml === 'function'){
+        return TEAM_MEMBERS.buildRemoveBtnHtml(TEAM_MEMBERS.prepareMember(uid, r));
+    }
+    var showRemove = (USERS[currentUser]||{}).role === 'CEO' ||
+        (['Co-CEO','COO'].includes((USERS[currentUser]||{}).role) && ['Sales','Rep'].includes(r.role));
+    if(!showRemove) return '<span class="tm-muted">—</span>';
+    var idArg = getRepNumericId(uid);
+    idArg = (idArg != null && isFinite(Number(idArg))) ? Number(idArg) : 0;
     return `<button class="tm-delete-btn" onclick="tmDeleteRep(${idArg}, '${uid}', '${esc(r.name)}')">
             <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h12M4 3v8a2 2 0 002 2h2a2 2 0 002-2V3M6 7v4M8 7v4"/></svg>
             Remove
@@ -4188,7 +4191,7 @@
     }
     function mergeTeamMembersIntoUsers(rows){
     if(!Array.isArray(rows)) return;
-    var extra = ls('tm_extra_reps') || {};
+    var extra = {};
     window._salesUserIdByKey = {};
     window._salesUserKeyById = {};
     rows.forEach(function(r){
@@ -4215,19 +4218,22 @@
     });
     ls('tm_extra_reps', extra);
     }
-    function loadTeamMembersFromCloud(){
+    async function loadTeamMembersFromCloud(){
+    if(typeof window.loadTeamMembers === 'function'){
+        return window.loadTeamMembers();
+    }
     if(!window.APP_API||typeof APP_API.fetchTeamMembers!=='function') return;
-    APP_API.fetchTeamMembers().then(function(res){
-        if(res.error){
+    var res = await APP_API.fetchTeamMembers();
+    if(res.error){
         console.warn('sales_users load:', res.error.message||res.error);
         return;
-        }
-        mergeTeamMembersIntoUsers(res.data||[]);
-        if(typeof tmRenderTable==='function') tmRenderTable();
-        if(typeof cooRenderTable==='function') cooRenderTable();
-    });
     }
-    function loadTeamMembers(){ loadTeamMembersFromCloud(); }
+    window._teamMembersLive = res.data || [];
+    mergeTeamMembersIntoUsers(res.data||[]);
+    if(typeof tmRenderTable==='function') tmRenderTable();
+    if(typeof cooRenderTable==='function') cooRenderTable();
+    }
+    function loadTeamMembers(){ return loadTeamMembersFromCloud(); }
     function saveOwnedRepsForMember(uid, ownedRepKeys){
     var ownedIds = Array.isArray(ownedRepKeys) && ownedRepKeys.length && typeof ownedRepKeys[0] === 'number'
         ? (window.APP_API ? APP_API.normalizeOwnedRepsBigint(ownedRepKeys) : ownedRepKeys)
@@ -6456,6 +6462,10 @@
         return;
     }
 
+    if(window.TEAM_MEMBERS && typeof TEAM_MEMBERS.debugLogTeamMembers === 'function'){
+        TEAM_MEMBERS.debugLogTeamMembers(TEAM_MEMBERS.prepareMembersFromEntries(entries));
+    }
+
     tbody.innerHTML = entries.map(([uid,r])=>{
         const dp = getTMRepDP(uid);
         const initial = r.name ? r.name[0].toUpperCase() : '?';
@@ -7182,6 +7192,10 @@
     if(!entries.length){
         tbody.innerHTML = `<tr><td colspan="6"><div class="tm-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>No reps found.</div></td></tr>`;
         return;
+    }
+
+    if(window.TEAM_MEMBERS && typeof TEAM_MEMBERS.debugLogTeamMembers === 'function'){
+        TEAM_MEMBERS.debugLogTeamMembers(TEAM_MEMBERS.prepareMembersFromEntries(entries));
     }
 
     tbody.innerHTML = entries.map(([uid, r]) => {

@@ -304,17 +304,63 @@
     return null;
   }
 
-  async function loadTeamMembers(){
-    if(typeof window.loadTeamMembersFromCloud === "function"){
-      window.loadTeamMembersFromCloud();
-      return;
-    }
-    if(window.APP_API && typeof window.APP_API.fetchTeamMembers === "function"){
-      var res = await window.APP_API.fetchTeamMembers();
-      if(!res.error && typeof window.mergeTeamMembersIntoUsers === "function"){
-        window.mergeTeamMembersIntoUsers(res.data || []);
+  function clearTeamMemberCaches(){
+    try{
+      localStorage.removeItem("teamMembers");
+      localStorage.removeItem("salesUsers");
+      localStorage.removeItem("members");
+      localStorage.removeItem("tm_extra_reps");
+    }catch(_e){}
+    try{
+      sessionStorage.removeItem("teamMembers");
+      sessionStorage.removeItem("salesUsers");
+      sessionStorage.removeItem("members");
+    }catch(_e2){}
+    window._teamMembersLive = null;
+    window._salesUserIdByKey = {};
+    window._salesUserKeyById = {};
+  }
+
+  async function fetchTeamMembersFresh(){
+    var client = window.APP_SUPABASE_CLIENT;
+    if(client && typeof client.from === "function"){
+      try{
+        var result = await client
+          .from(TEAM_TABLE)
+          .select("*")
+          .order("id", { ascending: true });
+        return { data: result.data || [], error: result.error || null };
+      }catch(err){
+        return { data: null, error: { message: err && err.message ? err.message : "Fetch failed" } };
       }
     }
+    if(window.APP_API && typeof window.APP_API.fetchTeamMembers === "function"){
+      return window.APP_API.fetchTeamMembers();
+    }
+    return { data: [], error: { message: "Supabase client not ready" } };
+  }
+
+  async function loadTeamMembers(){
+    clearTeamMemberCaches();
+
+    var res = await fetchTeamMembersFresh();
+    if(res.error){
+      console.warn("sales_users load:", res.error.message || res.error);
+      return res;
+    }
+
+    var data = Array.isArray(res.data) ? res.data : [];
+    window._teamMembersLive = data;
+
+    if(typeof window.mergeTeamMembersIntoUsers === "function"){
+      window.mergeTeamMembersIntoUsers(data);
+    }
+
+    if(typeof window.tmRenderStats === "function") window.tmRenderStats();
+    if(typeof window.tmRenderTable === "function") window.tmRenderTable();
+    if(typeof window.cooRenderTable === "function") window.cooRenderTable();
+
+    return { data: data, error: null };
   }
 
   async function removeRep(userId, localUid, displayName, skipConfirm){
@@ -476,6 +522,67 @@
 
     return { data: null, error: { message: "Supabase not ready" } };
   }
+
+  function prepareMember(uid, r){
+    var id = null;
+    if(typeof window.getRepNumericId === "function"){
+      id = window.getRepNumericId(uid);
+    } else if(typeof window.getRepSalesUserId === "function"){
+      id = window.getRepSalesUserId(uid);
+    }
+    return {
+      uid: uid,
+      id: id,
+      name: r && r.name ? r.name : uid,
+      role: r && r.role ? r.role : "",
+      email: r && r.email ? r.email : "",
+      phone: r && r.phone ? r.phone : "",
+      tier: r && r.tier ? r.tier : "",
+      raw: r
+    };
+  }
+
+  function prepareMembersFromEntries(entries){
+    return (entries || []).map(function(pair){
+      return prepareMember(pair[0], pair[1]);
+    });
+  }
+
+  function debugLogTeamMembers(members){
+    (members || []).forEach(function(rep){
+      console.log("Rep:", rep.name, "| id:", rep.id, "| type:", typeof rep.id, "| role:", rep.role);
+    });
+  }
+
+  /** Remove visibility: role check ONLY — never use rep.id for show/hide. */
+  function showRemoveForRep(rep){
+    var actorRole = teamMemberCurrentRole();
+    if(actorRole === "CEO") return true;
+    if(["Co-CEO", "COO"].includes(actorRole) && ["Sales", "Rep"].includes(rep.role)) return true;
+    return false;
+  }
+
+  function buildRemoveBtnHtml(rep){
+    if(!showRemoveForRep(rep)) return '<span class="tm-muted">—</span>';
+    var idArg = rep.id != null && isFinite(Number(rep.id)) && Number(rep.id) > 0
+      ? Number(rep.id)
+      : 0;
+    var uid = String(rep.uid || "").replace(/'/g, "\\'");
+    var name = String(rep.name || "").replace(/'/g, "\\'");
+    return '<button class="tm-delete-btn" onclick="tmDeleteRep(' + idArg + ", '" + uid + "', '" + name + "')\">" +
+      '<svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M1 3h12M4 3v8a2 2 0 002 2h2a2 2 0 002-2V3M6 7v4M8 7v4"/></svg> Remove</button>';
+  }
+
+  window.TEAM_MEMBERS = {
+    prepareMember: prepareMember,
+    prepareMembersFromEntries: prepareMembersFromEntries,
+    debugLogTeamMembers: debugLogTeamMembers,
+    showRemoveForRep: showRemoveForRep,
+    buildRemoveBtnHtml: buildRemoveBtnHtml,
+    clearCaches: clearTeamMemberCaches,
+    fetchFresh: fetchTeamMembersFresh
+  };
 
   window.canManageTeamMembers = canManageTeamMembers;
   window.removeRep = removeRep;

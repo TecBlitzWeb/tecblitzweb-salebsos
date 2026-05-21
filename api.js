@@ -278,7 +278,7 @@
   async function fetchTeamMembers(){
     var cfg = getConfig();
     if(!cfg.SUPABASE_URL) return { data: [], error: { message: "Missing SUPABASE_URL" } };
-    return safeFetch(teamUrl("?select=*"), { headers: getBaseHeaders() });
+    return safeFetch(teamUrl("?select=*&order=id.asc"), { headers: getBaseHeaders() });
   }
 
   async function removeRep(userId, skipConfirm){
