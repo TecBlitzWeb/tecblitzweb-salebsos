@@ -4839,6 +4839,13 @@
     let ps = getProspects();
     const u = USERS[currentUser];
     ps = ps.filter(p => prospectVisibleToUser(p, u));
+    // Reps: hide prospects already in the interested-leads pipeline (open/non-closed)
+    if(u && u.tier === 'rep'){
+        const openLeadBizNames = getLeads()
+            .filter(l => l.status !== 'won' && l.status !== 'lost' && l.status !== 'closed')
+            .map(l => (l.biz||'').trim().toLowerCase());
+        ps = ps.filter(p => !openLeadBizNames.includes((p.name||'').trim().toLowerCase()));
+    }
     const q = (document.getElementById('prospect-search')||{}).value||'';
     const fa = (document.getElementById('prospect-filter-area')||{}).value||'';
     const ft = (document.getElementById('prospect-filter-type')||{}).value||'';
@@ -5179,6 +5186,11 @@
         const pipelinePage = document.getElementById('page-pipeline');
         if(pipelinePage && pipelinePage.classList.contains('active')){
         renderPipeline();
+        }
+        // Remove prospect card from Prospects page immediately
+        const prospectsPage = document.getElementById('page-prospects');
+        if(prospectsPage && prospectsPage.classList.contains('active')){
+        renderProspects();
         }
     }
     showToast(id?'Call updated':'Call logged','success');
