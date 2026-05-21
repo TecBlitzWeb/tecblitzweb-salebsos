@@ -4032,36 +4032,55 @@
     // ════════════════════════════════════════
     // DATA LAYER
     // ════════════════════════════════════════
-    const USERS = {
-    "Bisara":   { pin:"2525", role:"CEO",    email:"bisara@tecblitzweb.com" },
-    "Avishka":  { pin:"4141", role:"Co-CEO", email:"avishka@tecblitzweb.com" },
-    "Dilitha":  { pin:"3636", role:"COO",    email:"dilitha@tecblitzweb.com" },
-    "Dulaj":    { pin:"5757", role:"COO",    email:"dulaj@tecblitzweb.com" },
-    "Ramesh":   { pin:"8585", role:"COO",    email:"ramesh@tecblitzweb.com" },
-    "Fasith":   { pin:"6868", role:"Rep",    email:"fasith@tecblitzweb.com" },
-    "Shehan":   { pin:"1212", role:"Rep",    email:"shehan@tecblitzweb.com" },
-    "Chamindu": { pin:"2626", role:"Rep",    email:"chamindu@tecblitzweb.com" },
-    "SalesR01": { pin:"7878", role:"Sales",  email:"salesr01@tecblitzweb.com" },
-    "SalesR02": { pin:"8787", role:"Sales",  email:"salesr02@tecblitzweb.com" },
-    "SalesR03": { pin:"9898", role:"Sales",  email:"salesr03@tecblitzweb.com" },
-    "SalesR04": { pin:"5252", role:"Sales",  email:"salesr04@tecblitzweb.com" },
-    "SalesR05": { pin:"0909", role:"Sales",  email:"salesr05@tecblitzweb.com" },
-    "SalesR06": { pin:"6262", role:"Sales",  email:"salesr06@tecblitzweb.com" },
-    "SalesR07": { pin:"7373", role:"Sales",  email:"salesr07@tecblitzweb.com" },
-    "SalesR08": { pin:"3232", role:"Sales",  email:"salesr08@tecblitzweb.com" },
-    "SalesR09": { pin:"4343", role:"Sales",  email:"salesr09@tecblitzweb.com" },
-    "SalesR10": { pin:"9191", role:"Sales",  email:"salesr10@tecblitzweb.com" },
-    "SalesR11": { pin:"3838", role:"Sales",  email:"salesr11@tecblitzweb.com" },
-    "SalesR12": { pin:"7373", role:"Sales",  email:"salesr12@tecblitzweb.com" }
-    };
+    /** Populated from Supabase sales_users — never hardcoded. */
+    window.USERS = window.USERS || {};
+    var USERS = window.USERS;
 
-    Object.entries(USERS).forEach(([k, v]) => {
-    v.name = k;
-    v.handle = '@' + String(k).toLowerCase();
-    if(v.role === 'CEO' || v.role === 'Co-CEO') v.tier = 'ceo';
-    else if(v.role === 'COO') v.tier = 'coo';
-    else v.tier = 'rep';
-    });
+    function registerUserFromCloudRow(r){
+    if(window.USER_REGISTRY && typeof USER_REGISTRY.registerFromRow === 'function'){
+        return USER_REGISTRY.registerFromRow(r, USERS);
+    }
+    if(!r) return '';
+    var key = canonicalRepKey(String(r.username || r.name || ''));
+    if(!key) return '';
+    var displayName = (r.name && String(r.name).trim()) ? String(r.name).trim() : key;
+    var rowId = (r.id != null && window.APP_API) ? APP_API.toBigintId(r.id) : (r.id != null ? parseInt(r.id, 10) : null);
+    var role = r.role || 'Sales';
+    USERS[key] = {
+        name: displayName,
+        role: role,
+        tier: (role === 'CEO' || role === 'Co-CEO') ? 'ceo' : (role === 'COO' ? 'coo' : 'rep'),
+        email: r.email || '',
+        owned_reps: window.SALES_OS ? SALES_OS.normalizeOwnedReps(r.owned_reps) : [],
+        supabaseId: rowId != null && isFinite(rowId) ? rowId : null,
+        source: 'cloud'
+    };
+    USERS[key].handle = '@' + String(key).toLowerCase();
+    if(rowId != null){
+        window._salesUserIdByKey = window._salesUserIdByKey || {};
+        window._salesUserKeyById = window._salesUserKeyById || {};
+        window._salesUserIdByKey[key] = rowId;
+        window._salesUserKeyById[rowId] = key;
+    }
+    return key;
+    }
+
+    async function bootstrapUsersFromSupabase(){
+    if(window.USER_REGISTRY && typeof USER_REGISTRY.bootstrapAll === 'function'){
+        return USER_REGISTRY.bootstrapAll();
+    }
+    if(typeof refreshTeamMembers === 'function') await refreshTeamMembers();
+    return window._teamMembersLive || [];
+    }
+
+    async function ensureCurrentUserLoaded(){
+    if(!currentUser) return null;
+    if(USERS[currentUser]) return USERS[currentUser];
+    if(window.USER_REGISTRY && typeof USER_REGISTRY.ensureCurrentUser === 'function'){
+        return USER_REGISTRY.ensureCurrentUser(currentUser);
+    }
+    return USERS[currentUser] || null;
+    }
 
     // Helper: display label for dropdowns — "Name (@handle)"
     function userLabel(uid){ const u=USERS[uid]; if(!u) return uid; return u.handle ? `${u.name} (${u.handle})` : u.name; }
@@ -4192,29 +4211,20 @@
     function mergeTeamMembersIntoUsers(rows){
     if(!Array.isArray(rows)) return;
     var extra = {};
-    window._salesUserIdByKey = {};
-    window._salesUserKeyById = {};
     rows.forEach(function(r){
-        var key = canonicalRepKey(String(r.username || r.name || ''));
-        if(!key) return;
-        var displayName = (r.name && String(r.name).trim()) ? String(r.name).trim() : key;
-        var rowId = (r.id != null && window.APP_API) ? APP_API.toBigintId(r.id) : (r.id != null ? parseInt(r.id, 10) : null);
-        if(rowId != null){
-        window._salesUserIdByKey[key] = rowId;
-        window._salesUserKeyById[rowId] = key;
-        }
-        if(!USERS[key]){
-        var role = r.role || 'Sales';
-        var tier = tmTierFromRole(role);
-        USERS[key] = { name: displayName, role: role, tier: tier, email: r.email || '' };
-        extra[key] = { name: displayName, role: role, tier: tier, email: r.email || '', source: 'cloud' };
-        }
-        var owned = window.SALES_OS ? SALES_OS.normalizeOwnedReps(r.owned_reps) : (window.APP_API ? APP_API.normalizeOwnedRepsBigint(r.owned_reps) : []);
-        USERS[key].owned_reps = owned;
+        var key = registerUserFromCloudRow(r);
+        if(!key || !USERS[key]) return;
+        extra[key] = {
+        name: USERS[key].name,
+        role: USERS[key].role,
+        tier: USERS[key].tier,
+        email: USERS[key].email || '',
+        source: 'cloud'
+        };
         var tm = getTMRepData(key)||{};
-        tm.owned_reps = owned;
-        if(rowId != null) tm.supabaseId = rowId;
-        ls('tm_rep_'+key, Object.assign({}, tm, { owned_reps: owned, supabaseId: tm.supabaseId }));
+        tm.owned_reps = USERS[key].owned_reps || [];
+        if(USERS[key].supabaseId != null) tm.supabaseId = USERS[key].supabaseId;
+        ls('tm_rep_'+key, Object.assign({}, tm, { owned_reps: tm.owned_reps, supabaseId: tm.supabaseId }));
     });
     ls('tm_extra_reps', extra);
     }
@@ -4234,6 +4244,8 @@
         var res;
         if(window.TEAM_MEMBERS && typeof TEAM_MEMBERS.fetchFresh === 'function'){
             res = await TEAM_MEMBERS.fetchFresh();
+        } else if(typeof window.fetchTeamMembersFresh === 'function'){
+            res = await window.fetchTeamMembersFresh();
         } else if(window.APP_API && typeof APP_API.fetchTeamMembers === 'function'){
             res = await APP_API.fetchTeamMembers();
         } else {
@@ -4779,32 +4791,29 @@
             role: 'User'
         };
         }
-        var loginKey = canonicalRepKey(user.username || user.name);
+        var loginKey = registerUserFromCloudRow(user);
+        if(!loginKey){
+        loginKey = canonicalRepKey(user.username || user.name || email.split('@')[0]);
         currentUser = loginKey;
+        registerUserFromCloudRow({
+            id: user.id,
+            username: loginKey,
+            name: user.name || loginKey,
+            email: user.email || email,
+            role: user.role || 'Sales',
+            owned_reps: user.owned_reps
+        });
+        } else {
+        currentUser = loginKey;
+        }
         sessionStorage.setItem('sos_user', currentUser);
-        if(USERS[currentUser]){
-        if(user.role) USERS[currentUser].role = user.role;
-        if(user.email) USERS[currentUser].email = user.email;
-        if(user.owned_reps && window.SALES_OS) USERS[currentUser].owned_reps = SALES_OS.normalizeOwnedReps(user.owned_reps);
-        if(user.id != null){
-            var rowId = window.APP_API ? APP_API.toBigintId(user.id) : parseInt(user.id, 10);
-            if(rowId != null){
-            window._salesUserIdByKey = window._salesUserIdByKey || {};
-            window._salesUserKeyById = window._salesUserKeyById || {};
-            window._salesUserIdByKey[currentUser] = rowId;
-            window._salesUserKeyById[rowId] = currentUser;
-            var tmLogin = getTMRepData(currentUser) || {};
-            tmLogin.supabaseId = rowId;
-            ls('tm_rep_'+currentUser, tmLogin);
-            }
-        }
-        }
-    
+
         sendLoginEmailNotification(user);
         void tryInsertLoginLog(user);
 
         setLoading(false);
-        launchApp(user.name, user.role);
+        await bootstrapUsersFromSupabase();
+        await launchApp();
         if(typeof goPage === 'function') goPage('dashboard');
     } catch(e){
         setLoading(false);
@@ -4833,13 +4842,18 @@
     // ── Session restore on page reload ──
     (function restoreSession(){
     const saved = sessionStorage.getItem('sos_user');
-    if(saved && USERS[saved]){
-        currentUser = saved;
-        window.addEventListener('DOMContentLoaded', function(){
-        launchApp();
+    if(!saved) return;
+    currentUser = saved;
+    window.addEventListener('DOMContentLoaded', async function(){
+        await bootstrapUsersFromSupabase();
+        await ensureCurrentUserLoaded();
+        if(!USERS[currentUser]){
+        sessionStorage.removeItem('sos_user');
+        return;
+        }
+        await launchApp();
         if(typeof goPage === 'function') goPage('dashboard');
-        });
-    }
+    });
     })();
 
     // ════════════════════════════════════════
@@ -7146,6 +7160,21 @@
         };
     });
 
+    if(window._teamMembersLive && Array.isArray(window._teamMembersLive) && window._teamMembersLive.length){
+        var cloudKeys = {};
+        window._teamMembersLive.forEach(function(r){
+            var k = canonicalRepKey(String(r.username || r.name || ''));
+            if(k) cloudKeys[k] = true;
+        });
+        Object.keys(all).forEach(function(uid){
+            var u = all[uid];
+            var isSalesRep = u && (u.tier === 'rep' || u.role === 'Sales' || u.role === 'Rep' || u.role === 'Sales Rep');
+            if(isSalesRep && !cloudKeys[canonicalRepKey(uid)]){
+                delete all[uid];
+            }
+        });
+    }
+
     return all;
     }
 
@@ -7724,7 +7753,8 @@
     });
 
     // ── launchApp — merged: cloud sync + avatar + badge polling ──
-    function launchApp(){
+    async function launchApp(){
+    await ensureCurrentUserLoaded();
     const u = USERS[currentUser];
     if(!u){
         console.error('launchApp: no USERS entry for currentUser=', currentUser);

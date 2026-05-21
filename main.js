@@ -54,6 +54,15 @@
       showStartupConfigError("Missing Supabase configuration. Set SUPABASE_URL and SUPABASE_ANON_KEY in config.js.");
     } else if(authClient){
       console.log("Supabase initialized");
+      // TEMPORARY: one-time DB cleanup for Fasith/Shehan — remove after confirming gone from sales_users
+      if(typeof window.deleteGhostUsers === "function" && !sessionStorage.getItem("tecb_ghost_users_cleaned_v1")){
+        window.deleteGhostUsers().then(function(){
+          sessionStorage.setItem("tecb_ghost_users_cleaned_v1", "1");
+          if(typeof window.refreshTeamMembers === "function"){
+            return window.refreshTeamMembers();
+          }
+        }).catch(function(e){ console.error("deleteGhostUsers failed:", e); });
+      }
     } else {
       showStartupConfigError("Supabase auth client could not be created.");
     }
@@ -277,6 +286,123 @@
   };
 })();
 
+/* ── Dynamic USERS registry from Supabase sales_users (no hardcoded list) ── */
+(function(){
+  var TABLE = "sales_users";
+
+  function canonKey(rep){
+    if(typeof window.canonicalRepKey === "function") return window.canonicalRepKey(rep);
+    if(rep == null || rep === "") return "";
+    return String(rep).trim();
+  }
+
+  function applyUserTier(u, key){
+    if(!u) return u;
+    key = key || u._key || "";
+    u.name = (u.name && String(u.name).trim()) ? String(u.name).trim() : key;
+    u.handle = u.handle || ("@" + String(key).toLowerCase());
+    if(u.role === "CEO" || u.role === "Co-CEO") u.tier = "ceo";
+    else if(u.role === "COO" || u.role === "Chief Operating Officer") u.tier = "coo";
+    else if(u.role === "Sales Manager") u.tier = "management";
+    else u.tier = "rep";
+    return u;
+  }
+
+  function registerFromRow(row, users){
+    users = users || window.USERS || {};
+    if(!row) return "";
+    var key = canonKey(row.username || row.name || "");
+    if(!key) return "";
+    var displayName = (row.name && String(row.name).trim()) ? String(row.name).trim() : key;
+    var rowId = window.APP_API && window.APP_API.toBigintId
+      ? window.APP_API.toBigintId(row.id)
+      : (row.id != null ? parseInt(row.id, 10) : null);
+    var owned = window.SALES_OS && window.SALES_OS.normalizeOwnedReps
+      ? window.SALES_OS.normalizeOwnedReps(row.owned_reps)
+      : [];
+    users[key] = applyUserTier({
+      name: displayName,
+      role: row.role || "Sales",
+      email: row.email || "",
+      owned_reps: owned,
+      supabaseId: rowId != null && isFinite(rowId) ? rowId : null,
+      source: "cloud"
+    }, key);
+    users[key]._key = key;
+    if(rowId != null){
+      window._salesUserIdByKey = window._salesUserIdByKey || {};
+      window._salesUserKeyById = window._salesUserKeyById || {};
+      window._salesUserIdByKey[key] = rowId;
+      window._salesUserKeyById[rowId] = key;
+    }
+    window.USERS = users;
+    return key;
+  }
+
+  async function fetchRowsByFilter(column, value){
+    var client = window.APP_SUPABASE_CLIENT;
+    if(client && typeof client.from === "function"){
+      try{
+        var result = await client.from(TABLE).select("*").eq(column, value).limit(1);
+        var rows = result.data;
+        if(Array.isArray(rows) && rows.length) return rows[0];
+        if(rows && !Array.isArray(rows)) return rows;
+      }catch(_e){}
+    }
+    if(!window.SB_URL || !window.BASE_HDR || value == null) return null;
+    try{
+      var url = window.SB_URL + "/rest/v1/" + TABLE + "?select=*&" + column + "=eq." + encodeURIComponent(value) + "&limit=1";
+      var res = await fetch(url, { headers: window.BASE_HDR });
+      var data = await res.json();
+      if(Array.isArray(data) && data.length) return data[0];
+    }catch(_e2){}
+    return null;
+  }
+
+  async function fetchOne(identifier){
+    var key = canonKey(identifier);
+    if(!key) return null;
+    var row = await fetchRowsByFilter("username", key);
+    if(!row) row = await fetchRowsByFilter("name", key);
+    if(!row && String(identifier).indexOf("@") !== -1) row = await fetchRowsByFilter("email", identifier);
+    if(row) registerFromRow(row);
+    return row;
+  }
+
+  async function bootstrapAll(){
+    window.USERS = window.USERS || {};
+    var data = [];
+    if(typeof window.fetchTeamMembersFresh === "function"){
+      var res = await window.fetchTeamMembersFresh();
+      if(!res.error) data = res.data || [];
+    } else {
+      var client = window.APP_SUPABASE_CLIENT;
+      if(client && typeof client.from === "function"){
+        var result = await client.from(TABLE).select("*").order("id", { ascending: true });
+        data = result.data || [];
+      }
+    }
+    (data || []).forEach(function(row){ registerFromRow(row); });
+    return data;
+  }
+
+  async function ensureCurrentUser(key){
+    key = canonKey(key || window.currentUser);
+    if(!key) return null;
+    if(window.USERS && window.USERS[key]) return window.USERS[key];
+    await fetchOne(key);
+    return window.USERS && window.USERS[key] ? window.USERS[key] : null;
+  }
+
+  window.USER_REGISTRY = {
+    applyUserTier: applyUserTier,
+    registerFromRow: registerFromRow,
+    fetchOne: fetchOne,
+    bootstrapAll: bootstrapAll,
+    ensureCurrentUser: ensureCurrentUser
+  };
+})();
+
 /* ── Team Members: add / delete sales_users (bigint id) ── */
 (function(){
   var TEAM_TABLE = "sales_users";
@@ -339,6 +465,45 @@
       return window.APP_API.fetchTeamMembers();
     }
     return { data: [], error: { message: "Supabase client not ready" } };
+  }
+
+  /** One-time cleanup: remove ghost rows from sales_users (by name / username). */
+  async function deleteGhostUsers(){
+    var namesToDelete = ["Fasith", "Shehan"];
+    var client = window.APP_SUPABASE_CLIENT;
+    if(!client || typeof client.from !== "function"){
+      console.warn("deleteGhostUsers: Supabase client not ready");
+      return;
+    }
+    for(var i = 0; i < namesToDelete.length; i++){
+      var name = namesToDelete[i];
+      var result = await client.from(TEAM_TABLE).delete().eq("name", name);
+      if(result && result.error){
+        var byUser = await client.from(TEAM_TABLE).delete().eq("username", name);
+        if(byUser && byUser.error) console.error("Failed to delete", name, byUser.error);
+        else console.log("Deleted (username):", name);
+      } else {
+        console.log("Deleted:", name);
+      }
+      if(window.USERS && window.USERS[name]){
+        delete window.USERS[name];
+      }
+      if(typeof window.ls === "function"){
+        try{
+          var extra = window.ls("tm_extra_reps") || {};
+          delete extra[name];
+          window.ls("tm_extra_reps", extra);
+        }catch(_e){}
+      }
+      try{ localStorage.removeItem("tm_rep_" + name); }catch(_e2){}
+      try{
+        if(typeof window.getData === "function" && typeof window.ls === "function"){
+          var pins = window.getData("pins", {});
+          delete pins[name];
+          window.ls("pins", pins);
+        }
+      }catch(_e3){}
+    }
   }
 
   /** Fetch only — never renders; never calls index loadTeamMembers. */
@@ -611,4 +776,6 @@
   window.loadTeamMembersFromCloud = loadTeamMembersFromCloud;
   window.renderTeamMembers = renderTeamMembers;
   window.refreshTeamMembers = refreshTeamMembers;
+  window.deleteGhostUsers = deleteGhostUsers;
+  window.fetchTeamMembersFresh = fetchTeamMembersFresh;
 })();
