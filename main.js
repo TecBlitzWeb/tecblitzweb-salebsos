@@ -276,3 +276,202 @@
     loadLeads: loadLeads
   };
 })();
+
+/* ── Team Members: add / delete sales_users (bigint id) ── */
+(function(){
+  var TEAM_TABLE = "sales_users";
+
+  function teamMemberCurrentRole(){
+    var uid = window.currentUser;
+    var u = (window.USERS || {})[uid];
+    return u && u.role ? u.role : "";
+  }
+
+  function canManageTeamMembers(){
+    return ["CEO", "Co-CEO", "COO"].includes(teamMemberCurrentRole());
+  }
+
+  function toNumericRepId(userId, localUid){
+    var numericId = Number(userId);
+    if(isFinite(numericId) && numericId > 0) return Math.floor(numericId);
+    if(typeof window.getRepSalesUserId === "function" && localUid){
+      numericId = Number(window.getRepSalesUserId(localUid));
+      if(isFinite(numericId) && numericId > 0) return Math.floor(numericId);
+    }
+    if(window.APP_API && typeof window.APP_API.toBigintId === "function"){
+      return window.APP_API.toBigintId(userId);
+    }
+    return null;
+  }
+
+  async function loadTeamMembers(){
+    if(typeof window.loadTeamMembersFromCloud === "function"){
+      window.loadTeamMembersFromCloud();
+      return;
+    }
+    if(window.APP_API && typeof window.APP_API.fetchTeamMembers === "function"){
+      var res = await window.APP_API.fetchTeamMembers();
+      if(!res.error && typeof window.mergeTeamMembersIntoUsers === "function"){
+        window.mergeTeamMembersIntoUsers(res.data || []);
+      }
+    }
+  }
+
+  async function removeRep(userId, localUid, displayName, skipConfirm){
+    console.log("Current user role:", teamMemberCurrentRole());
+    console.log("Rep id type:", typeof userId, userId);
+
+    var numericId = toNumericRepId(userId, localUid);
+    if(numericId == null){
+      console.error("Delete error: invalid bigint id", userId, localUid);
+      if(typeof window.showToast === "function"){
+        window.showToast("Error: missing numeric rep id — reload team list and try again", "error");
+      }
+      return { error: { message: "Invalid rep id" } };
+    }
+
+    if(!skipConfirm){
+      var label = displayName || localUid || "this rep";
+      if(!window.confirm("Are you sure you want to remove " + label + "?")){
+        return { error: { message: "Cancelled" } };
+      }
+    }
+
+    var client = window.APP_SUPABASE_CLIENT;
+    if(client && typeof client.from === "function"){
+      try{
+        var result = await client.from(TEAM_TABLE).delete().eq("id", numericId);
+        if(result && result.error){
+          console.error("Delete error:", result.error);
+          if(typeof window.showToast === "function"){
+            window.showToast("Error: " + (result.error.message || "Delete failed"), "error");
+          }
+          return { error: result.error };
+        }
+        if(localUid && typeof window.tmRemoveRepLocal === "function"){
+          window.tmRemoveRepLocal(localUid);
+        }
+        if(typeof window.showToast === "function"){
+          window.showToast("Rep removed successfully ✓", "success");
+        }
+        if(typeof window.tmCloseModal === "function") window.tmCloseModal("tm-edit-modal");
+        if(typeof window.tmRenderStats === "function") window.tmRenderStats();
+        if(typeof window.tmRenderTable === "function") window.tmRenderTable();
+        if(typeof window.cooRenderTable === "function") window.cooRenderTable();
+        await loadTeamMembers();
+        return { error: null };
+      }catch(e){
+        console.error("Delete error:", e);
+        if(typeof window.showToast === "function"){
+          window.showToast("Error: " + (e.message || "Delete failed"), "error");
+        }
+        return { error: e };
+      }
+    }
+
+    if(window.APP_API && typeof window.APP_API.removeRep === "function"){
+      var apiRes = await window.APP_API.removeRep(numericId, true);
+      if(apiRes && apiRes.error){
+        console.error("Delete error:", apiRes.error);
+        if(typeof window.showToast === "function"){
+          window.showToast("Error: " + (apiRes.error.message || "Delete failed"), "error");
+        }
+        return apiRes;
+      }
+      if(localUid && typeof window.tmRemoveRepLocal === "function"){
+        window.tmRemoveRepLocal(localUid);
+      }
+      if(typeof window.showToast === "function"){
+        window.showToast("Rep removed successfully ✓", "success");
+      }
+      await loadTeamMembers();
+      return { error: null };
+    }
+
+    if(typeof window.showToast === "function"){
+      window.showToast("Error: Supabase not ready", "error");
+    }
+    return { error: { message: "Supabase not ready" } };
+  }
+
+  async function addNewRep(formData){
+    console.log("Current user role:", teamMemberCurrentRole());
+
+    if(!canManageTeamMembers()){
+      if(typeof window.showToast === "function"){
+        window.showToast("Management access required", "error");
+      }
+      return { data: null, error: { message: "Not allowed" } };
+    }
+
+    var name = (formData.name || "").trim();
+    var username = (formData.username || "").trim();
+    var email = (formData.email || "").trim();
+    var password = formData.password || "";
+    var role = formData.role || "Sales";
+    if(!username && name){
+      username = name.toLowerCase().replace(/\s/g, "");
+    }
+    if(!name || !email || !username){
+      return { data: null, error: { message: "Name, username, and email are required" } };
+    }
+
+    var row = {
+      name: name,
+      username: username,
+      email: email,
+      password: password,
+      role: role,
+      created_at: new Date().toISOString()
+    };
+
+    var client = window.APP_SUPABASE_CLIENT;
+    if(client && typeof client.from === "function"){
+      try{
+        var ins = await client.from(TEAM_TABLE).insert([row]).select();
+        if(ins && ins.error){
+          console.error("Insert error:", ins.error);
+          if(typeof window.showToast === "function"){
+            window.showToast("Error adding rep: " + (ins.error.message || "Insert failed"), "error");
+          }
+          return { data: null, error: ins.error };
+        }
+        var inserted = ins && ins.data ? (Array.isArray(ins.data) ? ins.data[0] : ins.data) : null;
+        if(typeof window.showToast === "function"){
+          window.showToast("New rep added ✓", "success");
+        }
+        await loadTeamMembers();
+        return { data: inserted, error: null };
+      }catch(e){
+        console.error("Insert error:", e);
+        if(typeof window.showToast === "function"){
+          window.showToast("Error adding rep: " + (e.message || "Insert failed"), "error");
+        }
+        return { data: null, error: e };
+      }
+    }
+
+    if(window.APP_API && typeof window.APP_API.insertSalesUser === "function"){
+      var apiIns = await window.APP_API.insertSalesUser(formData);
+      if(apiIns.error){
+        console.error("Insert error:", apiIns.error);
+        if(typeof window.showToast === "function"){
+          window.showToast("Error adding rep: " + (apiIns.error.message || "Insert failed"), "error");
+        }
+        return apiIns;
+      }
+      if(typeof window.showToast === "function"){
+        window.showToast("New rep added ✓", "success");
+      }
+      await loadTeamMembers();
+      return apiIns;
+    }
+
+    return { data: null, error: { message: "Supabase not ready" } };
+  }
+
+  window.canManageTeamMembers = canManageTeamMembers;
+  window.removeRep = removeRep;
+  window.addNewRep = addNewRep;
+  window.loadTeamMembers = loadTeamMembers;
+})();

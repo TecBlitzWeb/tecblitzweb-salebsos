@@ -4081,7 +4081,19 @@
     actorUid = actorUid || currentUser;
     var a = USERS[actorUid];
     if(!a) return false;
-    return a.tier==='ceo' || a.tier==='coo' || a.tier==='management' || a.role==='Co-CEO' || a.role==='Chief Operating Officer';
+    return ['CEO','Co-CEO','COO'].includes(a.role);
+    }
+    function getRepNumericId(uid){
+    var tm = getTMRepData(uid) || {};
+    if(tm.supabaseId != null){
+        var n = Number(tm.supabaseId);
+        if(isFinite(n) && n > 0) return Math.floor(n);
+    }
+    if(typeof getRepSalesUserId === 'function'){
+        var id = getRepSalesUserId(uid);
+        if(id != null && isFinite(Number(id)) && Number(id) > 0) return Math.floor(Number(id));
+    }
+    return null;
     }
     function tmCanDeleteRep(actorUid, targetUid){
     actorUid = actorUid || currentUser;
@@ -6006,7 +6018,8 @@
         el.style.display = _isDirectorCEO ? '' : 'none';
     });
     document.querySelectorAll('.tm-mgmt-add-btn').forEach(el=>{
-        el.style.display = tmCanAddRep(currentUser) ? '' : 'none';
+        var canManage = tmCanAddRep(currentUser);
+        el.style.display = canManage ? '' : 'none';
     });
 
     // COO section
@@ -6461,6 +6474,7 @@
 
         const emailDisplay = r.email ? `<span>${esc(r.email)}</span>` : `<span class="tm-muted">—</span>`;
         const phoneDisplay = r.phone ? `<span>${esc(r.phone)}</span>` : `<span class="tm-muted">—</span>`;
+        const repId = getRepNumericId(uid);
 
         // Reports To cell — only reps get a COO selector; management shows nothing
         let reportsToHtml = `<span class="tm-muted">—</span>`;
@@ -6495,7 +6509,7 @@
             <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 1.5l3 3-8 8H1.5v-3l8-8z"/></svg>
             Edit
             </button>
-            ${tmCanDeleteRep(currentUser, uid) ? `<button class="tm-delete-btn" onclick="tmDeleteRep('${uid}', '${esc(r.name)}')">
+            ${tmCanDeleteRep(currentUser, uid) && repId != null ? `<button class="tm-delete-btn" onclick="tmDeleteRep(${repId}, '${uid}', '${esc(r.name)}')">
             <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h12M4 3v8a2 2 0 002 2h2a2 2 0 002-2V3M6 7v4M8 7v4"/></svg>
             Remove
             </button>` : ''}
@@ -6707,24 +6721,25 @@
 
     const tier = tmTierFromRole(role);
 
-    if(!window.APP_API || typeof APP_API.insertSalesUser !== 'function'){
+    var addFn = window.addNewRep;
+    if(typeof addFn !== 'function'){
         showToast('API not ready','error'); return;
     }
 
-    const result = await APP_API.insertSalesUser({
-        username: uid,
+    const result = await addFn({
         name: displayName,
+        username: uid,
         email: email,
         role: role,
         password: password
     });
-    if(result.error){
-        showToast(result.error.message || 'Failed to add rep in Supabase','error');
-        console.error('insertSalesUser', result.error);
+    if(result && result.error){
         return;
     }
 
-    const supabaseId = (result.data && result.data.id != null) ? Number(result.data.id) : null;
+    var payload = result && result.data;
+    var row = payload && payload.row ? payload.row : payload;
+    const supabaseId = row && row.id != null ? Number(row.id) : (payload && payload.id != null ? Number(payload.id) : null);
     if(supabaseId != null){
         window._salesUserIdByKey = window._salesUserIdByKey || {};
         window._salesUserKeyById = window._salesUserKeyById || {};
@@ -6756,8 +6771,6 @@
     tmRenderStats();
     tmRenderTable();
     if(typeof cooRenderTable === 'function') cooRenderTable();
-    loadTeamMembersFromCloud();
-    showToast('New rep added ✓','success');
     }
 
 
@@ -7190,6 +7203,7 @@
 
         const emailDisplay = r.email ? `<span>${esc(r.email)}</span>` : `<span class="tm-muted">—</span>`;
         const phoneDisplay = r.phone ? `<span>${esc(r.phone)}</span>` : `<span class="tm-muted">—</span>`;
+        const repId = getRepNumericId(uid);
 
         return `<tr>
         <td>
@@ -7210,7 +7224,7 @@
             <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 1.5l3 3-8 8H1.5v-3l8-8z"/></svg>
             Edit
             </button>` : '<span class="tm-muted">—</span>'}
-            ${tmCanDeleteRep(currentUser, uid) ? `<button class="tm-delete-btn" onclick="tmDeleteRep('${uid}', '${esc(r.name)}')">
+            ${tmCanDeleteRep(currentUser, uid) && repId != null ? `<button class="tm-delete-btn" onclick="tmDeleteRep(${repId}, '${uid}', '${esc(r.name)}')">
             <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h12M4 3v8a2 2 0 002 2h2a2 0 002-2V3M6 7v4M8 7v4"/></svg>
             Remove
             </button>` : ''}
@@ -7386,45 +7400,30 @@
         if(opt) opt.remove();
     }
     }
+    window.tmRemoveRepLocal = tmRemoveRepLocal;
 
-    // ── Delete rep (role-based) ──
-    function tmDeleteRep(uid, name){
+    // ── Delete rep (role-based) — repId must be numeric bigint from sales_users.id ──
+    function tmDeleteRep(repId, uid, name){
     if(!tmCanDeleteRep(currentUser, uid)){
         showToast('You cannot remove this team member','error');
         return;
     }
 
+    var numericId = Number(repId);
+    if(!isFinite(numericId) || numericId <= 0){
+        numericId = getRepNumericId(uid);
+    }
+    if(numericId == null){
+        showToast('Error: missing numeric rep id — reload team list','error');
+        return;
+    }
+
     showConfirm('Are you sure you want to remove '+name+'?', async function(){
-        const tm = getTMRepData(uid) || {};
-        const supabaseId = tm.supabaseId != null ? Number(tm.supabaseId) : null;
-        var cloudErr = null;
-
-        if(window.APP_API){
-            var res = null;
-            if(supabaseId != null && typeof APP_API.removeRep === 'function'){
-                res = await APP_API.removeRep(supabaseId, true);
-            } else if(typeof APP_API.deleteSalesUserByUsername === 'function'){
-                res = await APP_API.deleteSalesUserByUsername(uid);
-            } else if(typeof APP_API.deleteSalesUserByName === 'function'){
-                res = await APP_API.deleteSalesUserByName(uid);
-            }
-            if(res && res.error && res.error.message !== 'Cancelled'){
-                cloudErr = res.error.message || 'Delete failed';
-            }
-        }
-
-        if(cloudErr){
-            showToast('Error removing rep: '+cloudErr,'error');
+        if(typeof window.removeRep === 'function'){
+            await window.removeRep(numericId, uid, name, true);
             return;
         }
-
-        tmRemoveRepLocal(uid);
-        showToast('Rep removed successfully ✓','success');
-        loadTeamMembersFromCloud();
-        tmCloseModal('tm-edit-modal');
-        tmRenderStats();
-        tmRenderTable();
-        if(typeof cooRenderTable === 'function') cooRenderTable();
+        showToast('Error: removeRep not loaded','error');
     }, { icon:'del', confirmLabel:'Remove', confirmClass:'btn-red' });
     }
 
