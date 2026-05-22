@@ -243,7 +243,7 @@
     if(isDirectorCEO(currentUid, USERS)) return true;
     var key = getAssignedKey(record, assignField);
     var assignId = getRepIdForKey(key, USERS) || ( /^\d+$/.test(key) ? parseInt(key, 10) : null );
-    if(!key && assignField === 'assignedTo') return false;
+    if(!key && assignField === 'assignedTo') return true;
     if(isScopedManager(currentUid, USERS)){
       var owned = getOwnedRepIds(currentUid, USERS);
       if(!owned.length) return true; // No owned reps → see ALL (same as CEO)
