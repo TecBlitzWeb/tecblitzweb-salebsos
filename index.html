@@ -5379,7 +5379,13 @@
     function prospectVisibleToUser(p, u){
     if(!p || !u) return false;
     if(window.SALES_OS) return SALES_OS.canSeeAssignedRecord(p, currentUser, USERS, 'assignedTo');
-    return false;
+    // Fallback: CEO/Co-CEO (tier==='ceo') see all; others see only their assigned prospects
+    if(u.tier === 'ceo') return true;
+    var assigned = String(p.assignedTo || p.assignedto || '').trim();
+    if(assigned === '') return true;
+    var me = typeof canonicalRepKey === 'function' ? canonicalRepKey(currentUser) : String(currentUser || '').trim();
+    var assignKey = typeof canonicalRepKey === 'function' ? canonicalRepKey(assigned) : assigned;
+    return assignKey === me || assignKey.toLowerCase() === me.toLowerCase();
     }
     function normalizeCloudCallRow(c){
     if(!c) return null;

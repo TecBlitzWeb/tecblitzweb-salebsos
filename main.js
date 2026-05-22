@@ -245,7 +245,13 @@
     var assignId = getRepIdForKey(key, USERS) || ( /^\d+$/.test(key) ? parseInt(key, 10) : null );
     if(!key && assignField === 'assignedTo') return false;
     if(isScopedManager(currentUid, USERS)){
-      if(assignId != null) return getOwnedRepIds(currentUid, USERS).indexOf(assignId) !== -1;
+      var owned = getOwnedRepIds(currentUid, USERS);
+      if(!owned.length) return true; // No owned reps → see ALL (same as CEO)
+      if(assignId != null) return owned.indexOf(assignId) !== -1;
+      var mine = repTokensForUser(currentUid, USERS);
+      for(var j = 0; j < mine.length; j++){
+        if(assignKeysEqual(key, mine[j])) return true;
+      }
       return false;
     }
     var selfId = getRepIdForKey(currentUid, USERS);

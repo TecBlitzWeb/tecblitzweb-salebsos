@@ -196,7 +196,7 @@
     if(isDirectorCEO(currentUid, USERS) || u.role === "CEO") return "";
     if(isCoCEO(currentUid, USERS) || isCOORole(currentUid, USERS)){
       var owned = getOwnedRepIds(currentUid, USERS);
-      if(!owned.length) return "&" + col + "=eq.-1";
+      if(!owned.length) return ""; // No owned reps → see ALL (same as CEO)
       return "&" + col + "=in.(" + owned.join(",") + ")";
     }
     return buildSalesRepAssigneeFilter(col, currentUid, USERS);
