@@ -613,10 +613,10 @@
   }
 
   async function performSalesLogin(email, password){
-    if(!window.APP_API || typeof window.APP_API.loginWithSalesUser !== "function"){
+    if(!window.APP_API || typeof window.APP_API.loginWithAuthAndProfile !== "function"){
       return { ok: false, error: "Login service not initialized" };
     }
-    var result = await window.APP_API.loginWithSalesUser(email, password);
+    var result = await window.APP_API.loginWithAuthAndProfile(email, password);
     if(result.error || !result.data){
       var msg = result.error && result.error.message ? result.error.message : "Invalid email or password";
       return { ok: false, error: msg };

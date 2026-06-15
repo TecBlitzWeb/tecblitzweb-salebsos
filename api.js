@@ -226,6 +226,48 @@
     }
   }
 
+  /** Headers carrying the logged-in user's session token (falls back to anon). */
+  function authedHeaders(accessToken){
+    var cfg = getConfig();
+    return {
+      "Content-Type": "application/json",
+      "apikey": cfg.SUPABASE_ANON_KEY || "",
+      "Authorization": "Bearer " + (accessToken || cfg.SUPABASE_ANON_KEY || "")
+    };
+  }
+
+  /**
+   * Full Auth login: signInWithPassword, then load the sales_users profile row
+   * linked by auth_user_id, using the session token so RLS (Step 3) is respected.
+   */
+  async function loginWithAuthAndProfile(email, password){
+    var em = (email || "").trim().toLowerCase();
+    var pw = password != null ? String(password) : "";
+    if(!em || !pw) return { data: null, error: { message: "Please enter email and password" } };
+
+    var auth = await loginWithEmailPassword(em, pw);
+    if(auth.error || !auth.data || !auth.data.user){
+      var amsg = auth.error && auth.error.message ? auth.error.message : "Invalid email or password";
+      return { data: null, error: { message: amsg } };
+    }
+
+    var uid = auth.data.user.id;
+    var token = auth.data.session && auth.data.session.access_token ? auth.data.session.access_token : null;
+
+    var select = "id,name,username,email,role,owned_reps,auth_user_id";
+    var res = await safeFetch(
+      teamUrl("?select=" + select + "&auth_user_id=eq." + encodeURIComponent(uid) + "&limit=1"),
+      { headers: authedHeaders(token) }
+    );
+    if(res.error) return { data: null, error: res.error };
+    var rows = Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []);
+    var row = rows.length ? rows[0] : null;
+    if(!row){
+      return { data: null, error: { message: "No profile linked to this account. Contact an admin." } };
+    }
+    return { data: row, error: null };
+  }
+
   /** Authenticate against sales_users.email + sales_users.password (not Supabase Auth). */
   async function loginWithSalesUser(email, password){
     var cfg = getConfig();
@@ -424,6 +466,7 @@
     safeFetch: safeFetch,
     baseHeaders: getBaseHeaders,
     loginWithEmailPassword: loginWithEmailPassword,
+    loginWithAuthAndProfile: loginWithAuthAndProfile,
     loginWithSalesUser: loginWithSalesUser,
     insertLoginLogSafe: insertLoginLogSafe,
     insertSalesUser: insertSalesUser,
