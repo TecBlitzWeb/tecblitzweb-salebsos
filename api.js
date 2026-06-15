@@ -21,12 +21,39 @@
     };
   }
 
+  /**
+   * Current logged-in user's access token, or null. Prefers the live value set
+   * by config.js (onAuthStateChange), and falls back to the session that
+   * supabase-js persists in localStorage so the very first fetch after a reload
+   * still carries the token before getSession() resolves.
+   */
+  function getStoredAccessToken(){
+    if(window.APP_ACCESS_TOKEN) return window.APP_ACCESS_TOKEN;
+    try{
+      var cfg = getConfig();
+      var ref = "";
+      try{ ref = new URL(cfg.SUPABASE_URL).hostname.split(".")[0]; }catch(_e){}
+      if(ref && typeof localStorage !== "undefined"){
+        var raw = localStorage.getItem("sb-" + ref + "-auth-token");
+        if(raw){
+          var j = JSON.parse(raw);
+          var t = j && (j.access_token || (j.currentSession && j.currentSession.access_token));
+          if(t) return t;
+        }
+      }
+    }catch(_e2){}
+    return null;
+  }
+
   function getBaseHeaders(){
     var cfg = getConfig();
+    var token = getStoredAccessToken();
     return {
       "Content-Type": "application/json",
       "apikey": cfg.SUPABASE_ANON_KEY || "",
-      "Authorization": "Bearer " + (cfg.SUPABASE_ANON_KEY || "")
+      // Use the user's session token so RLS sees auth.uid(); fall back to anon
+      // (which, under strict RLS, sees nothing — that is the intended behavior).
+      "Authorization": "Bearer " + (token || cfg.SUPABASE_ANON_KEY || "")
     };
   }
 
@@ -226,6 +253,48 @@
     }
   }
 
+  /** Headers carrying the logged-in user's session token (falls back to anon). */
+  function authedHeaders(accessToken){
+    var cfg = getConfig();
+    return {
+      "Content-Type": "application/json",
+      "apikey": cfg.SUPABASE_ANON_KEY || "",
+      "Authorization": "Bearer " + (accessToken || cfg.SUPABASE_ANON_KEY || "")
+    };
+  }
+
+  /**
+   * Full Auth login: signInWithPassword, then load the sales_users profile row
+   * linked by auth_user_id, using the session token so RLS (Step 3) is respected.
+   */
+  async function loginWithAuthAndProfile(email, password){
+    var em = (email || "").trim().toLowerCase();
+    var pw = password != null ? String(password) : "";
+    if(!em || !pw) return { data: null, error: { message: "Please enter email and password" } };
+
+    var auth = await loginWithEmailPassword(em, pw);
+    if(auth.error || !auth.data || !auth.data.user){
+      var amsg = auth.error && auth.error.message ? auth.error.message : "Invalid email or password";
+      return { data: null, error: { message: amsg } };
+    }
+
+    var uid = auth.data.user.id;
+    var token = auth.data.session && auth.data.session.access_token ? auth.data.session.access_token : null;
+
+    var select = "id,name,username,email,role,owned_reps,auth_user_id";
+    var res = await safeFetch(
+      teamUrl("?select=" + select + "&auth_user_id=eq." + encodeURIComponent(uid) + "&limit=1"),
+      { headers: authedHeaders(token) }
+    );
+    if(res.error) return { data: null, error: res.error };
+    var rows = Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []);
+    var row = rows.length ? rows[0] : null;
+    if(!row){
+      return { data: null, error: { message: "No profile linked to this account. Contact an admin." } };
+    }
+    return { data: row, error: null };
+  }
+
   /** Authenticate against sales_users.email + sales_users.password (not Supabase Auth). */
   async function loginWithSalesUser(email, password){
     var cfg = getConfig();
@@ -272,10 +341,8 @@
 
   function createClient(){
     var cfg = getConfig();
-    var baseHeaders = getBaseHeaders();
-    var upsertHeaders = Object.assign({}, baseHeaders, { "Prefer": "resolution=merge-duplicates,return=minimal" });
-    var deleteHeaders = Object.assign({}, baseHeaders, { "Prefer": "return=minimal" });
-
+    // Recompute headers per call so the current session token is always used
+    // (the token isn't known yet when the client is first constructed).
     return {
       from: function(table){
         var base = (cfg.SUPABASE_URL || "") + "/rest/v1/" + table;
@@ -283,11 +350,12 @@
           select: function(cols, opts){
             var q = "?select=" + encodeURIComponent(cols || "*");
             if(opts && opts.filter) q += opts.filter;
-            return safeFetch(base + q, { headers: baseHeaders });
+            return safeFetch(base + q, { headers: getBaseHeaders() });
           },
           upsert: function(rows){
             var body = Array.isArray(rows) ? rows : [rows];
-            return safeFetch(base, { method: "POST", headers: upsertHeaders, body: JSON.stringify(body) });
+            var headers = Object.assign({}, getBaseHeaders(), { "Prefer": "resolution=merge-duplicates,return=minimal" });
+            return safeFetch(base, { method: "POST", headers: headers, body: JSON.stringify(body) });
           },
           insert: function(rows){
             return this.upsert(rows);
@@ -295,7 +363,8 @@
           delete: function(id){
             var numId = toBigintId(id);
             if(numId == null) return Promise.resolve({ data: null, error: { message: "Invalid id" } });
-            return safeFetch(base + "?id=eq." + numId, { method: "DELETE", headers: deleteHeaders });
+            var headers = Object.assign({}, getBaseHeaders(), { "Prefer": "return=minimal" });
+            return safeFetch(base + "?id=eq." + numId, { method: "DELETE", headers: headers });
           }
         };
       }
@@ -424,6 +493,7 @@
     safeFetch: safeFetch,
     baseHeaders: getBaseHeaders,
     loginWithEmailPassword: loginWithEmailPassword,
+    loginWithAuthAndProfile: loginWithAuthAndProfile,
     loginWithSalesUser: loginWithSalesUser,
     insertLoginLogSafe: insertLoginLogSafe,
     insertSalesUser: insertSalesUser,

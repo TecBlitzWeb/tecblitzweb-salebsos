@@ -4992,6 +4992,11 @@
     }
     }
     function doLogout(){
+    try{
+        if(window.APP_SUPABASE_CLIENT && window.APP_SUPABASE_CLIENT.auth){
+            window.APP_SUPABASE_CLIENT.auth.signOut();
+        }
+    }catch(_e){}
     setCurrentUserKey(null);
     sessionStorage.removeItem('sos_user');
     sessionStorage.removeItem('sos_user_data');

@@ -21,4 +21,19 @@
     (window.supabase && typeof window.supabase.createClient === 'function' && SUPABASE_URL && SUPABASE_ANON_KEY)
       ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       : null;
+
+  // Keep the logged-in user's access token available to api.js so REST data
+  // fetches run as the authenticated user (required once RLS is strict).
+  window.APP_ACCESS_TOKEN = null;
+  if (window.APP_SUPABASE_CLIENT && window.APP_SUPABASE_CLIENT.auth) {
+    try {
+      window.APP_SUPABASE_CLIENT.auth.getSession().then(function (res) {
+        var s = res && res.data ? res.data.session : null;
+        window.APP_ACCESS_TOKEN = s ? s.access_token : null;
+      });
+      window.APP_SUPABASE_CLIENT.auth.onAuthStateChange(function (_event, session) {
+        window.APP_ACCESS_TOKEN = session ? session.access_token : null;
+      });
+    } catch (_e) {}
+  }
 })();
