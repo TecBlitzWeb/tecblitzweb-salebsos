@@ -21,12 +21,39 @@
     };
   }
 
+  /**
+   * Current logged-in user's access token, or null. Prefers the live value set
+   * by config.js (onAuthStateChange), and falls back to the session that
+   * supabase-js persists in localStorage so the very first fetch after a reload
+   * still carries the token before getSession() resolves.
+   */
+  function getStoredAccessToken(){
+    if(window.APP_ACCESS_TOKEN) return window.APP_ACCESS_TOKEN;
+    try{
+      var cfg = getConfig();
+      var ref = "";
+      try{ ref = new URL(cfg.SUPABASE_URL).hostname.split(".")[0]; }catch(_e){}
+      if(ref && typeof localStorage !== "undefined"){
+        var raw = localStorage.getItem("sb-" + ref + "-auth-token");
+        if(raw){
+          var j = JSON.parse(raw);
+          var t = j && (j.access_token || (j.currentSession && j.currentSession.access_token));
+          if(t) return t;
+        }
+      }
+    }catch(_e2){}
+    return null;
+  }
+
   function getBaseHeaders(){
     var cfg = getConfig();
+    var token = getStoredAccessToken();
     return {
       "Content-Type": "application/json",
       "apikey": cfg.SUPABASE_ANON_KEY || "",
-      "Authorization": "Bearer " + (cfg.SUPABASE_ANON_KEY || "")
+      // Use the user's session token so RLS sees auth.uid(); fall back to anon
+      // (which, under strict RLS, sees nothing — that is the intended behavior).
+      "Authorization": "Bearer " + (token || cfg.SUPABASE_ANON_KEY || "")
     };
   }
 
@@ -314,10 +341,8 @@
 
   function createClient(){
     var cfg = getConfig();
-    var baseHeaders = getBaseHeaders();
-    var upsertHeaders = Object.assign({}, baseHeaders, { "Prefer": "resolution=merge-duplicates,return=minimal" });
-    var deleteHeaders = Object.assign({}, baseHeaders, { "Prefer": "return=minimal" });
-
+    // Recompute headers per call so the current session token is always used
+    // (the token isn't known yet when the client is first constructed).
     return {
       from: function(table){
         var base = (cfg.SUPABASE_URL || "") + "/rest/v1/" + table;
@@ -325,11 +350,12 @@
           select: function(cols, opts){
             var q = "?select=" + encodeURIComponent(cols || "*");
             if(opts && opts.filter) q += opts.filter;
-            return safeFetch(base + q, { headers: baseHeaders });
+            return safeFetch(base + q, { headers: getBaseHeaders() });
           },
           upsert: function(rows){
             var body = Array.isArray(rows) ? rows : [rows];
-            return safeFetch(base, { method: "POST", headers: upsertHeaders, body: JSON.stringify(body) });
+            var headers = Object.assign({}, getBaseHeaders(), { "Prefer": "resolution=merge-duplicates,return=minimal" });
+            return safeFetch(base, { method: "POST", headers: headers, body: JSON.stringify(body) });
           },
           insert: function(rows){
             return this.upsert(rows);
@@ -337,7 +363,8 @@
           delete: function(id){
             var numId = toBigintId(id);
             if(numId == null) return Promise.resolve({ data: null, error: { message: "Invalid id" } });
-            return safeFetch(base + "?id=eq." + numId, { method: "DELETE", headers: deleteHeaders });
+            var headers = Object.assign({}, getBaseHeaders(), { "Prefer": "return=minimal" });
+            return safeFetch(base + "?id=eq." + numId, { method: "DELETE", headers: headers });
           }
         };
       }
