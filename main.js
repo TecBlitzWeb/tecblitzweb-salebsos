@@ -1,6 +1,5 @@
 (function(){
   const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG || {};
-  console.log("CONFIG:", window.APP_CONFIG);
   const client = window.APP_API.createClient();
 
   if(SUPABASE_URL && SUPABASE_ANON_KEY){
@@ -54,15 +53,6 @@
       showStartupConfigError("Missing Supabase configuration. Set SUPABASE_URL and SUPABASE_ANON_KEY in config.js.");
     } else if(authClient){
       console.log("Supabase initialized");
-      // TEMPORARY: one-time DB cleanup for Fasith/Shehan — remove after confirming gone from sales_users
-      if(typeof window.deleteGhostUsers === "function" && !sessionStorage.getItem("tecb_ghost_users_cleaned_v1")){
-        window.deleteGhostUsers().then(function(){
-          sessionStorage.setItem("tecb_ghost_users_cleaned_v1", "1");
-          if(typeof window.refreshTeamMembers === "function"){
-            return window.refreshTeamMembers();
-          }
-        }).catch(function(e){ console.error("deleteGhostUsers failed:", e); });
-      }
     } else {
       showStartupConfigError("Supabase auth client could not be created.");
     }
@@ -157,12 +147,20 @@
     return getUser(uid, USERS)?.role === 'Co-CEO';
   }
 
+  // Canonical COO check — single source of truth. Inclusive of both the role
+  // label (COO / Chief Operating Officer) and the legacy tier flag, so the
+  // three previously-drifted copies (api.js, index.html) can delegate here.
+  function isCOO(uid, USERS){
+    var u = getUser(uid, USERS);
+    return !!(u && (u.role === 'COO' || u.role === 'Chief Operating Officer' || u.tier === 'coo'));
+  }
+  // Back-compat alias (was tier-only); now resolves to the canonical check.
   function isCOOTier(uid, USERS){
-    return getUser(uid, USERS)?.tier === 'coo';
+    return isCOO(uid, USERS);
   }
 
   function isScopedManager(uid, USERS){
-    return isCoCEO(uid, USERS) || isCOOTier(uid, USERS);
+    return isCoCEO(uid, USERS) || isCOO(uid, USERS);
   }
 
   function isSalesRepKey(k, USERS){
@@ -303,6 +301,7 @@
     getRepIdForKey: getRepIdForKey,
     isDirectorCEO: isDirectorCEO,
     isCoCEO: isCoCEO,
+    isCOO: isCOO,
     isCOOTier: isCOOTier,
     isScopedManager: isScopedManager,
     getOwnedRepUIDs: getOwnedRepUIDs,
@@ -727,45 +726,6 @@
     return { data: [], error: { message: "Supabase client not ready" } };
   }
 
-  /** One-time cleanup: remove ghost rows from sales_users (by name / username). */
-  async function deleteGhostUsers(){
-    var namesToDelete = ["Fasith", "Shehan"];
-    var client = window.APP_SUPABASE_CLIENT;
-    if(!client || typeof client.from !== "function"){
-      console.warn("deleteGhostUsers: Supabase client not ready");
-      return;
-    }
-    for(var i = 0; i < namesToDelete.length; i++){
-      var name = namesToDelete[i];
-      var result = await client.from(TEAM_TABLE).delete().eq("name", name);
-      if(result && result.error){
-        var byUser = await client.from(TEAM_TABLE).delete().eq("username", name);
-        if(byUser && byUser.error) console.error("Failed to delete", name, byUser.error);
-        else console.log("Deleted (username):", name);
-      } else {
-        console.log("Deleted:", name);
-      }
-      if(window.USERS && window.USERS[name]){
-        delete window.USERS[name];
-      }
-      if(typeof window.ls === "function"){
-        try{
-          var extra = window.ls("tm_extra_reps") || {};
-          delete extra[name];
-          window.ls("tm_extra_reps", extra);
-        }catch(_e){}
-      }
-      try{ localStorage.removeItem("tm_rep_" + name); }catch(_e2){}
-      try{
-        if(typeof window.getData === "function" && typeof window.ls === "function"){
-          var pins = window.getData("pins", {});
-          delete pins[name];
-          window.ls("pins", pins);
-        }
-      }catch(_e3){}
-    }
-  }
-
   /** Fetch only — never renders; never calls index loadTeamMembers. */
   async function loadTeamMembersFromCloud(){
     if(isLoadingTeamMembers || window._isLoadingTeamMembers){
@@ -1036,7 +996,6 @@
   window.loadTeamMembersFromCloud = loadTeamMembersFromCloud;
   window.renderTeamMembers = renderTeamMembers;
   window.refreshTeamMembers = refreshTeamMembers;
-  window.deleteGhostUsers = deleteGhostUsers;
   window.fetchTeamMembersFresh = fetchTeamMembersFresh;
 })();
 

@@ -159,21 +159,36 @@
     return (USERS || window.USERS || {})[uid];
   }
 
+  // Role predicates delegate to the canonical SALES_OS implementation (main.js)
+  // so the definition lives in exactly one place. The inline expressions are a
+  // load-order fallback for the rare case SALES_OS isn't ready yet.
   function isDirectorCEO(uid, USERS){
+    if(window.SALES_OS && typeof window.SALES_OS.isDirectorCEO === "function"){
+      return window.SALES_OS.isDirectorCEO(uid, USERS);
+    }
     var u = getUser(uid, USERS);
     return !!(u && u.role === "CEO");
   }
 
   function isCoCEO(uid, USERS){
+    if(window.SALES_OS && typeof window.SALES_OS.isCoCEO === "function"){
+      return window.SALES_OS.isCoCEO(uid, USERS);
+    }
     return getUser(uid, USERS)?.role === "Co-CEO";
   }
 
   function isCOORole(uid, USERS){
+    if(window.SALES_OS && typeof window.SALES_OS.isCOO === "function"){
+      return window.SALES_OS.isCOO(uid, USERS);
+    }
     var u = getUser(uid, USERS);
     return !!(u && (u.role === "COO" || u.role === "Chief Operating Officer" || u.tier === "coo"));
   }
 
   function isScopedManager(uid, USERS){
+    if(window.SALES_OS && typeof window.SALES_OS.isScopedManager === "function"){
+      return window.SALES_OS.isScopedManager(uid, USERS);
+    }
     return isCoCEO(uid, USERS) || isCOORole(uid, USERS);
   }
 
