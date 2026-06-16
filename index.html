@@ -4296,11 +4296,13 @@
 
     // ── Tier helpers ──
     function isCEO(uid){ return USERS[uid]?.tier==='ceo'; }
-    function isCOO(uid){ return USERS[uid]?.tier==='coo'; }
     function isMgmt(uid){ const t=USERS[uid]?.tier; return t==='ceo'||t==='coo'||t==='management'; }
-    function isDirectorCEO(uid){ uid=uid||currentUser; return !!(USERS[uid]&&USERS[uid].role==='CEO'); }
-    function isCoCEO(uid){ uid=uid||currentUser; return USERS[uid]?.role==='Co-CEO'; }
-    function isScopedManager(uid){ uid=uid||currentUser; return isCoCEO(uid)||isCOO(uid); }
+    // Role predicates delegate to the canonical SALES_OS implementation (main.js).
+    // Inline expressions are a load-order fallback only.
+    function isCOO(uid){ uid=uid||currentUser; return window.SALES_OS ? SALES_OS.isCOO(uid,USERS) : (USERS[uid]?.tier==='coo'); }
+    function isDirectorCEO(uid){ uid=uid||currentUser; return window.SALES_OS ? SALES_OS.isDirectorCEO(uid,USERS) : !!(USERS[uid]&&USERS[uid].role==='CEO'); }
+    function isCoCEO(uid){ uid=uid||currentUser; return window.SALES_OS ? SALES_OS.isCoCEO(uid,USERS) : (USERS[uid]?.role==='Co-CEO'); }
+    function isScopedManager(uid){ uid=uid||currentUser; return window.SALES_OS ? SALES_OS.isScopedManager(uid,USERS) : (isCoCEO(uid)||isCOO(uid)); }
     function tmIsSalesRepRole(r){
     if(!r) return false;
     return r.tier==='rep' || r.role==='Sales' || r.role==='Rep' || r.role==='Sales Rep';

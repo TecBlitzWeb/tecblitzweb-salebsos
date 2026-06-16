@@ -4,9 +4,7 @@
 
   window.APP_CONFIG = {
     SUPABASE_URL,
-    SUPABASE_ANON_KEY,
-    // CEO "Add Rep" only — service role; never commit a real key to git
-    SUPABASE_SERVICE_ROLE_KEY: ""
+    SUPABASE_ANON_KEY
   };
 
   window.SB_URL = SUPABASE_URL;
