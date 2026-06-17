@@ -4802,7 +4802,9 @@
         max-width: 100%;
     }
 
-    /* ── Tables: scroll container + wrapping notes ── */
+    /* ── Tables: scroll container + notes-only wrap ── */
+    /* Culprit (removed): #page-mycalls th/td + #page-allcalls #ac-table th/td
+       applied white-space:normal !important + overflow-wrap:anywhere to every cell. */
     #page-mycalls .table-wrap,
     #page-allcalls #ac-table-wrap,
     #page-performance .table-wrap,
@@ -4829,25 +4831,48 @@
         min-width: 880px;
     }
 
-    #page-mycalls th,
-    #page-mycalls td,
+    /* Compact columns: single line; wrapper scrolls — do not crush to fit */
+    #page-mycalls table th,
+    #page-mycalls table td,
     #page-allcalls #ac-table th,
     #page-allcalls #ac-table td {
-        white-space: normal !important;
-        word-wrap: break-word;
-        overflow-wrap: anywhere;
+        white-space: nowrap;
+        overflow-wrap: normal;
+        word-wrap: normal;
+        word-break: normal;
         vertical-align: top;
     }
 
-    #page-mycalls #calls-tbody td:nth-child(5) {
-        max-width: none !important;
-        min-width: 12rem;
-    }
-
+    /* Notes column only — wrap long text, take leftover width */
+    #page-mycalls table th:nth-child(5),
+    #page-mycalls table td:nth-child(5),
     #page-allcalls #ac-table th:nth-child(8),
     #page-allcalls #ac-table td:nth-child(8) {
+        white-space: normal !important;
+        overflow-wrap: break-word;
+        word-break: normal;
+        overflow: visible !important;
+        text-overflow: unset !important;
+        max-width: none !important;
         min-width: 12rem;
-        max-width: 28rem;
+        width: auto;
+    }
+
+    #page-allcalls #ac-table .ac-row-detail td {
+        white-space: normal !important;
+        overflow-wrap: break-word;
+        word-break: normal;
+    }
+
+    #page-mycalls table td:last-child,
+    #page-allcalls #ac-table td:last-child,
+    #page-mycalls table td:last-child .btn,
+    #page-mycalls table td:last-child button,
+    #page-allcalls #ac-table td:last-child .btn,
+    #page-allcalls #ac-table td:last-child button,
+    #page-mycalls table td .badge,
+    #page-allcalls #ac-table td .badge {
+        white-space: nowrap;
     }
 
     .ac-call-card-notes {
@@ -4865,6 +4890,19 @@
 
         #page-allcalls #ac-table-wrap {
             overflow-x: auto !important;
+        }
+
+        /* My Calls card rows — same nowrap/notes-only wrap as desktop table */
+        #page-mycalls .table-wrap td:not(:nth-child(5)) {
+            white-space: nowrap !important;
+            overflow-wrap: normal !important;
+            word-break: normal !important;
+        }
+
+        #page-mycalls .table-wrap td:nth-child(5) {
+            white-space: normal !important;
+            overflow-wrap: break-word !important;
+            word-break: normal !important;
         }
     }
 
