@@ -3419,6 +3419,36 @@
         padding: var(--space-8) var(--space-5);
     }
 
+    /* Prospects filter bar — owned by #page-prospects block, not global .search-bar */
+    #page-prospects .search-bar input,
+    #page-prospects .search-bar select {
+        font-family: var(--font-body) !important;
+        font-size: 1rem !important;
+        line-height: var(--leading-body);
+        color: var(--color-text-primary) !important;
+        background: var(--color-bg-elevated) !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: var(--radius-sm) !important;
+        padding: var(--space-2) var(--space-3) !important;
+        min-height: var(--touch-min);
+        backdrop-filter: none;
+    }
+
+    #page-prospects .page-header .btn-purple {
+        background: var(--color-accent);
+        color: #fff;
+        box-shadow: var(--shadow-card);
+        border-radius: var(--radius-sm);
+        font-family: var(--font-body);
+    }
+
+    #page-prospects .page-header .btn-purple:hover {
+        background: var(--color-accent-hover);
+        box-shadow: var(--shadow-card-hover);
+        transform: none;
+        filter: none;
+    }
+
     @media (min-width: 769px) {
         #page-prospects .prospect-grid,
         #page-prospects #prospect-grid {
@@ -3512,8 +3542,8 @@
 
     /* ══════════════════════════════════════════════════════════
        AUDIT — page containers (verified in DOM)
-       #page-dashboard     → Dashboard (already styled — untouched)
-       #page-prospects     → Prospects (already styled — untouched)
+       #page-dashboard     → Dashboard (scoped block + CASCADE SHIELD at end)
+       #page-prospects     → Prospects (scoped block + CASCADE SHIELD at end)
        #page-jobs          → Jobs / Leads
        #page-pipeline      → Interested Leads Pipeline
        #page-mycalls       → My Calls
@@ -3631,10 +3661,12 @@
         padding: var(--space-6) var(--space-7) var(--space-8);
     }
 
-    /* Generic page headers (dashboard/prospects override locally) */
-    .page-header { margin-bottom: var(--space-6); }
+    /* Generic page headers — skip finished pages (they have scoped blocks above) */
+    #app .page:not(#page-dashboard):not(#page-prospects) .page-header {
+        margin-bottom: var(--space-6);
+    }
 
-    .page-header h2 {
+    #app .page:not(#page-dashboard):not(#page-prospects) .page-header h2 {
         font-family: var(--font-display);
         font-size: clamp(var(--text-xl), 3vw, var(--text-2xl));
         font-weight: 800;
@@ -3644,7 +3676,7 @@
         text-shadow: none;
     }
 
-    .page-header p {
+    #app .page:not(#page-dashboard):not(#page-prospects) .page-header p {
         font-family: var(--font-body);
         font-size: 1rem;
         color: var(--color-text-secondary);
@@ -3652,13 +3684,13 @@
         margin-top: var(--space-2);
     }
 
-    .section-head {
+    #app .page:not(#page-dashboard):not(#page-prospects) .section-head {
         margin-bottom: var(--space-4);
         padding-bottom: var(--space-3);
         border-bottom: 1px solid var(--border-subtle);
     }
 
-    .section-head h3 {
+    #app .page:not(#page-dashboard):not(#page-prospects) .section-head h3 {
         font-family: var(--font-display);
         font-size: var(--text-lg);
         font-weight: 700;
@@ -3774,13 +3806,13 @@
         box-shadow: none;
     }
 
-    .search-bar {
+    #app .page:not(#page-prospects) .search-bar {
         gap: var(--space-3);
         margin-bottom: var(--space-4);
     }
 
-    .search-bar input,
-    .search-bar select {
+    #app .page:not(#page-prospects) .search-bar input,
+    #app .page:not(#page-prospects) .search-bar select {
         font-family: var(--font-body) !important;
         font-size: 1rem !important;
         line-height: var(--leading-body);
@@ -4492,14 +4524,26 @@
             padding: var(--space-5) var(--space-4) calc(var(--bottom-nav-h) + var(--space-6));
         }
 
-        .page-header > div[style*="display:flex"] {
+        #page-prospects .page-header > div {
+            flex-direction: column;
+            align-items: stretch;
+            gap: var(--space-3);
+        }
+
+        #page-prospects .page-header .btn {
+            width: 100%;
+            min-height: var(--touch-min);
+            font-size: 1rem;
+        }
+
+        #app .page:not(#page-dashboard):not(#page-prospects) .page-header > div[style*="display:flex"] {
             flex-direction: column !important;
             align-items: stretch !important;
             gap: var(--space-3) !important;
         }
 
-        .page-header .btn,
-        .page-header .btn-purple {
+        #app .page:not(#page-dashboard):not(#page-prospects) .page-header .btn,
+        #app .page:not(#page-dashboard):not(#page-prospects) .page-header .btn-purple {
             width: 100%;
             min-height: var(--touch-min);
         }
@@ -4562,6 +4606,14 @@
             font-size: var(--text-xl);
         }
 
+        #page-dashboard .dash-page-header h2 {
+            font-size: var(--text-xl);
+        }
+
+        #page-prospects .page-header h2 {
+            font-size: var(--text-xl);
+        }
+
         th, td {
             padding: var(--space-3);
             font-size: 0.9375rem;
@@ -4576,6 +4628,107 @@
             padding: var(--space-5) var(--space-4);
             border-radius: var(--radius-md) var(--radius-md) 0 0;
         }
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       CASCADE SHIELD — must remain last in <style>
+       Re-asserts finished pages so later/global rules cannot drift them.
+       Dashboard: hero + stat cards + header actions
+       Prospects: card grid + prospect-card shell
+       ══════════════════════════════════════════════════════════ */
+    #page-dashboard {
+        font-family: var(--font-body);
+        font-size: var(--text-base);
+        line-height: var(--leading-body);
+        color: var(--color-text-primary);
+    }
+
+    #page-dashboard .dash-page-header h2 {
+        font-family: var(--font-display);
+        font-size: clamp(var(--text-xl), 3vw, var(--text-2xl));
+        font-weight: 800;
+        color: var(--color-text-primary);
+        letter-spacing: -0.02em;
+        line-height: var(--leading-tight);
+        text-shadow: none;
+    }
+
+    #page-dashboard .dash-page-header p,
+    #page-dashboard #dash-date {
+        font-family: var(--font-body);
+        font-size: var(--text-base);
+        color: var(--color-text-secondary);
+        line-height: var(--leading-body);
+    }
+
+    #page-dashboard .dash-header-actions .btn-outline {
+        background: var(--color-bg-elevated);
+        border: 1px solid var(--border-subtle);
+        color: var(--color-text-secondary);
+        box-shadow: none;
+    }
+
+    #page-dashboard .dash-header-actions .btn-purple {
+        background: var(--color-accent);
+        box-shadow: var(--shadow-card);
+        border-radius: var(--radius-sm);
+    }
+
+    #page-dashboard .stat-card {
+        background: var(--color-bg-card);
+        border: 1px solid var(--border-subtle);
+        box-shadow: var(--shadow-card);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    #page-dashboard .stat-card:hover {
+        background: var(--color-bg-elevated);
+        border-color: rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-card-hover);
+        transform: none;
+    }
+
+    #page-dashboard .stat-num .stat-num-value {
+        font-family: var(--font-body) !important;
+        color: var(--color-text-primary) !important;
+        background: none !important;
+        -webkit-text-fill-color: var(--color-text-primary) !important;
+        filter: none !important;
+    }
+
+    #page-prospects {
+        font-family: var(--font-body);
+        font-size: 1rem;
+        line-height: var(--leading-body);
+        color: var(--color-text-primary);
+    }
+
+    #page-prospects .prospect-card {
+        background: var(--color-bg-card);
+        border: 1px solid var(--border-subtle);
+        box-shadow: var(--shadow-card);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    #page-prospects .prospect-card:hover {
+        background: var(--color-bg-elevated);
+        border-color: rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-card-hover);
+        transform: none;
+    }
+
+    #page-prospects .prospect-biz {
+        font-family: var(--font-display);
+        color: var(--color-text-primary);
+    }
+
+    #page-prospects .prospect-card .btn-cyan {
+        background: var(--color-accent);
+        color: #fff;
+        box-shadow: var(--shadow-card);
+        filter: none;
     }
     </style>
 
