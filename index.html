@@ -4631,6 +4631,169 @@
     }
 
     /* ══════════════════════════════════════════════════════════
+       SINGLE-COLUMN LAYOUT — all pages, desktop + mobile
+       Grid sources found:
+         .prospect-grid / #prospect-grid (auto-fill minmax 420px / 380px)
+         .pipeline-grid (auto-fill minmax 340px)
+         .stat-grid / .stat-grid-bento (auto-fill + 12-col bento spans)
+         .two-col, .revenue-strip (2–3 columns)
+         #job-dashboard-content, #pipeline-content (grid 1fr — kept)
+         #ac-stats-bar (repeat 5 / auto-fit minmax 140px)
+         .tm-stats-strip (horizontal flex stats)
+       Table containers:
+         .table-wrap, #ac-table-wrap, #page-mycalls .table-wrap
+       ══════════════════════════════════════════════════════════ */
+
+    .prospect-grid,
+    #prospect-grid,
+    .pipeline-grid,
+    .stat-grid,
+    .stat-grid.stat-grid-bento,
+    .two-col,
+    .revenue-strip,
+    #job-dashboard-content,
+    #pipeline-content,
+    #ac-stats-bar,
+    #page-allcalls #ac-stats-bar {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: var(--space-4) !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    #page-dashboard .stat-grid.stat-grid-bento .stat-bento-hero,
+    #page-dashboard .stat-grid.stat-grid-bento .stat-bento-side,
+    #page-dashboard .stat-grid.stat-grid-bento .stat-bento-sm,
+    #page-dashboard .stat-grid.stat-grid-bento .stat-bento-mid,
+    #page-dashboard .stat-grid.stat-grid-bento .stat-bento-xs {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    #page-prospects .prospect-grid,
+    #page-prospects #prospect-grid,
+    #page-pipeline .pipeline-grid,
+    #page-pipeline #pipeline-content,
+    #page-jobs #job-dashboard-content {
+        grid-template-columns: 1fr !important;
+    }
+
+    .prospect-card,
+    .lead-card,
+    .inbox-lead-card,
+    .followup-card,
+    .ac-stat-card,
+    .rev-card,
+    #page-prospects .prospect-card,
+    #page-pipeline .lead-card,
+    #page-jobs .inbox-lead-card,
+    #page-followups .followup-card,
+    #page-allcalls .ac-stat-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    .tm-stats-strip {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: var(--space-3) !important;
+    }
+
+    .tm-stat + .tm-stat::before {
+        display: none !important;
+    }
+
+    #page-revenue .revenue-strip {
+        grid-template-columns: 1fr !important;
+    }
+
+    #page-revenue #revenue-content > div[style*="display:flex"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: var(--space-4) !important;
+    }
+
+    #page-revenue #revenue-content > div[style*="display:flex"] > .card {
+        flex: none !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    #app .page {
+        overflow-x: hidden;
+        max-width: 100%;
+    }
+
+    /* ── Tables: scroll container + wrapping notes ── */
+    #page-mycalls .table-wrap,
+    #page-allcalls #ac-table-wrap,
+    #page-performance .table-wrap,
+    #page-dashboard #dash-recent-calls .table-wrap,
+    #page-dashboard #dash-today-calls .table-wrap,
+    #page-jobs .card .table-wrap,
+    #page-jobs .card [style*="overflow-x"] {
+        display: block;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #page-mycalls table,
+    #page-allcalls #ac-table,
+    #page-performance table {
+        width: 100%;
+        min-width: 640px;
+        table-layout: auto;
+    }
+
+    #page-allcalls #ac-table {
+        min-width: 880px;
+    }
+
+    #page-mycalls th,
+    #page-mycalls td,
+    #page-allcalls #ac-table th,
+    #page-allcalls #ac-table td {
+        white-space: normal !important;
+        word-wrap: break-word;
+        overflow-wrap: anywhere;
+        vertical-align: top;
+    }
+
+    #page-mycalls #calls-tbody td:nth-child(5) {
+        max-width: none !important;
+        min-width: 12rem;
+    }
+
+    #page-allcalls #ac-table th:nth-child(8),
+    #page-allcalls #ac-table td:nth-child(8) {
+        min-width: 12rem;
+        max-width: 28rem;
+    }
+
+    .ac-call-card-notes {
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: unset !important;
+        line-height: var(--leading-body);
+    }
+
+    @media (max-width: 768px) {
+        #ac-stats-bar,
+        #page-allcalls #ac-stats-bar {
+            grid-template-columns: 1fr !important;
+        }
+
+        #page-allcalls #ac-table-wrap {
+            overflow-x: auto !important;
+        }
+    }
+
+    /* ══════════════════════════════════════════════════════════
        CASCADE SHIELD — must remain last in <style>
        Re-asserts finished pages so later/global rules cannot drift them.
        Dashboard: hero + stat cards + header actions
