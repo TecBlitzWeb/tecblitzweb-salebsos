@@ -3217,6 +3217,8 @@
         gap: var(--space-5);
         width: 100%;
         max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
     }
 
     #page-prospects .prospect-card {
@@ -3237,8 +3239,10 @@
         transition: border-color var(--t-fast), background var(--t-fast), box-shadow var(--t-fast);
         width: 100%;
         max-width: 100%;
+        min-width: 0;
         box-sizing: border-box;
-        overflow: visible;
+        overflow-wrap: break-word;
+        word-break: break-word;
         cursor: default;
     }
 
@@ -3253,9 +3257,19 @@
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
+        flex-wrap: wrap;
         gap: var(--space-3);
         padding-bottom: var(--space-3);
         border-bottom: 1px solid var(--border-subtle);
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    #page-prospects .prospect-card-header > div:first-child {
+        flex: 1 1 12rem;
+        min-width: 0;
+        max-width: 100%;
     }
 
     #page-prospects .prospect-biz {
@@ -3297,7 +3311,16 @@
         display: flex;
         flex-wrap: wrap;
         gap: var(--space-2);
-        flex-shrink: 0;
+        flex: 0 1 auto;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    #page-prospects .prospect-card .badge {
+        white-space: normal;
+        overflow-wrap: break-word;
+        word-break: break-word;
+        max-width: 100%;
     }
 
     #page-prospects .prospect-card-actions .btn,
@@ -3320,7 +3343,11 @@
         border-left: 3px solid var(--color-accent);
         border-radius: var(--radius-sm);
         box-shadow: none;
+        overflow-wrap: anywhere;
         word-break: break-word;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     #page-prospects .script-box {
@@ -3334,7 +3361,11 @@
         padding: var(--space-4);
         margin: 0;
         white-space: pre-wrap;
+        overflow-wrap: anywhere;
         word-break: break-word;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
         box-shadow: none;
     }
 
@@ -3356,6 +3387,9 @@
         color: var(--color-accent);
         line-height: var(--leading-body);
         filter: none;
+        overflow-wrap: break-word;
+        word-break: break-word;
+        min-width: 0;
     }
 
     #page-prospects .prospect-rep {
@@ -3364,6 +3398,9 @@
         font-weight: 600;
         color: var(--color-text-secondary);
         line-height: var(--leading-body);
+        overflow-wrap: break-word;
+        word-break: break-word;
+        min-width: 0;
     }
 
     #page-prospects .prospect-card .info-row {
@@ -3371,6 +3408,11 @@
         font-size: 1rem;
         line-height: var(--leading-body);
         color: var(--color-text-secondary);
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     #page-prospects .prospect-card .info-row strong {
@@ -3380,15 +3422,22 @@
         color: var(--color-text-primary);
         font-variant-numeric: tabular-nums;
         letter-spacing: 0.01em;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
+    /* Culprit: phone/Log Call row — inline flex row + .info-row (global display:flex, min-width:auto) */
     #page-prospects .prospect-card > div[style*="display:flex"] {
         display: flex;
+        flex-wrap: wrap;
         gap: var(--space-3);
         align-items: center;
         padding-top: var(--space-3);
         margin-top: var(--space-1);
         border-top: 1px solid var(--border-subtle);
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     #page-prospects .prospect-card .btn-cyan {
@@ -3420,6 +3469,32 @@
     }
 
     /* Prospects filter bar — owned by #page-prospects block, not global .search-bar */
+    #page-prospects .search-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2);
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        margin-bottom: var(--space-4);
+    }
+
+    #page-prospects .search-bar input {
+        flex: 1 1 12rem;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    #page-prospects .search-bar select {
+        flex: 1 1 8rem;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
     #page-prospects .search-bar input,
     #page-prospects .search-bar select {
         font-family: var(--font-body) !important;
@@ -3452,7 +3527,7 @@
     @media (min-width: 769px) {
         #page-prospects .prospect-grid,
         #page-prospects #prospect-grid {
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            grid-template-columns: 1fr;
             gap: var(--space-6);
         }
 
@@ -4892,6 +4967,31 @@
         color: #fff;
         box-shadow: var(--shadow-card);
         filter: none;
+    }
+
+    /* Prospects overflow shield — grid/flex min-width:auto + phone row (see comment above) */
+    #page-prospects {
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    #page-prospects .prospect-grid,
+    #page-prospects #prospect-grid,
+    #page-prospects .prospect-card,
+    #page-prospects .prospect-card-header,
+    #page-prospects .prospect-pain,
+    #page-prospects .script-box,
+    #page-prospects .prospect-footer,
+    #page-prospects .prospect-card > div[style*="display:flex"] {
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    #page-prospects .prospect-card > div[style*="display:flex"] .btn-cyan {
+        flex: 0 1 auto;
+        max-width: 100%;
     }
     </style>
 
