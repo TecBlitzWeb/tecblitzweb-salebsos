@@ -1,37 +1,28 @@
-const CACHE = 'tecblitzweb-sos-v1';
-const ASSETS = [
-  '/',
-  '/index.html',
-  '/main.js',
-  '/api.js',
-  '/config.js'
-];
+// Self-unregistering service worker — replaces legacy PWA cache worker.
+// On activate: wipe all caches, unregister, reload open clients. No fetch/offline handling.
 
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS))
-  );
+self.addEventListener('install', function() {
   self.skipWaiting();
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(
-    fetch(e.request)
-      .then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-        return res;
+self.addEventListener('activate', function(event) {
+  event.waitUntil(
+    caches.keys()
+      .then(function(keys) {
+        return Promise.all(keys.map(function(key) { return caches.delete(key); }));
       })
-      .catch(() => caches.match(e.request))
+      .then(function() {
+        return self.registration.unregister();
+      })
+      .then(function() {
+        return self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      })
+      .then(function(clients) {
+        clients.forEach(function(client) {
+          if (client.url && typeof client.navigate === 'function') {
+            client.navigate(client.url);
+          }
+        });
+      })
   );
 });

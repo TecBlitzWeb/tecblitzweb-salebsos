@@ -12136,16 +12136,19 @@
 
     </script>
     <script>
+    // Service worker removed — unregister legacy workers and clear caches (no re-register).
     if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-        var swPath = '/sw.js';
-        console.log('SW register path:', swPath);
-        try {
-            navigator.serviceWorker.register(swPath)
-            .then(function(reg) { console.log('SW registered:', reg.scope); })
-            .catch(function(err) { console.log('SW failed:', err); });
-        } catch (err) {
-            console.log('SW register error:', err);
+        navigator.serviceWorker.getRegistrations()
+        .then(function(regs) {
+            return Promise.all(regs.map(function(reg) { return reg.unregister(); }));
+        })
+        .then(function() { console.log('Legacy service worker unregistered'); })
+        .catch(function(err) { console.log('SW unregister:', err); });
+        if ('caches' in window) {
+        caches.keys()
+            .then(function(keys) { return Promise.all(keys.map(function(k) { return caches.delete(k); })); })
+            .catch(function() {});
         }
     });
     }
