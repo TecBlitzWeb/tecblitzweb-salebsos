@@ -4167,8 +4167,6 @@
             <label>Assign to COO *</label>
             <select id="job-create-coo">
             <option value="">-- Select COO --</option>
-            <option value="dulaj">Dulaj (@dulaj)</option>
-            <option value="ramesh">Ramesh (@ramesh)</option>
             <option value="dilitha">Dinu Dilitha (@dilitha)</option>
             </select>
         </div>
@@ -5158,7 +5156,7 @@
         document.getElementById('p-type').value='Car Sales';
         document.getElementById('p-area').value='';
         document.getElementById('p-phone').value='';
-        document.getElementById('p-assign').value='ramesh';
+        document.getElementById('p-assign').value='';
         document.getElementById('p-pkg').value='Business Website – Rs. 85,000';
         document.getElementById('p-pain').value='';
         document.getElementById('p-script').value='';
@@ -9140,9 +9138,9 @@
         const names = Object.values(USERS).map(u => u.name).filter(Boolean);
         if(names.length) return names;
     }
-    return ['Avishka','Dilitha','Dulaj','Ramesh','Fasith','Shehan','Chamindu','SalesR09','SalesR10','SalesR11','SalesR12'];
+    return ['Avishka','Dilitha','Fasith','Shehan','Chamindu','SalesR09','SalesR10','SalesR11','SalesR12'];
     }
-    const AC_AGENTS = ['Avishka','Dilitha','Dulaj','Ramesh','Fasith','Shehan','Chamindu','SalesR09','SalesR10','SalesR11','SalesR12'];
+    const AC_AGENTS = ['Avishka','Dilitha','Fasith','Shehan','Chamindu','SalesR09','SalesR10','SalesR11','SalesR12'];
     const AC_STATUSES = ['Interested','Not Interested','Follow-up','No Answer','Busy'];
     const AC_BUSINESSES = [
     'Silva Auto Parts','Perera Car Sales','Colombo Motors','Nihal Workshop',
