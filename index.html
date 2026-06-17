@@ -3230,9 +3230,9 @@
             </select>
             <select id="prospect-filter-pkg" onchange="renderProspects()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;">
                 <option value="">All Packages</option>
-                <option value="Landing Page – Rs. 45,000">Landing Page</option>
-                <option value="Business Website – Rs. 85,000">Business Website</option>
-                <option value="eCommerce – Rs. 175,000">eCommerce</option>
+                <option value="Landing Page – Rs. 65,000">Landing Page</option>
+                <option value="Business Website – Rs. 120,000">Business Website</option>
+                <option value="eCommerce – Rs. 240,000">eCommerce</option>
             </select>
             </div>
             <div class="prospect-grid" id="prospect-grid"></div>
@@ -3802,10 +3802,9 @@
         <div class="field"><label>Package</label>
             <select id="lead-edit-pkg">
             <option value="">— Not set —</option>
-            <option value="Landing Page – Rs. 45,000">Landing Page – Rs. 45,000</option>
-            <option value="Business Website – Rs. 85,000">Business Website – Rs. 85,000</option>
-            <option value="eCommerce – Rs. 175,000">eCommerce – Rs. 175,000</option>
-            <option value="Monthly Maintenance – Rs. 10,000/mo">Monthly Maintenance – Rs. 10,000/mo</option>
+            <option value="Landing Page – Rs. 65,000">Landing Page – Rs. 65,000</option>
+            <option value="Business Website – Rs. 120,000">Business Website – Rs. 120,000</option>
+            <option value="eCommerce – Rs. 240,000">eCommerce – Rs. 240,000</option>
             </select>
         </div>
         </div>
@@ -3846,14 +3845,13 @@
         </div>
         <div class="field"><label>Package to Pitch</label>
             <select id="p-pkg">
-            <option value="Landing Page – Rs. 45,000">Landing Page – Rs. 45,000</option>
-            <option value="Business Website – Rs. 85,000">Business Website – Rs. 85,000</option>
-            <option value="eCommerce – Rs. 175,000">eCommerce – Rs. 175,000</option>
-            <option value="Monthly Maintenance – Rs. 10,000/mo">Monthly Maintenance – Rs. 10,000/mo</option>
+            <option value="Landing Page – Rs. 65,000">Landing Page – Rs. 65,000</option>
+            <option value="Business Website – Rs. 120,000">Business Website – Rs. 120,000</option>
+            <option value="eCommerce – Rs. 240,000">eCommerce – Rs. 240,000</option>
             </select>
         </div>
         </div>
-        <div class="form-row single">
+        <div class="form-row single" style="display:none;">
         <div class="field"><label>Pain Line <span style="color:var(--purple)">*</span></label><input type="text" id="p-pain" placeholder="Their biggest problem we solve"></div>
         </div>
         <div class="form-row single">
@@ -4669,10 +4667,9 @@
     }
 
     const PACKAGES = {
-    'Landing Page – Rs. 45,000': 45000,
-    'Business Website – Rs. 85,000': 85000,
-    'eCommerce – Rs. 175,000': 175000,
-    'Monthly Maintenance – Rs. 10,000/mo': 10000,
+    'Landing Page – Rs. 65,000': 65000,
+    'Business Website – Rs. 120,000': 120000,
+    'eCommerce – Rs. 240,000': 240000,
     };
 
     let currentUser = null;
@@ -5157,7 +5154,7 @@
         document.getElementById('p-area').value='';
         document.getElementById('p-phone').value='';
         document.getElementById('p-assign').value='';
-        document.getElementById('p-pkg').value='Business Website – Rs. 85,000';
+        document.getElementById('p-pkg').value='Business Website – Rs. 120,000';
         document.getElementById('p-pain').value='';
         document.getElementById('p-script').value='';
     }
@@ -5193,7 +5190,7 @@
         phone: document.getElementById('p-phone').value.trim(),
         assignedTo: document.getElementById('p-assign').value,
         pkg: document.getElementById('p-pkg').value,
-        pain: document.getElementById('p-pain').value.trim(),
+        pain: (document.getElementById('p-pain').value || '').trim(),
         script: document.getElementById('p-script').value.trim(),
         createdAt: id ? undefined : new Date().toISOString(),
     };
@@ -5928,7 +5925,7 @@
     let totalRevenue = closed.reduce((s,d)=>s+Number(d.value||0),0);
 
     openLeads.forEach(l=>{
-        pipeline += PACKAGES[l.pkg] || 85000;
+        pipeline += PACKAGES[l.pkg] || 120000;
     });
 
     const today = (function(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
@@ -5977,10 +5974,9 @@
             <div class="field"><label>Business</label><input type="text" id="cd-biz" placeholder="Business name"></div>
             <div class="field"><label>Package</label>
             <select id="cd-pkg">
-                <option value="45000">Landing Page – Rs. 45,000</option>
-                <option value="85000">Business Website – Rs. 85,000</option>
-                <option value="175000">eCommerce – Rs. 175,000</option>
-                <option value="10000">Monthly Maintenance – Rs. 10,000/mo</option>
+                <option value="65000">Landing Page – Rs. 65,000</option>
+                <option value="120000">Business Website – Rs. 120,000</option>
+                <option value="240000">eCommerce – Rs. 240,000</option>
             </select>
             </div>
         </div>
@@ -6116,7 +6112,7 @@
     OVERDUE FOLLOW-UPS: ${overdueFU.length}
     ${overdueFU.slice(0,5).map(c=>`- ${c.biz} (due ${c.followup}, rep: ${USERS[c.rep]?.name||c.rep})`).join('\n')}
 
-    PACKAGES: Landing Page Rs.45,000 | Business Website Rs.85,000 | eCommerce Rs.175,000
+    PACKAGES: Landing Page Rs.65,000 | Business Website Rs.120,000 | eCommerce Rs.240,000
 
     Generate a sharp, executive-level daily sales report with EXACTLY these 5 sections. Use the exact section titles in CAPS. Be direct and action-oriented. Max 1000 tokens.
 
@@ -6514,7 +6510,7 @@
     Hot leads: ${calls.filter(c=>c.outcome==='Interested').length}
     Overdue follow-ups: ${calls.filter(c=>c.followup&&c.followup<today).length}
 
-    PACKAGES: Landing Page Rs.45,000 | Business Website Rs.85,000 | eCommerce Rs.175,000
+    PACKAGES: Landing Page Rs.65,000 | Business Website Rs.120,000 | eCommerce Rs.240,000
     TARGET MARKET: Car dealerships, auto repair shops, spare parts shops, vehicle rental businesses in Sri Lanka.
 
     You are concise, direct, and action-oriented. Respond in 200 words or fewer unless asked for something detailed. Format with line breaks for readability. Use bullet points when listing items.`;
@@ -8707,7 +8703,7 @@
     // Fix 3: Auto-create closed deal entry when won
     if(outcome === 'won'){
         const lead = leads[idx];
-        const pkgValue = PACKAGES[lead.pkg] || 85000;
+        const pkgValue = PACKAGES[lead.pkg] || 120000;
         const closed = getData('closed_deals', []);
         // Avoid duplicate if already recorded
         const alreadyRecorded = closed.find(d => d.leadId === leadId);
@@ -8717,7 +8713,7 @@
             value: pkgValue,
             rep: canonicalRepKey(lead.rep),
             date: (function(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })(),
-            pkg: lead.pkg || 'Business Website – Rs. 85,000',
+            pkg: lead.pkg || 'Business Website – Rs. 120,000',
             leadId: leadId,
             source: 'pipeline'
         });
