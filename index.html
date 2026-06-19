@@ -2909,7 +2909,7 @@
         gap: 2px;
         min-height: 0;
         box-shadow: var(--shadow-card);
-        transition: transform .18s ease;
+        transition: transform .18s ease, opacity .18s ease;
     }
     #page-dashboard #dash-stats .stat-card:hover {
         background: var(--color-bg-elevated);
@@ -5049,7 +5049,7 @@
     }
 
     #page-dashboard #dash-stats .stat-card {
-        transition: transform .18s ease !important;
+        transition: transform .18s ease, opacity .18s ease !important;
     }
     #page-dashboard #dash-stats .stat-card:hover {
         transform: translateY(-3px) !important;
@@ -7994,22 +7994,54 @@
     var gen = ++_dashStatCountGen;
     var root = document.getElementById('dash-stats');
     if(!root) return;
-    var duration = 600;
-    root.querySelectorAll('.stat-num-value').forEach(function(el){
-        var target = parseInt(el.textContent, 10);
-        if(isNaN(target)) target = 0;
-        var startTs = null;
+    var cards = root.querySelectorAll('.stat-card');
+    var countDuration = 900;
+    var entranceDuration = 420;
+    var stagger = 60;
+
+    cards.forEach(function(card, i){
+        var el = card.querySelector('.stat-num-value');
+        if(!el) return;
+        var target = Number(String(el.textContent || '').trim());
+        var animateCount = Number.isFinite(target);
+        if(!animateCount) return;
+
+        var delay = i * stagger;
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(8px)';
+        card.style.transition = 'none';
         el.textContent = '0';
-        function tick(ts){
+
+        setTimeout(function(){
         if(gen !== _dashStatCountGen) return;
-        if(startTs === null) startTs = ts;
-        var t = Math.min(1, (ts - startTs) / duration);
-        var eased = 1 - Math.pow(1 - t, 3);
-        el.textContent = String(Math.round(target * eased));
-        if(t < 1) requestAnimationFrame(tick);
-        else el.textContent = String(target);
+        card.style.transition = 'opacity ' + (entranceDuration / 1000) + 's ease-out, transform ' + (entranceDuration / 1000) + 's ease-out';
+        requestAnimationFrame(function(){
+            if(gen !== _dashStatCountGen) return;
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        });
+
+        var startTs = null;
+        function tick(ts){
+            if(gen !== _dashStatCountGen) return;
+            if(startTs === null) startTs = ts;
+            var t = Math.min(1, (ts - startTs) / countDuration);
+            var eased = 1 - Math.pow(1 - t, 3);
+            el.textContent = String(Math.round(target * eased));
+            if(t < 1) {
+            requestAnimationFrame(tick);
+            } else {
+            el.textContent = String(target);
+            setTimeout(function(){
+                if(gen !== _dashStatCountGen) return;
+                card.style.opacity = '';
+                card.style.transform = '';
+                card.style.transition = '';
+            }, entranceDuration);
+            }
         }
         requestAnimationFrame(tick);
+        }, delay);
     });
     }
 
@@ -8038,7 +8070,6 @@
         <div class="stat-card stat-accent-cyan stat-bento-mid"><div class="stat-card-top"><div><div class="stat-label">Follow-ups (7d)</div></div><div class="stat-card-icon" aria-hidden="true">${_icCal}</div></div><div class="stat-num stat-num-solid"><span class="stat-num-value">${fueDue.length}</span></div><div class="stat-sub">due this week</div></div>
         <div class="stat-card stat-accent-cyan stat-bento-xs"><div class="stat-card-top"><div><div class="stat-label">Prospects</div></div><div class="stat-card-icon" aria-hidden="true">${_icUsers}</div></div><div class="stat-num stat-num-cyan"><span class="stat-num-value">${myProspects.length}</span></div><div class="stat-sub">${u.tier==='rep'?'assigned to you':'total prospects'}</div></div>
     `;
-    animateDashStatCounts();
 
     renderDashRepBalanceToCall(allProspects, myCalls);
 
@@ -8075,6 +8106,8 @@
     if(heroC) heroC.textContent = myCalls.filter(c=>c.date===today).length;
     if(heroL) heroL.textContent = String((getLeads()||[]).filter(leadVisibleToUser).length);
     if(heroP) heroP.textContent = String(myProspects.length);
+
+    animateDashStatCounts();
     }
 
     async function dashboardRefreshNow(){
