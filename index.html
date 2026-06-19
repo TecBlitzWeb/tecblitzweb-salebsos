@@ -2909,13 +2909,13 @@
         gap: 2px;
         min-height: 0;
         box-shadow: var(--shadow-card);
-        transition: border-color var(--t-fast), background var(--t-fast), box-shadow var(--t-fast);
+        transition: transform .18s ease;
     }
     #page-dashboard #dash-stats .stat-card:hover {
         background: var(--color-bg-elevated);
         border-color: var(--border-subtle);
         box-shadow: var(--shadow-card-hover);
-        transform: translateY(-1px);
+        transform: translateY(-3px);
     }
     #page-dashboard #dash-stats .stat-card-top {
         display: block;
@@ -5046,6 +5046,13 @@
         #page-dashboard #dash-stats.stat-grid.stat-grid-bento {
             grid-template-columns: repeat(2, 1fr) !important;
         }
+    }
+
+    #page-dashboard #dash-stats .stat-card {
+        transition: transform .18s ease !important;
+    }
+    #page-dashboard #dash-stats .stat-card:hover {
+        transform: translateY(-3px) !important;
     }
 
     #page-prospects .prospect-card > div[style*="display:flex"] .btn-cyan {
@@ -7982,6 +7989,30 @@
         '</div>';
     }
 
+    var _dashStatCountGen = 0;
+    function animateDashStatCounts(){
+    var gen = ++_dashStatCountGen;
+    var root = document.getElementById('dash-stats');
+    if(!root) return;
+    var duration = 600;
+    root.querySelectorAll('.stat-num-value').forEach(function(el){
+        var target = parseInt(el.textContent, 10);
+        if(isNaN(target)) target = 0;
+        var startTs = null;
+        el.textContent = '0';
+        function tick(ts){
+        if(gen !== _dashStatCountGen) return;
+        if(startTs === null) startTs = ts;
+        var t = Math.min(1, (ts - startTs) / duration);
+        var eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = String(Math.round(target * eased));
+        if(t < 1) requestAnimationFrame(tick);
+        else el.textContent = String(target);
+        }
+        requestAnimationFrame(tick);
+    });
+    }
+
     function renderDashboard(){
     const today = (function(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
     document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
@@ -8007,6 +8038,7 @@
         <div class="stat-card stat-accent-cyan stat-bento-mid"><div class="stat-card-top"><div><div class="stat-label">Follow-ups (7d)</div></div><div class="stat-card-icon" aria-hidden="true">${_icCal}</div></div><div class="stat-num stat-num-solid"><span class="stat-num-value">${fueDue.length}</span></div><div class="stat-sub">due this week</div></div>
         <div class="stat-card stat-accent-cyan stat-bento-xs"><div class="stat-card-top"><div><div class="stat-label">Prospects</div></div><div class="stat-card-icon" aria-hidden="true">${_icUsers}</div></div><div class="stat-num stat-num-cyan"><span class="stat-num-value">${myProspects.length}</span></div><div class="stat-sub">${u.tier==='rep'?'assigned to you':'total prospects'}</div></div>
     `;
+    animateDashStatCounts();
 
     renderDashRepBalanceToCall(allProspects, myCalls);
 
