@@ -8479,6 +8479,29 @@
     document.getElementById('confirm-modal').classList.add('open');
     }
 
+    function showYesNoConfirm(message, onYes, onNo){
+    document.getElementById('confirm-message').textContent = message;
+    const okBtn = document.getElementById('confirm-ok-btn');
+    const cancelBtn = document.getElementById('confirm-cancel-btn');
+    const prevCancelText = cancelBtn.textContent;
+    okBtn.textContent = 'Yes';
+    okBtn.className = 'btn btn-purple';
+    cancelBtn.textContent = 'No';
+    okBtn.onclick = function(){
+        closeModal('confirm-modal');
+        cancelBtn.textContent = prevCancelText;
+        cancelBtn.onclick = function(){ closeModal('confirm-modal'); };
+        if(onYes) onYes();
+    };
+    cancelBtn.onclick = function(){
+        closeModal('confirm-modal');
+        cancelBtn.textContent = prevCancelText;
+        cancelBtn.onclick = function(){ closeModal('confirm-modal'); };
+        if(onNo) onNo();
+    };
+    document.getElementById('confirm-modal').classList.add('open');
+    }
+
     // ── Job finish dialog (replaces native prompt()) ──
     let _jobFinishCurrentId = null;
     function showJobFinishDialog(jobId, job){
@@ -10640,6 +10663,7 @@
         callbackNotes: l.callbackNotes || '',
         callbackOutcome: l.callbackOutcome || '',
         callbackAt: l.callbackAt || '',
+        advance_cleared: !!l.advance_cleared,
         createdAt: l.createdAt
         }));
         sbClient.from('interested_leads').upsert(formatted)
@@ -10977,25 +11001,58 @@
     function pipelineCloseCallback(outcome){
     const leadId = document.getElementById('callback-lead-id').value;
     const notes = document.getElementById('callback-notes').value.trim();
+    if(outcome === 'won'){
+        showYesNoConfirm('50% advance cleared in hand?',
+            function(){ pipelineMarkLeadWon(leadId, notes); },
+            function(){
+                showToast('Send mockup = warm lock. Advance cleared in hand = Won.', '');
+                showConfirm(
+                    'Set this lead to warm lock (awaiting advance)? Status stays as Mockup Sent (pending).',
+                    function(){ pipelineApplyWarmLock(leadId, notes); },
+                    { icon:'warn', confirmLabel:'Warm lock', confirmClass:'btn-outline' }
+                );
+            }
+        );
+        return;
+    }
+    pipelineFinalizeCallback(leadId, notes, outcome);
+    }
+
+    async function pipelineMarkLeadWon(leadId, notes){
     const leads = getLeads();
     const idx = leads.findIndex(l => l.id === leadId);
     if(idx === -1){ showToast('Lead not found','error'); return; }
+
+    const callbackAt = new Date().toISOString();
+    const patchPayload = {
+        status: 'won',
+        advance_cleared: true,
+        callbackNotes: notes,
+        callbackOutcome: 'won',
+        callbackAt: callbackAt
+    };
+
+    if(sbReady && sbClient){
+        const { error } = await sbClient.from('interested_leads').update(patchPayload).eq('id', String(leadId));
+        if(error){
+            const msg = error.message || 'Could not mark lead as won';
+            showToast(msg, 'error');
+            return;
+        }
+    }
+
     leads[idx].callbackNotes = notes;
-    leads[idx].callbackOutcome = outcome;
-    leads[idx].callbackAt = new Date().toISOString();
-    if(outcome === 'won') leads[idx].status = 'won';
-    else if(outcome === 'lost') leads[idx].status = 'lost';
-    else leads[idx].status = 'called'; // followup — stays in pipeline
+    leads[idx].callbackOutcome = 'won';
+    leads[idx].callbackAt = callbackAt;
+    leads[idx].status = 'won';
+    leads[idx].advance_cleared = true;
     saveLeads(leads);
 
-    // Fix 3: Auto-create closed deal entry when won
-    if(outcome === 'won'){
-        const lead = leads[idx];
-        const pkgValue = PACKAGES[lead.pkg] || 120000;
-        const closed = getData('closed_deals', []);
-        // Avoid duplicate if already recorded
-        const alreadyRecorded = closed.find(d => d.leadId === leadId);
-        if(!alreadyRecorded){
+    const lead = leads[idx];
+    const pkgValue = PACKAGES[lead.pkg] || 120000;
+    const closed = getData('closed_deals', []);
+    const alreadyRecorded = closed.find(d => d.leadId === leadId);
+    if(!alreadyRecorded){
         closed.push({
             biz: lead.biz,
             value: pkgValue,
@@ -11007,16 +11064,45 @@
         });
         ls('closed_deals', closed);
         saveClosedDealsCloud(closed);
-        console.log('✓ Auto-recorded closed deal for', lead.biz, '— Rs.', pkgValue.toLocaleString());
-        }
     }
 
-    // Log to history
+    leadHistoryLog(leadId, 'callback', `Callback logged: won — ${notes || '(no notes)'}`, currentUser);
+    closeModal('callback-modal');
+    renderPipeline();
+    showToast('Deal WON & recorded in Revenue! Great work!', 'success');
+    }
+
+    function pipelineApplyWarmLock(leadId, notes){
+    const leads = getLeads();
+    const idx = leads.findIndex(l => l.id === leadId);
+    if(idx === -1){ showToast('Lead not found','error'); return; }
+    leads[idx].callbackNotes = notes;
+    leads[idx].callbackOutcome = 'warm-lock';
+    leads[idx].callbackAt = new Date().toISOString();
+    leads[idx].status = 'pending';
+    leads[idx].advance_cleared = false;
+    saveLeads(leads);
+    leadHistoryLog(leadId, 'callback', `Warm lock — awaiting advance. ${notes || '(no notes)'}`, currentUser);
+    closeModal('callback-modal');
+    renderPipeline();
+    showToast('Lead kept on warm lock (awaiting advance).', 'success');
+    }
+
+    function pipelineFinalizeCallback(leadId, notes, outcome){
+    const leads = getLeads();
+    const idx = leads.findIndex(l => l.id === leadId);
+    if(idx === -1){ showToast('Lead not found','error'); return; }
+    leads[idx].callbackNotes = notes;
+    leads[idx].callbackOutcome = outcome;
+    leads[idx].callbackAt = new Date().toISOString();
+    if(outcome === 'lost') leads[idx].status = 'lost';
+    else leads[idx].status = 'called';
+    saveLeads(leads);
     leadHistoryLog(leadId, 'callback', `Callback logged: ${outcome} — ${notes || '(no notes)'}`, currentUser);
     closeModal('callback-modal');
     renderPipeline();
-    const msgs = { won:'Deal WON & recorded in Revenue! Great work!', lost:'Marked as lost. Keep pushing!', followup:'Callback logged. Follow-up scheduled.' };
-    showToast(msgs[outcome] || 'Callback logged','success');
+    const msgs = { lost:'Marked as lost. Keep pushing!', followup:'Callback logged. Follow-up scheduled.' };
+    showToast(msgs[outcome] || 'Callback logged', 'success');
     }
 
     function pipelineDiscard(leadId){
