@@ -5323,7 +5323,7 @@
             </div>
             <div class="stat-grid stat-grid-bento" id="dash-stats"></div>
             <div id="dash-rep-remaining-prospects-wrap" style="margin-top:24px;display:none;">
-            <div class="section-head"><h3>Reps — Remaining Prospects</h3></div>
+            <div class="section-head"><h3>Reps — Balance to Call</h3></div>
             <div id="dash-rep-remaining-prospects"></div>
             </div>
             <div class="two-col">
@@ -7918,17 +7918,28 @@
         </tbody></table></div>`;
     }
 
-    function isRemainingProspect(p){
-    var st = String((p && (p.status != null ? p.status : '')) || '').trim().toLowerCase();
-    return st !== 'won' && st !== 'lost' && st !== 'closed';
+    function callProspectRef(c){
+    if(c == null) return '';
+    if(c.prospect != null && String(c.prospect).trim() !== '') return String(c.prospect);
+    if(c.biz != null && String(c.biz).trim() !== '') return String(c.biz);
+    return '';
     }
 
-    function isClosedProspect(p){
-    var st = String((p && (p.status != null ? p.status : '')) || '').trim().toLowerCase();
-    return st === 'won' || st === 'lost' || st === 'closed';
+    function isProspectCalled(p, calledNames, calledIds){
+    const nameKey = String(p.name || '').trim().toLowerCase();
+    const idKey = String(p.id != null ? p.id : '');
+    return calledNames.has(nameKey) || calledIds.has(idKey);
     }
 
-    function renderDashRepRemainingProspects(prospects){
+    function assigneeRowLabel(rawAssign){
+    if(!rawAssign) return 'Unassigned';
+    const ck = canonicalRepKey(rawAssign);
+    const u = USERS[ck] || USERS[rawAssign];
+    if(u && u.name) return u.name;
+    return String(rawAssign);
+    }
+
+    function renderDashRepBalanceToCall(prospects, calls){
     const wrap = document.getElementById('dash-rep-remaining-prospects-wrap');
     const el = document.getElementById('dash-rep-remaining-prospects');
     if(!wrap || !el) return;
@@ -7937,81 +7948,68 @@
     wrap.style.display = showCeoPanel ? '' : 'none';
     if(!showCeoPanel) return;
 
-    const list = prospects || [];
-    const totalProspects = list.length;
-    const repKeys = SALES_OS.getSalesRepUids(USERS);
-    const repCanonSet = {};
-    const counts = {};
-    repKeys.forEach(function(repKey){
-        const ck = canonicalRepKey(repKey);
-        repCanonSet[ck] = true;
-        counts[ck] = 0;
+    const calledNames = new Set();
+    const calledIds = new Set();
+    (calls || []).forEach(function(c){
+        const ref = callProspectRef(c);
+        if(!ref) return;
+        calledNames.add(ref.trim().toLowerCase());
+        calledIds.add(ref);
     });
 
-    let closedCount = 0;
-    let unassignedCount = 0;
+    const uncalled = (prospects || []).filter(function(p){
+        return !isProspectCalled(p, calledNames, calledIds);
+    });
+    const totalUncalled = uncalled.length;
 
-    list.forEach(function(p){
-        if(isClosedProspect(p)){
-            closedCount++;
-            return;
+    const groups = {};
+    uncalled.forEach(function(p){
+        const rawAssign = String(
+            (window.SALES_OS && typeof SALES_OS.getAssignedKey === 'function')
+                ? SALES_OS.getAssignedKey(p, 'assignedTo')
+                : (p.assignedTo || p.assignedto || '')
+        ).trim();
+        const groupKey = rawAssign ? canonicalRepKey(rawAssign) : '__unassigned__';
+        if(!groups[groupKey]){
+            groups[groupKey] = {
+                label: assigneeRowLabel(rawAssign),
+                count: 0
+            };
         }
-        if(!isRemainingProspect(p)) return;
-
-        const assignKey = SALES_OS.getAssignedKey(p, 'assignedTo');
-        const ck = assignKey ? canonicalRepKey(assignKey) : '';
-        if(!ck || !repCanonSet[ck]){
-            unassignedCount++;
-            return;
-        }
-        counts[ck]++;
+        groups[groupKey].count++;
     });
 
-    const repRows = repKeys.map(function(repKey){
-        const ck = canonicalRepKey(repKey);
-        const repUser = USERS[repKey] || USERS[ck];
-        return {
-            name: repUser && repUser.name ? repUser.name : repKey,
-            count: counts[ck] || 0
-        };
+    const rows = Object.keys(groups).map(function(key){
+        return { label: groups[key].label, count: groups[key].count };
     }).sort(function(a, b){
-        return b.count - a.count || String(a.name).localeCompare(String(b.name));
+        return b.count - a.count || String(a.label).localeCompare(String(b.label));
     });
 
-    const sumRep = repRows.reduce(function(acc, r){ return acc + r.count; }, 0);
-    const reconciled = sumRep + closedCount + unassignedCount;
-    const reconciles = reconciled === totalProspects;
-
-    function rowHtml(label, count, opts){
-        opts = opts || {};
-        const labelStyle = opts.muted
-            ? 'color:var(--color-text-secondary, var(--text-2));font-weight:500;font-style:italic;'
-            : 'color:var(--color-text-primary, var(--text));font-weight:500;';
-        const countStyle = opts.muted
-            ? 'font-weight:600;color:var(--color-text-secondary, var(--text-2));'
-            : 'font-weight:700;color:var(--color-accent, var(--purple));';
-        return '<li style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-subtle, var(--border));font-size:14px;">' +
-            '<span style="' + labelStyle + '">' + esc(label) + '</span>' +
-            '<span style="' + countStyle + 'min-width:2ch;text-align:right;">' + count + '</span>' +
-        '</li>';
-    }
-
-    if(!repRows.length && !totalProspects){
-        el.innerHTML = '<div class="empty-state" style="padding:12px 0;">No prospects loaded.</div>';
-        return;
-    }
-
+    const sumRows = rows.reduce(function(acc, r){ return acc + r.count; }, 0);
+    const reconciles = sumRows === totalUncalled;
     const footerColor = reconciles
         ? 'color:var(--color-text-secondary, var(--text-2));'
         : 'color:var(--red);font-weight:700;';
 
-    el.innerHTML = '<ul style="list-style:none;margin:0;padding:0;">' +
-        repRows.map(function(r){ return rowHtml(r.name, r.count); }).join('') +
-        rowHtml('Closed', closedCount, { muted: true }) +
-        rowHtml('Unassigned / Other', unassignedCount, { muted: true }) +
+    if(!totalUncalled && !rows.length){
+        el.innerHTML =
+            '<div style="font-family:var(--font-display, \'Syne\', sans-serif);font-size:clamp(1.5rem, 4vw, 2rem);font-weight:800;color:var(--color-text-primary, var(--text));margin-bottom:16px;">Balance to call: 0</div>' +
+            '<div class="empty-state" style="padding:12px 0;">No uncalled prospects.</div>';
+        return;
+    }
+
+    el.innerHTML =
+        '<div style="font-family:var(--font-display, \'Syne\', sans-serif);font-size:clamp(1.5rem, 4vw, 2rem);font-weight:800;color:var(--color-accent, var(--purple));margin-bottom:16px;">Balance to call: ' + totalUncalled + '</div>' +
+        '<ul style="list-style:none;margin:0;padding:0;">' +
+        rows.map(function(r){
+            return '<li style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-subtle, var(--border));font-size:14px;">' +
+                '<span style="color:var(--color-text-primary, var(--text));font-weight:500;">' + esc(r.label) + '</span>' +
+                '<span style="font-weight:700;color:var(--color-accent, var(--purple));min-width:2ch;text-align:right;">' + r.count + '</span>' +
+            '</li>';
+        }).join('') +
         '</ul>' +
         '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-subtle, var(--border));font-size:13px;' + footerColor + '">' +
-            'Total check: ' + reconciled + ' / ' + totalProspects +
+            'Total check: ' + sumRows + ' / ' + totalUncalled +
             (reconciles ? '' : ' (mismatch)') +
         '</div>';
     }
@@ -8042,7 +8040,7 @@
         <div class="stat-card stat-accent-cyan stat-bento-xs"><div class="stat-card-top"><div><div class="stat-label">Prospects</div></div><div class="stat-card-icon" aria-hidden="true">${_icUsers}</div></div><div class="stat-num stat-num-cyan"><span class="stat-num-value">${myProspects.length}</span></div><div class="stat-sub">${u.tier==='rep'?'assigned to you':'total prospects'}</div></div>
     `;
 
-    renderDashRepRemainingProspects(allProspects);
+    renderDashRepBalanceToCall(allProspects, myCalls);
 
     const tcc = document.getElementById('dash-today-calls');
     if(!todayCalls.length){ tcc.innerHTML=`<div class="empty-state" style="padding:24px 0;">No calls logged today.</div>`; }
