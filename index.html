@@ -7923,6 +7923,11 @@
     return st !== 'won' && st !== 'lost' && st !== 'closed';
     }
 
+    function isClosedProspect(p){
+    var st = String((p && (p.status != null ? p.status : '')) || '').trim().toLowerCase();
+    return st === 'won' || st === 'lost' || st === 'closed';
+    }
+
     function renderDashRepRemainingProspects(prospects){
     const wrap = document.getElementById('dash-rep-remaining-prospects-wrap');
     const el = document.getElementById('dash-rep-remaining-prospects');
@@ -7932,26 +7937,37 @@
     wrap.style.display = showCeoPanel ? '' : 'none';
     if(!showCeoPanel) return;
 
+    const list = prospects || [];
+    const totalProspects = list.length;
     const repKeys = SALES_OS.getSalesRepUids(USERS);
+    const repCanonSet = {};
     const counts = {};
     repKeys.forEach(function(repKey){
-        counts[canonicalRepKey(repKey)] = 0;
+        const ck = canonicalRepKey(repKey);
+        repCanonSet[ck] = true;
+        counts[ck] = 0;
     });
 
-    (prospects || []).forEach(function(p){
+    let closedCount = 0;
+    let unassignedCount = 0;
+
+    list.forEach(function(p){
+        if(isClosedProspect(p)){
+            closedCount++;
+            return;
+        }
         if(!isRemainingProspect(p)) return;
+
         const assignKey = SALES_OS.getAssignedKey(p, 'assignedTo');
-        if(!assignKey) return;
-        const ck = canonicalRepKey(assignKey);
-        if(!Object.prototype.hasOwnProperty.call(counts, ck)){
-            const matchedRep = repKeys.find(function(repKey){ return canonicalRepKey(repKey) === ck; });
-            if(!matchedRep) return;
-            counts[ck] = 0;
+        const ck = assignKey ? canonicalRepKey(assignKey) : '';
+        if(!ck || !repCanonSet[ck]){
+            unassignedCount++;
+            return;
         }
         counts[ck]++;
     });
 
-    const rows = repKeys.map(function(repKey){
+    const repRows = repKeys.map(function(repKey){
         const ck = canonicalRepKey(repKey);
         const repUser = USERS[repKey] || USERS[ck];
         return {
@@ -7962,19 +7978,42 @@
         return b.count - a.count || String(a.name).localeCompare(String(b.name));
     });
 
-    if(!rows.length){
-        el.innerHTML = '<div class="empty-state" style="padding:12px 0;">No reps found.</div>';
+    const sumRep = repRows.reduce(function(acc, r){ return acc + r.count; }, 0);
+    const reconciled = sumRep + closedCount + unassignedCount;
+    const reconciles = reconciled === totalProspects;
+
+    function rowHtml(label, count, opts){
+        opts = opts || {};
+        const labelStyle = opts.muted
+            ? 'color:var(--color-text-secondary, var(--text-2));font-weight:500;font-style:italic;'
+            : 'color:var(--color-text-primary, var(--text));font-weight:500;';
+        const countStyle = opts.muted
+            ? 'font-weight:600;color:var(--color-text-secondary, var(--text-2));'
+            : 'font-weight:700;color:var(--color-accent, var(--purple));';
+        return '<li style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-subtle, var(--border));font-size:14px;">' +
+            '<span style="' + labelStyle + '">' + esc(label) + '</span>' +
+            '<span style="' + countStyle + 'min-width:2ch;text-align:right;">' + count + '</span>' +
+        '</li>';
+    }
+
+    if(!repRows.length && !totalProspects){
+        el.innerHTML = '<div class="empty-state" style="padding:12px 0;">No prospects loaded.</div>';
         return;
     }
 
+    const footerColor = reconciles
+        ? 'color:var(--color-text-secondary, var(--text-2));'
+        : 'color:var(--red);font-weight:700;';
+
     el.innerHTML = '<ul style="list-style:none;margin:0;padding:0;">' +
-        rows.map(function(r){
-            return '<li style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-subtle, var(--border));font-size:14px;">' +
-                '<span style="color:var(--color-text-primary, var(--text));font-weight:500;">' + esc(r.name) + '</span>' +
-                '<span style="font-weight:700;color:var(--color-accent, var(--purple));min-width:2ch;text-align:right;">' + r.count + '</span>' +
-            '</li>';
-        }).join('') +
-    '</ul>';
+        repRows.map(function(r){ return rowHtml(r.name, r.count); }).join('') +
+        rowHtml('Closed', closedCount, { muted: true }) +
+        rowHtml('Unassigned / Other', unassignedCount, { muted: true }) +
+        '</ul>' +
+        '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-subtle, var(--border));font-size:13px;' + footerColor + '">' +
+            'Total check: ' + reconciled + ' / ' + totalProspects +
+            (reconciles ? '' : ' (mismatch)') +
+        '</div>';
     }
 
     function renderDashboard(){
