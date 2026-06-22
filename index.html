@@ -8313,7 +8313,7 @@
     const overdueFull = overdue.length;
     const dueTodayFull = dueToday.length;
     const upcomingFull = upcoming.length;
-    if(window._fuRep){
+    if(window._fuRep!=null){
         overdue = overdue.filter(c=>c.rep===window._fuRep);
         dueToday = dueToday.filter(c=>c.rep===window._fuRep);
         upcoming = upcoming.filter(c=>c.rep===window._fuRep);
@@ -8326,15 +8326,15 @@
         ? 'padding:8px 14px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0;cursor:pointer;border:1px solid var(--purple);background:var(--purple);color:#fff;font-family:inherit;'
         : 'padding:8px 14px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0;cursor:pointer;border:1px solid var(--border);background:var(--glass-card);color:var(--text);font-family:inherit;';
     const chipBadgeStyle = (active)=>active
-        ? 'margin-left:6px;padding:1px 6px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(255,255,255,0.2);'
-        : 'margin-left:6px;padding:1px 6px;border-radius:999px;font-size:11px;font-weight:700;background:var(--purple-light);color:var(--purple);';
+        ? 'margin-left:6px;padding:1px 6px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(255,255,255,0.2);color:#fff;'
+        : 'margin-left:6px;padding:1px 6px;border-radius:999px;font-size:11px;font-weight:700;background:var(--glass-card);color:var(--text-2);border:1px solid var(--border);';
     let chipStrip = '';
     if(withFU.length && uniqueReps.length){
-        const chips = [`<button type="button" style="${chipBtnStyle(!window._fuRep)}" onclick="window._fuRep=null;renderFollowups();">All<span style="${chipBadgeStyle(!window._fuRep)}">${allDueCount}</span></button>`];
+        const chips = [`<button type="button" style="${chipBtnStyle(window._fuRep==null)}" onclick='window._fuRep=null;renderFollowups();'>All<span style="${chipBadgeStyle(window._fuRep==null)}">${allDueCount}</span></button>`];
         uniqueReps.forEach(function(rep){
             const active = window._fuRep===rep;
             const name = USERS[rep]?.name||rep;
-            chips.push(`<button type="button" style="${chipBtnStyle(active)}" onclick="window._fuRep=${JSON.stringify(rep)};renderFollowups();">${esc(name)}<span style="${chipBadgeStyle(active)}">${repDueCount(rep)}</span></button>`);
+            chips.push(`<button type="button" style="${chipBtnStyle(active)}" onclick='window._fuRep=${JSON.stringify(rep)};renderFollowups();'>${esc(name)}<span style="${chipBadgeStyle(active)}">${repDueCount(rep)}</span></button>`);
         });
         chipStrip = `<div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding-bottom:4px;-webkit-overflow-scrolling:touch;">${chips.join('')}</div>`;
     }
@@ -8364,7 +8364,7 @@
     const summary = `<div class="followup-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;font-size:12px;">
      <span style="padding:6px 12px;border-radius:6px;background:rgba(244,63,94,0.12);color:var(--red);border:1px solid rgba(244,63,94,0.3);font-weight:600;">${overdueFull} overdue</span>
      <span style="padding:6px 12px;border-radius:6px;background:rgba(251,191,36,0.12);color:var(--amber);border:1px solid rgba(251,191,36,0.3);font-weight:600;">${dueTodayFull} due today</span>
-     <span style="padding:6px 12px;border-radius:6px;background:rgba(168,85,247,0.12);color:#C084FC;border:1px solid rgba(168,85,247,0.35);font-weight:600;">${noAnswerCount} no answer · ${needFollowCount} need follow-up</span>
+     <span style="padding:6px 12px;border-radius:6px;background:var(--purple-light);color:var(--text-2);border:1px solid var(--border);font-weight:600;">${noAnswerCount} no answer · ${needFollowCount} need follow-up</span>
    </div>`;
 
     const content = (withFU.length > 0 ? summary : '') +
