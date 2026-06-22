@@ -8239,7 +8239,6 @@
     }
 
     function renderFollowbackDueList(){
-    const today = (function(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
     const leads = getFollowbackDueLeads();
     const el = document.getElementById('followups-content');
     if(!el) return;
@@ -8247,25 +8246,19 @@
         el.innerHTML = '<div class="empty-state">No follow-backs due.</div>';
         return;
     }
-    const statusLabel = { new:'New', pending:'Mockup Sent', called:'Callback Logged', won:'Won', lost:'Lost' };
-    const statusClass = { new:'lead-status-new', pending:'lead-status-pending', called:'lead-status-called', won:'badge-green', lost:'badge-red' };
-    el.innerHTML = '<div class="pipeline-section"><div class="pipeline-grid">' +
+    el.innerHTML = '<div class="followup-group group-overdue">' +
+        '<div class="followup-group-label">Overdue (' + leads.length + ')</div>' +
         leads.map(function(l){
-            const repName = USERS[l.rep]?.name || l.rep;
-            const statusBadge = '<span class="lead-status-badge ' + (statusClass[l.status] || 'badge-gray') + '">' + (statusLabel[l.status] || esc(l.status)) + '</span>';
             const dueYmd = callbackAtYmd(l.callbackAt);
-            const dueLabel = fmt(dueYmd);
-            const isOverdue = dueYmd < today;
-            let notesHtml = '';
-            if(l.callNotes) notesHtml += '<div class="lead-notes" style="border-left-color:var(--text-2);"><strong>Call:</strong> ' + esc(l.callNotes) + '</div>';
-            if(l.mockupNotes) notesHtml += '<div class="lead-notes" style="border-left-color:var(--purple);"><strong>Mockup:</strong> ' + esc(l.mockupNotes) + '</div>';
-            return '<div class="lead-card" style="border-left:3px solid ' + (isOverdue ? 'var(--red)' : 'var(--amber)') + ';">' +
-                '<div class="lead-card-top"><div><div class="lead-biz">' + esc(l.biz) + '</div><div class="lead-rep">' + esc(repName) + '</div></div>' +
-                '<div class="lead-date">Due ' + dueLabel + '</div></div>' +
-                notesHtml +
-                '<div class="lead-actions">' + statusBadge + '</div></div>';
+            return '<div class="followup-card">' +
+                '<div>' +
+                '<div class="followup-biz">' + esc(l.biz) + '</div>' +
+                '<div class="followup-date">' + fmt(dueYmd) + '</div>' +
+                (l.callbackNotes ? '<div class="followup-notes">' + esc(l.callbackNotes) + '</div>' : '') +
+                '</div>' +
+                '</div>';
         }).join('') +
-        '</div></div>';
+        '</div>';
     }
 
     // ════════════════════════════════════════
