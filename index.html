@@ -8348,7 +8348,10 @@
         return `<div class="followup-group ${cls}">
         <div class="followup-group-label">${label} (${labelCount})</div>
         ${visible.map(c=>`<div class="followup-card" style="display:flex;align-items:center;gap:8px;padding:10px 12px;flex-wrap:wrap;background:var(--glass-card);border-radius:10px;margin-bottom:6px;">
-            <div style="flex:1;min-width:120px;font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${(c.outcome==='No answer'||c.outcome==='Follow-up needed')?'★ ':''}${esc(c.biz)}</div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+            <div style="font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${(c.outcome==='No answer'||c.outcome==='Follow-up needed')?'★ ':''}${esc(c.biz)}</div>
+            ${c.notes?`<div style="font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;margin-top:2px;">${esc(c.notes)}</div>`:''}
+            </div>
             <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;">
             <span style="font-size:11px;color:var(--text-2);white-space:nowrap;">${fmt(c.followup)}</span>
             ${outcomeBadge(c.outcome)}
