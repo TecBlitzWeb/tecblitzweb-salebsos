@@ -8283,6 +8283,7 @@
     // ════════════════════════════════════════
     // FOLLOW-UPS PAGE
     // ════════════════════════════════════════
+    window._fuShown = window._fuShown || { overdue: 10, today: 10, upcoming: 10 };
     function renderFollowups(){
     updateFollowbackNavBadge();
     if(_followupsTab === 'followback'){
@@ -8307,11 +8308,14 @@
     const byPriority = (a,b) => (fuRank(a.outcome) - fuRank(b.outcome)) || a.followup.localeCompare(b.followup);
     overdue.sort(byPriority); dueToday.sort(byPriority); upcoming.sort(byPriority);
 
-    function renderGroup(items, cls, label){
+    function renderGroup(items, cls, label, key){
         if(!items.length) return '';
+        const shown = window._fuShown[key];
+        const visible = items.slice(0, shown);
+        const moreCount = items.length - visible.length;
         return `<div class="followup-group ${cls}">
         <div class="followup-group-label">${label} (${items.length})</div>
-        ${items.map(c=>`<div class="followup-card">
+        ${visible.map(c=>`<div class="followup-card">
             <div>
             ${(c.outcome==='No answer'||c.outcome==='Follow-up needed')?`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#C084FC;margin-bottom:4px;">★ Call first</div>`:''}
             <div class="followup-biz">${esc(c.biz)}</div>
@@ -8324,6 +8328,7 @@
             <button class="btn btn-outline btn-sm" onclick='openModal("call-modal",${JSON.stringify(c)})'>Update</button>
             </div>
         </div>`).join('')}
+        ${moreCount > 0 ? `<button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="window._fuShown['${key}']+=10; renderFollowups();">Show ${Math.min(10,moreCount)} more (${moreCount} left)</button>` : ''}
         </div>`;
     }
 
@@ -8336,9 +8341,9 @@
    </div>`;
 
     const content = (withFU.length > 0 ? summary : '') +
-        renderGroup(overdue,'group-overdue','Overdue') +
-        renderGroup(dueToday,'group-today','Due Today') +
-        renderGroup(upcoming,'group-upcoming','Upcoming');
+        renderGroup(overdue,'group-overdue','Overdue','overdue') +
+        renderGroup(dueToday,'group-today','Due Today','today') +
+        renderGroup(upcoming,'group-upcoming','Upcoming','upcoming');
     document.getElementById('followups-content').innerHTML = content||`<div class="empty-state">No follow-ups scheduled.</div>`;
     }
 
