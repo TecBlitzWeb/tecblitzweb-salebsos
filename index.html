@@ -8291,9 +8291,10 @@
         return;
     }
     const today = (function(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+    const cutoff = (function(){ const d = new Date(); d.setDate(d.getDate()-14); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
     const u = USERS[currentUser];
     let calls = getCalls().filter(callVisibleToUser);
-    const withFU = calls.filter(c=>c.followup && c.biz).sort((a,b)=>a.followup.localeCompare(b.followup));
+    const withFU = calls.filter(c=>c.followup && c.biz && c.followup >= cutoff).sort((a,b)=>a.followup.localeCompare(b.followup));
     const overdue = withFU.filter(c=>c.followup<today);
     const dueToday = withFU.filter(c=>c.followup===today);
     const upcoming = withFU.filter(c=>c.followup>today);
