@@ -5188,6 +5188,7 @@
             <div class="nav-item" onclick="goPage('followups')">
             <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M5 2v2M11 2v2M2 7h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
             Follow-ups
+            <span class="nav-badge badge-amber" id="followback-nav-badge"></span>
             </div>
 
             <div class="nav-item mgmt-only" onclick="goPage('pipeline')" id="nav-pipeline">
@@ -5444,6 +5445,10 @@
                 <button class="btn btn-purple btn-header-log-call" onclick="openModal('call-modal')">+ Log Call</button>
             </div>
             </div>
+            <div class="tab-bar" id="mycalls-tabs" style="margin-bottom:14px;">
+            <button type="button" class="tab active" onclick="myCallsSetTab('all',this)">All calls</button>
+            <button type="button" class="tab" onclick="myCallsSetTab('no-answer',this)">No answer</button>
+            </div>
             <div class="search-bar">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9CA3AF" stroke-width="1.5"/><path d="M10.5 10.5L13 13" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/></svg>
             <input type="text" id="calls-search" placeholder="Search calls..." oninput="renderMyCalls()">
@@ -5469,6 +5474,10 @@
         <!-- FOLLOW-UPS -->
         <div id="page-followups" class="page">
             <div class="page-header"><h2>Follow-ups</h2><p>Organised by urgency</p></div>
+            <div class="tab-bar" id="followups-tabs" style="margin-bottom:16px;">
+            <button type="button" class="tab active" onclick="followupsSetTab('calls',this)">Scheduled calls</button>
+            <button type="button" class="tab" onclick="followupsSetTab('followback',this)">Follow-back due</button>
+            </div>
             <div id="followups-content"></div>
         </div>
 
@@ -7013,6 +7022,7 @@
         ls('interested_leads', mergeByIdPreserveLocal(leads, getLeads()));
         console.log('✓ Auto-synced leads on focus:', leads.length, 'records');
         updatePipelineNavBadge();
+        updateFollowbackNavBadge();
         // Re-render Pipeline page if active
         const pipelinePage = document.getElementById('page-pipeline');
         if(pipelinePage && pipelinePage.classList.contains('active')){
@@ -7756,6 +7766,7 @@
     if(!id && outcome === 'Interested'){
         pipelineAddLead(obj);
         updatePipelineNavBadge();
+        updateFollowbackNavBadge();
         // Re-render pipeline page if currently active
         const pipelinePage = document.getElementById('page-pipeline');
         if(pipelinePage && pipelinePage.classList.contains('active')){
@@ -7785,6 +7796,51 @@
     });
     }
 
+    const NO_ANSWER_OUTCOME = 'No answer';
+
+    function callbackAtYmd(val){
+    if(!val) return '';
+    return String(val).slice(0, 10);
+    }
+
+    function getFollowbackDueLeads(){
+    const today = (function(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+    return getLeads().filter(leadVisibleToUser).filter(function(l){
+        if(!l.callbackAt) return false;
+        if(l.status === 'lost') return false;
+        if(l.callbackOutcome) return false;
+        const cb = callbackAtYmd(l.callbackAt);
+        return cb && cb <= today;
+    }).sort(function(a,b){
+        return callbackAtYmd(a.callbackAt).localeCompare(callbackAtYmd(b.callbackAt));
+    });
+    }
+
+    function updateFollowbackNavBadge(){
+    const badge = document.getElementById('followback-nav-badge');
+    if(!badge) return;
+    const n = getFollowbackDueLeads().length;
+    badge.textContent = n > 0 ? String(n) : '';
+    }
+
+    let _myCallsTab = 'all';
+    function myCallsSetTab(tab, btn){
+    _myCallsTab = tab;
+    document.querySelectorAll('#mycalls-tabs .tab').forEach(function(t){ t.classList.remove('active'); });
+    if(btn) btn.classList.add('active');
+    const filterSel = document.getElementById('calls-filter');
+    if(filterSel) filterSel.disabled = (tab === 'no-answer');
+    renderMyCalls();
+    }
+
+    let _followupsTab = 'calls';
+    function followupsSetTab(tab, btn){
+    _followupsTab = tab;
+    document.querySelectorAll('#followups-tabs .tab').forEach(function(t){ t.classList.remove('active'); });
+    if(btn) btn.classList.add('active');
+    renderFollowups();
+    }
+
     function outcomeBadge(o){
     const map={
         'Interested':'badge-green',
@@ -7802,7 +7858,11 @@
     const q = (document.getElementById('calls-search')||{}).value||'';
     const f = (document.getElementById('calls-filter')||{}).value||'';
     if(q) calls = calls.filter(c=>(c.biz||'').toLowerCase().includes(q.toLowerCase())||((c.notes||'').toLowerCase().includes(q.toLowerCase())));
-    if(f) calls = calls.filter(c=>c.outcome===f);
+    if(_myCallsTab === 'no-answer'){
+        calls = calls.filter(function(c){ return c.outcome === NO_ANSWER_OUTCOME; });
+    } else if(f) {
+        calls = calls.filter(c=>c.outcome===f);
+    }
     calls.sort((a,b)=>b.date.localeCompare(a.date));
     if(!calls.length){
         tbody.innerHTML=`<tr><td colspan="6" class="empty-state">No calls logged yet.</td></tr>`;
@@ -8140,6 +8200,11 @@
     // FOLLOW-UPS PAGE
     // ════════════════════════════════════════
     function renderFollowups(){
+    updateFollowbackNavBadge();
+    if(_followupsTab === 'followback'){
+        renderFollowbackDueList();
+        return;
+    }
     const today = (function(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
     const u = USERS[currentUser];
     let calls = getCalls().filter(callVisibleToUser);
@@ -8171,6 +8236,36 @@
         renderGroup(dueToday,'group-today','Due Today') +
         renderGroup(upcoming,'group-upcoming','Upcoming');
     document.getElementById('followups-content').innerHTML = content||`<div class="empty-state">No follow-ups scheduled.</div>`;
+    }
+
+    function renderFollowbackDueList(){
+    const today = (function(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+    const leads = getFollowbackDueLeads();
+    const el = document.getElementById('followups-content');
+    if(!el) return;
+    if(!leads.length){
+        el.innerHTML = '<div class="empty-state">No follow-backs due.</div>';
+        return;
+    }
+    const statusLabel = { new:'New', pending:'Mockup Sent', called:'Callback Logged', won:'Won', lost:'Lost' };
+    const statusClass = { new:'lead-status-new', pending:'lead-status-pending', called:'lead-status-called', won:'badge-green', lost:'badge-red' };
+    el.innerHTML = '<div class="pipeline-section"><div class="pipeline-grid">' +
+        leads.map(function(l){
+            const repName = USERS[l.rep]?.name || l.rep;
+            const statusBadge = '<span class="lead-status-badge ' + (statusClass[l.status] || 'badge-gray') + '">' + (statusLabel[l.status] || esc(l.status)) + '</span>';
+            const dueYmd = callbackAtYmd(l.callbackAt);
+            const dueLabel = fmt(dueYmd);
+            const isOverdue = dueYmd < today;
+            let notesHtml = '';
+            if(l.callNotes) notesHtml += '<div class="lead-notes" style="border-left-color:var(--text-2);"><strong>Call:</strong> ' + esc(l.callNotes) + '</div>';
+            if(l.mockupNotes) notesHtml += '<div class="lead-notes" style="border-left-color:var(--purple);"><strong>Mockup:</strong> ' + esc(l.mockupNotes) + '</div>';
+            return '<div class="lead-card" style="border-left:3px solid ' + (isOverdue ? 'var(--red)' : 'var(--amber)') + ';">' +
+                '<div class="lead-card-top"><div><div class="lead-biz">' + esc(l.biz) + '</div><div class="lead-rep">' + esc(repName) + '</div></div>' +
+                '<div class="lead-date">Due ' + dueLabel + '</div></div>' +
+                notesHtml +
+                '<div class="lead-actions">' + statusBadge + '</div></div>';
+        }).join('') +
+        '</div></div>';
     }
 
     // ════════════════════════════════════════
@@ -10319,7 +10414,7 @@
     // Apply saved profile picture
     refreshSidebarAvatar();
     // Update pipeline badge on load
-    setTimeout(updatePipelineNavBadge, 300);
+    setTimeout(function(){ updatePipelineNavBadge(); updateFollowbackNavBadge(); }, 300);
     // LOAD DATA FROM SUPABASE CLOUD — runs immediately if ready, else waits up to 2s
     async function runCloudLoad(){
         if(!sbReady || !sbClient) return;
@@ -10377,6 +10472,7 @@
             }));
             ls('interested_leads', mergeByIdPreserveLocal(leads, getLeads()));
             updatePipelineNavBadge();
+        updateFollowbackNavBadge();
             console.log('✓ Loaded', leads.length, 'interested leads from cloud');
             // Re-render any active page that shows leads
             const pp = document.getElementById('page-pipeline');
@@ -10470,6 +10566,7 @@
         const prev = (ls('interested_leads') || []).length;
         ls('interested_leads', mergeByIdPreserveLocal(leads, getLeads()));
         updatePipelineNavBadge();
+        updateFollowbackNavBadge();
         // Re-render whichever page is currently visible
         const pipelinePage = document.getElementById('page-pipeline');
         if(pipelinePage && pipelinePage.classList.contains('active')){
@@ -10706,6 +10803,7 @@
         })
         .catch(e => console.error('❌ saveLeads cloud exception:', e));
     }
+    updateFollowbackNavBadge();
     }
 
     // Called from saveCall() when outcome === 'Interested'
@@ -10751,6 +10849,7 @@
     leads.push(lead);
     saveLeads(leads);
     updatePipelineNavBadge();
+    updateFollowbackNavBadge();
     console.log('✓ Lead added to pipeline:', lead.biz, '| Total leads:', leads.length);
     }
 
@@ -10776,6 +10875,7 @@
     if(added > 0){
         console.log(`✓ Pipeline repair: added ${added} missing interested lead(s)`);
         updatePipelineNavBadge();
+        updateFollowbackNavBadge();
     }
     }
 
@@ -10955,6 +11055,7 @@
 
     content.innerHTML = html;
     updatePipelineNavBadge();
+    updateFollowbackNavBadge();
 
     // Refresh CEO inbox whenever pipeline re-renders
     const inbox = document.getElementById('ceo-leads-inbox-body');
@@ -11393,6 +11494,7 @@
     showToast(`Job Ticket created for ${company} → ${USERS[cooUid]?.name}`, 'success');
     await jobRefreshDashboard();
     updatePipelineNavBadge();
+    updateFollowbackNavBadge();
     }
 
     // ════════════════════════════════════════
