@@ -8297,12 +8297,23 @@
     const dueToday = withFU.filter(c=>c.followup===today);
     const upcoming = withFU.filter(c=>c.followup>today);
 
+    const fuRank = (o) => {
+        if (o === 'No answer') return 0;
+        if (o === 'Follow-up needed') return 1;
+        if (o === 'WhatsApp sent') return 2;
+        if (o === 'Interested') return 3;
+        return 4;
+    };
+    const byPriority = (a,b) => (fuRank(a.outcome) - fuRank(b.outcome)) || a.followup.localeCompare(b.followup);
+    overdue.sort(byPriority); dueToday.sort(byPriority); upcoming.sort(byPriority);
+
     function renderGroup(items, cls, label){
         if(!items.length) return '';
         return `<div class="followup-group ${cls}">
         <div class="followup-group-label">${label} (${items.length})</div>
         ${items.map(c=>`<div class="followup-card">
             <div>
+            ${(c.outcome==='No answer'||c.outcome==='Follow-up needed')?`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#C084FC;margin-bottom:4px;">★ Call first</div>`:''}
             <div class="followup-biz">${esc(c.biz)}</div>
             <div class="followup-date">${fmt(c.followup)}</div>
             ${c.notes?`<div class="followup-notes">${esc(c.notes)}</div>`:''}
@@ -8316,7 +8327,16 @@
         </div>`;
     }
 
-    const content = renderGroup(overdue,'group-overdue','Overdue') +
+    const noAnswerCount = withFU.filter(c=>c.outcome==='No answer').length;
+    const needFollowCount = withFU.filter(c=>c.outcome==='Follow-up needed').length;
+    const summary = `<div class="followup-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;font-size:12px;">
+     <span style="padding:6px 12px;border-radius:6px;background:rgba(244,63,94,0.12);color:var(--red);border:1px solid rgba(244,63,94,0.3);font-weight:600;">${overdue.length} overdue</span>
+     <span style="padding:6px 12px;border-radius:6px;background:rgba(251,191,36,0.12);color:var(--amber);border:1px solid rgba(251,191,36,0.3);font-weight:600;">${dueToday.length} due today</span>
+     <span style="padding:6px 12px;border-radius:6px;background:rgba(168,85,247,0.12);color:#C084FC;border:1px solid rgba(168,85,247,0.35);font-weight:600;">${noAnswerCount} no answer · ${needFollowCount} need follow-up</span>
+   </div>`;
+
+    const content = (withFU.length > 0 ? summary : '') +
+        renderGroup(overdue,'group-overdue','Overdue') +
         renderGroup(dueToday,'group-today','Due Today') +
         renderGroup(upcoming,'group-upcoming','Upcoming');
     document.getElementById('followups-content').innerHTML = content||`<div class="empty-state">No follow-ups scheduled.</div>`;
