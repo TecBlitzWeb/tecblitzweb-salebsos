@@ -550,6 +550,7 @@
 
     .biz-timeline-link {
         cursor: pointer;
+        color: var(--text);
         text-decoration: underline;
         text-decoration-color: rgba(124, 92, 255, 0.35);
         text-underline-offset: 2px;
@@ -612,6 +613,7 @@
     body.dark .btn-outline{ background: #1C1C28; border-color: rgba(255,255,255,0.08); color: var(--text-2); }
     body.dark .script-box{ background: #1C1C28; border-color: rgba(255,255,255,0.08); }
     body.dark .tab-bar{ background: #1C1C28; border-color: rgba(255,255,255,0.08); }
+    body.dark .tab:not(.active){ color: var(--text-2); }
     body.dark .tab.active{ background:rgba(168,85,247,0.2); color:#fff; }
     body.dark .login-left{ background:transparent; }
     body.dark .pin-btn{ background: #1C1C28; border-color: rgba(255,255,255,0.08); color: #F8FAFC; }
@@ -3834,7 +3836,7 @@
         font-family: var(--font-body);
         font-size: var(--text-sm);
         font-weight: 600;
-        color: var(--color-text-secondary);
+        color: var(--text-2);
     }
 
     .tab.active {
