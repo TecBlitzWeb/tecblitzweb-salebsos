@@ -8316,18 +8316,17 @@
         const moreCount = items.length - visible.length;
         return `<div class="followup-group ${cls}">
         <div class="followup-group-label">${label} (${items.length})</div>
-        ${visible.map(c=>`<div class="followup-card">
-            <div>
-            ${(c.outcome==='No answer'||c.outcome==='Follow-up needed')?`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#C084FC;margin-bottom:4px;">★ Call first</div>`:''}
-            <div class="followup-biz">${esc(c.biz)}</div>
-            <div class="followup-date">${fmt(c.followup)}</div>
-            ${c.notes?`<div class="followup-notes">${esc(c.notes)}</div>`:''}
-            ${isMgmt(currentUser)?`<div class="followup-date" style="margin-top:3px;">${USERS[c.rep]?.name||c.rep}</div>`:''}
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        ${visible.map(c=>`<div class="followup-card" style="display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:18px 16px;border-radius:14px;background:var(--glass-card);">
+            ${(c.outcome==='No answer'||c.outcome==='Follow-up needed')?`<span style="align-self:flex-start;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--purple);background:var(--purple-light);border:1px solid var(--border-strong);padding:4px 10px;border-radius:999px;line-height:1.2;">★ Call first</span>`:''}
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
             ${outcomeBadge(c.outcome)}
-            <button class="btn btn-outline btn-sm" onclick='openModal("call-modal",${JSON.stringify(c)})'>Update</button>
+            <div class="followup-date" style="font-size:12px;color:var(--text-2);margin:0;white-space:nowrap;">${fmt(c.followup)}</div>
             </div>
+            <div class="followup-biz" style="font-size:16px;font-weight:700;color:var(--text);line-height:1.35;margin:0;">${esc(c.biz)}</div>
+            ${c.phone?`<a href="tel:${c.phone}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;border-radius:12px;background:var(--purple-light);border:1px solid var(--border-strong);color:var(--purple);font-size:14px;font-weight:600;text-decoration:none;min-height:44px;box-sizing:border-box;">📞 ${esc(c.phone)}</a>`:''}
+            ${c.notes?`<div class="followup-notes" style="font-size:12px;color:var(--text-2);line-height:1.55;margin:0;">${esc(c.notes)}</div>`:''}
+            ${isMgmt(currentUser)?`<div class="followup-date" style="font-size:11px;color:var(--text-2);margin:0;">${USERS[c.rep]?.name||c.rep}</div>`:''}
+            <button class="btn btn-outline btn-sm" style="width:100%;min-height:44px;margin-top:2px;font-size:14px;font-weight:600;" onclick='openModal("call-modal",${JSON.stringify(c)})'>Update</button>
         </div>`).join('')}
         ${moreCount > 0 ? `<button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="window._fuShown['${key}']+=10; renderFollowups();">Show ${Math.min(10,moreCount)} more (${moreCount} left)</button>` : ''}
         </div>`;
