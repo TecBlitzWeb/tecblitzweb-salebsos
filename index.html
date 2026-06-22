@@ -548,6 +548,14 @@
     .history-step-sub { font-size: 11px; color: var(--text-2); margin-top: 2px; }
     .history-step-note { font-size: 12px; color: var(--text-2); margin-top: 6px; font-style: italic; }
 
+    .biz-timeline-link {
+        cursor: pointer;
+        text-decoration: underline;
+        text-decoration-color: rgba(124, 92, 255, 0.35);
+        text-underline-offset: 2px;
+    }
+    .biz-timeline-link:hover { color: var(--purple-mid); }
+
     /* ── DARK MODE — opaque surfaces ── */
     body.dark{
         --purple: #A855F7;
@@ -6046,6 +6054,18 @@
     </div>
     </div>
 
+    <!-- BUSINESS TIMELINE MODAL -->
+    <div class="modal-overlay" id="biz-timeline-modal">
+    <div class="modal" style="max-width:560px;">
+        <h3 id="biz-timeline-title">Business Timeline</h3>
+        <p id="biz-timeline-sub" style="font-size:13px;color:var(--text-2);margin-top:6px;margin-bottom:16px;"></p>
+        <div id="biz-timeline-content" class="history-timeline"></div>
+        <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('biz-timeline-modal')">Close</button>
+        </div>
+    </div>
+    </div>
+
     <!-- ══════════════ TEAM MGMT: ADD REP MODAL ══════════════ -->
     <div class="tm-modal-overlay" id="tm-add-modal">
     <div class="tm-modal">
@@ -7852,6 +7872,68 @@
     return `<span class="badge ${map[o]||'badge-gray'}">${o}</span>`;
     }
 
+    function normalizeBizName(name){
+    return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    function getBizTimelinePool(source){
+    if(source === 'allcalls' && typeof acAllData !== 'undefined' && Array.isArray(acAllData)){
+        return acAllData.filter(function(c){ return callVisibleToUser(c); });
+    }
+    return filterCallsForCurrentUser(getCalls());
+    }
+
+    function bizTimelineDateLabel(c, source){
+    if(source === 'allcalls' && typeof acFmtDateTime === 'function'){
+        return acFmtDateTime(c.date, c.time);
+    }
+    return fmt(c.date) + (c.time ? ' · ' + c.time : '');
+    }
+
+    function bizTimelineOutcomeBadge(c, source){
+    if(source === 'allcalls' && typeof acBadge === 'function'){
+        return acBadge(c.outcome);
+    }
+    return outcomeBadge(c.outcome);
+    }
+
+    function openBizTimeline(displayName, source){
+    const norm = normalizeBizName(displayName);
+    if(!norm){
+        showToast('No business name', 'error');
+        return;
+    }
+    const pool = getBizTimelinePool(source || 'mycalls');
+    const thread = pool.filter(function(c){
+        return normalizeBizName(c.biz) === norm;
+    }).sort(function(a,b){
+        const da = (a.date || '') + 'T' + (a.time || '00:00');
+        const db = (b.date || '') + 'T' + (b.time || '00:00');
+        return da.localeCompare(db);
+    });
+    const titleEl = document.getElementById('biz-timeline-title');
+    const subEl = document.getElementById('biz-timeline-sub');
+    const contentEl = document.getElementById('biz-timeline-content');
+    if(!titleEl || !subEl || !contentEl) return;
+    const label = String(displayName || '').trim() || 'Unknown business';
+    titleEl.textContent = label;
+    subEl.textContent = thread.length + ' call' + (thread.length !== 1 ? 's' : '') + ' on record';
+    if(!thread.length){
+        contentEl.innerHTML = '<div class="empty-state" style="padding:24px 0;">No calls found for this business.</div>';
+    } else {
+        contentEl.innerHTML = thread.map(function(c, i){
+            return '<div class="history-step">' +
+                '<div class="history-step-icon">' + (i + 1) + '</div>' +
+                '<div class="history-step-body">' +
+                '<div class="history-step-title">' + bizTimelineOutcomeBadge(c, source) + '</div>' +
+                '<div class="history-step-sub">' + esc(bizTimelineDateLabel(c, source)) + '</div>' +
+                (c.notes ? '<div class="history-step-note">' + esc(c.notes) + '</div>' : '') +
+                '</div></div>';
+        }).join('');
+    }
+    openModal('biz-timeline-modal');
+    }
+
     function renderMyCalls(){
     const tbody = document.getElementById('calls-tbody');
     let calls = filterCallsForCurrentUser(getCalls());
@@ -7870,7 +7952,7 @@
     }
     tbody.innerHTML = calls.map(c=>`
         <tr>
-        <td><strong>${esc(c.biz)}</strong></td>
+        <td><strong><button type="button" class="biz-timeline-link" style="background:none;border:none;padding:0;font:inherit;font-weight:700;" onclick="openBizTimeline(${JSON.stringify(c.biz)},'mycalls')">${esc(c.biz)}</button></strong></td>
         <td>${outcomeBadge(c.outcome)}</td>
         <td>${fmt(c.date)}</td>
         <td>${c.followup?fmt(c.followup):'—'}</td>
@@ -11952,7 +12034,7 @@
         tbody.innerHTML = slice.map((c, i) => `
         <tr onclick="acToggleRow('${c.id}',${start + i + 1})" id="ac-row-${c.id}" data-id="${c.id}">
             <td style="color:var(--text-2);font-size:12px;">${start + i + 1}</td>
-            <td style="font-weight:600;">${esc(c.biz)}</td>
+            <td style="font-weight:600;"><button type="button" class="biz-timeline-link" style="background:none;border:none;padding:0;font:inherit;font-weight:600;" onclick="event.stopPropagation();openBizTimeline(${JSON.stringify(c.biz)},'allcalls')">${esc(c.biz)}</button></td>
             <td style="font-family:'Outfit',sans-serif;color:var(--text-2);">${esc(c.phone)}</td>
             <td style="color:var(--text-2);font-size:12px;">${acFmtDateTime(c.date, c.time)}</td>
             <td style="color:var(--text-2);">${acFmtDuration(c.duration)}</td>
@@ -12022,7 +12104,7 @@
     list.innerHTML = slice.map((c, i) => `
         <div class="ac-call-card" onclick="acViewDetail('${c.id}')">
         <div class="ac-call-card-row1">
-            <div class="ac-call-card-biz">${esc(c.biz)}</div>
+            <div class="ac-call-card-biz"><button type="button" class="biz-timeline-link" style="background:none;border:none;padding:0;font:inherit;font-weight:600;text-align:left;" onclick="event.stopPropagation();openBizTimeline(${JSON.stringify(c.biz)},'allcalls')">${esc(c.biz)}</button></div>
             ${acBadge(c.outcome)}
         </div>
         <div class="ac-call-card-row2">
