@@ -11928,7 +11928,8 @@
     const today = new Date();
     today.setHours(0,0,0,0);
     if (acDateRange === 'today') {
-        return { from: today.toISOString().split('T')[0], to: today.toISOString().split('T')[0] };
+        const _ymd = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+        return { from: _ymd, to: _ymd };
     } else if (acDateRange === 'week') {
         const w = dashCalendarWeekBounds();
         return { from: w.start, to: w.end };
