@@ -8414,13 +8414,19 @@
     // ════════════════════════════════════════
     // PERFORMANCE
     // ════════════════════════════════════════
+    let perfDateRange='all', perfCustomFrom='', perfCustomTo='';
+    function perfGetBounds(){const d=new Date();d.setHours(0,0,0,0);const ymd=x=>x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');if(perfDateRange==='today')return{from:ymd(d),to:ymd(d)};if(perfDateRange==='week'){const s=new Date(d);s.setDate(d.getDate()-d.getDay());return{from:ymd(s),to:ymd(d)};}if(perfDateRange==='month'){const s=new Date(d.getFullYear(),d.getMonth(),1);return{from:ymd(s),to:ymd(d)};}if(perfDateRange==='custom')return{from:perfCustomFrom,to:perfCustomTo};return{from:'',to:''};}
+    function perfSetRange(r){perfDateRange=r;renderPerformance();}
+    function perfSetCustom(){perfCustomFrom=document.getElementById('perf-from')?.value||'';perfCustomTo=document.getElementById('perf-to')?.value||'';perfDateRange='custom';renderPerformance();}
     function renderPerformance(){
     const today = (function(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
     const calls = getCalls().filter(callVisibleToUser);
+    const _pb=perfGetBounds();
+    const rangeCalls=calls.filter(c=>(!_pb.from||c.date>=_pb.from)&&(!_pb.to||c.date<=_pb.to));
     const visibleReps = getVisibleRepUIDs();
     const reps = Object.entries(USERS).filter(([k,v])=>(v.tier==='rep'||v.role==='Sales'||v.role==='Rep') && visibleReps.includes(canonicalRepKey(k)));
     const stats = reps.map(([uid,u])=>{
-        const rc = calls.filter(c=>canonicalRepKey(c.rep)===canonicalRepKey(uid));
+        const rc = rangeCalls.filter(c=>canonicalRepKey(c.rep)===canonicalRepKey(uid));
         const int = rc.filter(c=>c.outcome==='Interested').length;
         const fu = rc.filter(c=>c.followup && c.followup>=today).length;
         const tod = rc.filter(c=>c.date===today).length;
@@ -8448,6 +8454,7 @@
     </table></div>`;
 
     document.getElementById('perf-content').innerHTML=`
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px;">${['all','today','week','month'].map(r=>`<button onclick="perfSetRange('${r}')" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:${perfDateRange===r?'var(--purple)':'transparent'};color:${perfDateRange===r?'#fff':'var(--text-2)'};font-size:13px;font-weight:600;cursor:pointer;">${({all:'All Time',today:'Today',week:'This Week',month:'This Month'})[r]}</button>`).join('')}<input type="date" id="perf-from" value="${perfCustomFrom}" onchange="perfSetCustom()" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:13px;"><span style="color:var(--text-2);">to</span><input type="date" id="perf-to" value="${perfCustomTo}" onchange="perfSetCustom()" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:13px;"></div>
         <div class="card" style="margin-bottom:20px;">
         <div class="section-head" style="margin-bottom:20px;"><h3>Calls Per Rep</h3></div>
         <div class="bar-chart">${chart}</div>
