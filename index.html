@@ -7470,7 +7470,7 @@
     const ft = (document.getElementById('prospect-filter-type')||{}).value||'';
     const fAssign = (document.getElementById('prospect-filter-assign')||{}).value||'';
     const fPkg = (document.getElementById('prospect-filter-pkg')||{}).value||'';
-    if(q) ps = ps.filter(p=>(p.name||'').toLowerCase().includes(q.toLowerCase())||(p.area||'').toLowerCase().includes(q.toLowerCase()));
+    if(q){const ql=q.toLowerCase();const qd=q.replace(/\D/g,'');ps = ps.filter(p=>{const nameHit=(p.name||'').toLowerCase().includes(ql);const areaHit=(p.area||'').toLowerCase().includes(ql);const phoneHit=qd.length>=3 && (p.phone||'').replace(/\D/g,'').includes(qd);return nameHit||areaHit||phoneHit;});}
     if(fa) ps = ps.filter(p=>p.area===fa);
     if(ft) ps = ps.filter(p=>p.type===ft);
     if(fAssign) ps = ps.filter(p=>p.assignedTo===fAssign);
