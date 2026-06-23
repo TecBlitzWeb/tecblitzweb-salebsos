@@ -4047,6 +4047,7 @@
         border: 1px solid var(--border-subtle);
         border-radius: var(--radius-md);
         padding: var(--space-3) var(--space-4);
+        min-height: 96px;
         box-shadow: var(--shadow-card);
     }
 
@@ -4437,6 +4438,13 @@
         #page-allcalls td,
         #page-settings .tm-table td {
             font-size: 1.0625rem;
+        }
+
+        #page-allcalls #ac-stats-bar {
+            display: grid !important;
+            grid-template-columns: repeat(5, 1fr) !important;
+            gap: 14px !important;
+            align-items: stretch !important;
         }
     }
 
