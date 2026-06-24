@@ -6058,6 +6058,16 @@
     </div>
     </div>
 
+    <div class="modal-overlay" id="prospect-history-modal">
+      <div class="modal" style="max-width:560px;">
+        <h3 id="prospect-history-title">Call History</h3>
+        <div id="prospect-history-body" style="max-height:60vh;overflow-y:auto;margin-top:12px;"></div>
+        <div style="margin-top:16px;text-align:right;">
+          <button class="btn btn-outline" onclick="closeModal('prospect-history-modal')">Close</button>
+        </div>
+      </div>
+    </div>
+
     <!-- BUSINESS TIMELINE MODAL -->
     <div class="modal-overlay" id="biz-timeline-modal">
     <div class="modal" style="max-width:560px;">
@@ -7525,10 +7535,44 @@
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
             <span class="info-row"><strong>${esc(p.phone)}</strong></span>
-            <button class="btn btn-cyan btn-sm" style="margin-left:auto;" onclick='openCallModalForProspect("${p.name}")'>Log Call</button>
+            <button class="btn btn-outline btn-sm" style="margin-left:auto;" onclick='openProspectHistory("${esc(p.name).replace(/"/g,"&quot;")}")'>History</button>
+            <button class="btn btn-cyan btn-sm" onclick='openCallModalForProspect("${p.name}")'>Log Call</button>
         </div>
         </div>`;
     }).join('');
+    }
+
+    function openProspectHistory(bizName){
+      const key = (bizName||'').trim().toLowerCase();
+      const calls = getCalls()
+        .filter(c => ((c.biz||'').trim().toLowerCase()) === key)
+        .sort((a,b) => {
+          const ad = (a.date||'') + 'T' + (a.time||'00:00');
+          const bd = (b.date||'') + 'T' + (b.time||'00:00');
+          return bd.localeCompare(ad);
+        });
+      const titleEl = document.getElementById('prospect-history-title');
+      const bodyEl  = document.getElementById('prospect-history-body');
+      if(titleEl) titleEl.textContent = 'Call History — ' + bizName;
+      if(!calls.length){
+        bodyEl.innerHTML = '<div class="empty-state" style="padding:24px;">No calls logged for this prospect yet.</div>';
+      } else {
+        bodyEl.innerHTML = calls.map(c => {
+          const badge = (typeof outcomeBadge === 'function') ? outcomeBadge(c.outcome) : esc(c.outcome||'—');
+          const when = esc((c.date||'') + (c.time ? (' ' + c.time) : ''));
+          const rep  = esc(userLabel ? userLabel(c.rep) : (c.rep||'—'));
+          const notes = c.notes ? esc(c.notes) : '<span style="color:var(--text-2);">No notes</span>';
+          return '<div style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;">'
+            + '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;">'
+            + '<span>' + badge + '</span>'
+            + '<span style="font-size:12px;color:var(--text-2);">' + when + '</span>'
+            + '</div>'
+            + '<div style="font-size:12px;color:var(--text-2);margin-top:4px;">Rep: ' + rep + '</div>'
+            + '<div style="margin-top:6px;font-size:14px;white-space:pre-wrap;">' + notes + '</div>'
+            + '</div>';
+        }).join('');
+      }
+      openModal('prospect-history-modal');
     }
 
     function openCallModalForProspect(biz){
