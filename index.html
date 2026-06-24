@@ -3332,6 +3332,14 @@
         transform: none;
     }
 
+    #page-prospects .prospect-toggle-btn{
+      width:100%;
+      min-height:44px;
+      margin-top:4px;
+      font-size:14px;
+      font-weight:600;
+    }
+
     #page-prospects .empty-state {
         font-family: var(--font-body);
         font-size: var(--text-base);
@@ -7464,6 +7472,14 @@
     return !isNaN(ta) && !isNaN(tb) && ta === tb;
     }
 
+    // Tracks which prospect cards are expanded (survives re-renders). Default: all collapsed.
+    const _expandedProspects = new Set();
+    function toggleProspectCard(id){
+      if(_expandedProspects.has(id)) _expandedProspects.delete(id);
+      else _expandedProspects.add(id);
+      renderProspects();
+    }
+
     async function renderProspects(){
     await refreshProspectsAssigneeDropdown();
     const grid = document.getElementById('prospect-grid');
@@ -7509,6 +7525,7 @@
         const repCOOName = repCOOUid && USERS[repCOOUid] ? ` (${USERS[repCOOUid].name})` : '';
         const repName = p.assignedTo ? userLabel(p.assignedTo) + repCOOName : '—';
         const prospectId = esc(p.id);
+        const isExpanded = _expandedProspects.has(String(p.id));
         const createdRaw = p.createdAt || p.created_at;
         const updatedRaw = p.updatedAt || p.updated_at;
         const addedLabel = fmtProspectTs(createdRaw);
@@ -7528,7 +7545,8 @@
             <div class="prospect-card-actions"><button class="btn btn-outline btn-sm" onclick='editProspectSafe("${prospectId}")'>Edit</button>${(USERS[currentUser]?.tier==='ceo')?`<button class="btn btn-sm" style="background:var(--red-light);color:var(--red);border:none;" onclick="deleteProspect('${prospectId}')">×</button>`:''}</div>
         </div>
         <div class="prospect-pain">${esc(p.pain||'No pain line set')}</div>
-        ${p.script?`<div class="script-box">${esc(p.script)}</div>`:''}
+        ${(p.script && isExpanded)?`<div class="script-box">${esc(p.script)}</div>`:''}
+        ${p.script?`<button class="btn btn-outline btn-sm prospect-toggle-btn" onclick='toggleProspectCard("${String(p.id)}")'>${isExpanded?'▲ Hide script':'▼ Show script'}</button>`:''}
         <div class="prospect-footer">
             <span class="prospect-pkg">${esc(p.pkg)}</span>
             <span class="prospect-rep">${repName}</span>
