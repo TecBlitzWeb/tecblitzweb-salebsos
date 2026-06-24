@@ -7550,6 +7550,7 @@
         const repName = p.assignedTo ? userLabel(p.assignedTo) + repCOOName : '—';
         const prospectId = esc(p.id);
         const isExpanded = _expandedProspects.has(String(p.id));
+        const _act = getProspectActivity(p.name);
         const createdRaw = p.createdAt || p.created_at;
         const updatedRaw = p.updatedAt || p.updated_at;
         const addedLabel = fmtProspectTs(createdRaw);
@@ -7559,7 +7560,7 @@
         return `<div class="prospect-card">
         <div class="prospect-card-header">
             <div onclick='toggleProspectCard("${String(p.id)}")' style="cursor:pointer;">
-            <div class="prospect-biz">${esc(p.name)}<span style="margin-left:6px;font-size:12px;opacity:0.7;">${isExpanded ? '▲' : '▼'}</span></div>
+            <div class="prospect-biz">${esc(p.name)}<span style="margin-left:6px;font-size:12px;opacity:0.7;">${isExpanded ? '▲' : '▼'}</span>${_act.count > 0 ? `<span title="${esc(_act.last)}" style="display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:8px;vertical-align:middle;background:${prospectActivityDotColor(_act.last)};"></span>` : ''}</div>
             <div class="prospect-meta" style="margin-top:4px;">
                 <span class="badge badge-purple">${esc(p.type)}</span>
                 <span class="prospect-area">${esc(p.area)}</span>
@@ -7575,12 +7576,37 @@
             <span class="prospect-rep">${repName}</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
+            ${_act.count > 0
+      ? `<span class="badge ${(typeof outcomeBadge==='function' ? (outcomeBadge(_act.last).match(/badge-[a-z]+/)||['badge-gray'])[0] : 'badge-gray')}" style="font-size:11px;">${esc(_act.last)} · ${_act.count} call${_act.count>1?'s':''}</span>`
+      : `<span class="badge badge-gray" style="font-size:11px;opacity:0.7;">New · no calls</span>`}
             <span class="info-row"><strong>${esc(p.phone)}</strong></span>
             <button class="btn btn-outline btn-sm" style="margin-left:auto;" onclick='openProspectHistory("${esc(p.name).replace(/"/g,"&quot;")}")'>History</button>
             <button class="btn btn-cyan btn-sm" onclick='openCallModalForProspect("${p.name}")'>Log Call</button>
         </div>
         </div>`;
     }).join('');
+    }
+
+    function getProspectActivity(bizName){
+      const key = (bizName||'').trim().toLowerCase();
+      const calls = getCalls().filter(c => ((c.biz||'').trim().toLowerCase()) === key);
+      if(!calls.length) return { count:0, last:null };
+      calls.sort((a,b)=>{
+        const ad=(a.date||'')+'T'+(a.time||'00:00');
+        const bd=(b.date||'')+'T'+(b.time||'00:00');
+        return bd.localeCompare(ad);
+      });
+      return { count: calls.length, last: calls[0].outcome || '' };
+    }
+    function prospectActivityDotColor(outcome){
+      switch(outcome){
+        case 'Interested': return 'var(--green)';
+        case 'Follow-up needed': return 'var(--amber)';
+        case 'WhatsApp sent': return 'var(--cyan)';
+        case 'Not interested': return 'var(--red)';
+        case 'No answer': return 'var(--text-2)';
+        default: return 'var(--text-2)';
+      }
     }
 
     function openProspectHistory(bizName){
