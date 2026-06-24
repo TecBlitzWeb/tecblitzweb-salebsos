@@ -2773,33 +2773,36 @@
         height: 240px;
         flex-shrink: 0;
     }
-    #page-dashboard .hero-avatar-wrap {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+    #page-dashboard .hero-pulse-wrap{
+      position:relative; width:200px; height:200px;
+      display:flex; align-items:center; justify-content:center; margin:0 auto;
     }
-    #page-dashboard .hero-avatar-svg {
-        width: 150px;
-        height: 165px;
-        position: relative;
-        z-index: 2;
+    #page-dashboard .hero-pulse-ring{
+      position:absolute; top:50%; left:50%; width:80px; height:80px;
+      margin:-40px 0 0 -40px; border-radius:50%;
+      border:1.5px solid rgba(124,92,255,0.35);
+      animation:heroPulse 3s ease-out infinite;
     }
-    #page-dashboard .hero-avatar-ring {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 170px;
-        height: 170px;
-        border-radius: 50%;
-        border: 1px solid var(--border-subtle);
-        z-index: 1;
+    #page-dashboard .hero-pulse-ring2{ animation-delay:1s; }
+    #page-dashboard .hero-pulse-ring3{ animation-delay:2s; }
+    @keyframes heroPulse{
+      0%{ transform:scale(0.6); opacity:0.8; }
+      100%{ transform:scale(2.2); opacity:0; }
     }
-    #page-dashboard .hero-ring2 {
-        width: 200px;
-        height: 200px;
-        border-color: rgba(255, 255, 255, 0.04);
+    #page-dashboard .hero-pulse-core{ position:relative; width:120px; height:120px; z-index:1; }
+    #page-dashboard .hero-pulse-wave{
+      stroke-dasharray:140; stroke-dashoffset:140;
+      animation:heroWave 2.4s ease-in-out infinite;
+    }
+    @keyframes heroWave{
+      0%{ stroke-dashoffset:140; }
+      45%{ stroke-dashoffset:0; }
+      55%{ stroke-dashoffset:0; }
+      100%{ stroke-dashoffset:-140; }
+    }
+    @media (prefers-reduced-motion: reduce){
+      #page-dashboard .hero-pulse-ring,
+      #page-dashboard .hero-pulse-wave{ animation:none; }
     }
     #page-dashboard .hero-float-card {
         position: absolute;
@@ -5275,35 +5278,15 @@
             <div class="hfc-icon">👥</div>
             <div class="hfc-info"><span class="hfc-label">Prospects</span><span class="hfc-val" id="hero-prospects-val">—</span></div>
             </div>
-            <div class="hero-avatar-wrap">
-            <div class="hero-avatar-ring"></div>
-            <div class="hero-avatar-ring hero-ring2"></div>
-            <svg class="hero-avatar-svg" viewBox="0 0 200 220" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="100" cy="60" r="36" fill="#A855F7" opacity="0.15"/>
-            <circle cx="100" cy="58" r="28" fill="#C084FC"/>
-            <ellipse cx="100" cy="57" rx="16" ry="18" fill="#F5D0FE"/>
-            <ellipse cx="93" cy="52" rx="3" ry="3.5" fill="#1e1b4b"/>
-            <ellipse cx="107" cy="52" rx="3" ry="3.5" fill="#1e1b4b"/>
-            <path d="M93 62 Q100 68 107 62" stroke="#1e1b4b" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-            <rect x="72" y="88" width="56" height="64" rx="12" fill="#7C3AED"/>
-            <rect x="78" y="94" width="44" height="52" rx="8" fill="#A855F7"/>
-            <rect x="82" y="98" width="36" height="4" rx="2" fill="white" opacity="0.5"/>
-            <rect x="82" y="106" width="28" height="3" rx="1.5" fill="white" opacity="0.3"/>
-            <rect x="82" y="113" width="32" height="3" rx="1.5" fill="white" opacity="0.3"/>
-            <rect x="60" y="92" width="14" height="44" rx="7" fill="#C084FC"/>
-            <rect x="126" y="92" width="14" height="44" rx="7" fill="#C084FC"/>
-            <rect x="58" y="152" width="20" height="36" rx="10" fill="#A855F7"/>
-            <rect x="122" y="152" width="20" height="36" rx="10" fill="#A855F7"/>
-            <rect x="50" y="130" width="100" height="12" rx="6" fill="#7C3AED" opacity="0.4"/>
-            <rect x="70" y="152" width="60" height="8" rx="4" fill="#6D28D9" opacity="0.5"/>
-            <rect x="72" y="155" width="56" height="52" rx="8" fill="#22D3EE" opacity="0.15"/>
-            <rect x="76" y="158" width="48" height="36" rx="6" fill="#0E7490" opacity="0.8"/>
-            <rect x="79" y="161" width="42" height="2" rx="1" fill="#22D3EE" opacity="0.6"/>
-            <rect x="79" y="166" width="34" height="1.5" rx="0.75" fill="white" opacity="0.3"/>
-            <rect x="79" y="170" width="38" height="1.5" rx="0.75" fill="white" opacity="0.3"/>
-            <rect x="79" y="174" width="30" height="1.5" rx="0.75" fill="white" opacity="0.2"/>
-            <rect x="68" y="196" width="64" height="4" rx="2" fill="#6D28D9" opacity="0.3"/>
-            </svg>
+            <div class="hero-pulse-wrap" aria-hidden="true">
+              <span class="hero-pulse-ring"></span>
+              <span class="hero-pulse-ring hero-pulse-ring2"></span>
+              <span class="hero-pulse-ring hero-pulse-ring3"></span>
+              <svg class="hero-pulse-core" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="60" cy="60" r="30" fill="none" stroke="#7C5CFF" stroke-width="2" opacity="0.5"/>
+                <circle cx="60" cy="60" r="18" fill="#A855F7" opacity="0.18"/>
+                <path class="hero-pulse-wave" d="M30 60 L48 60 L54 44 L66 76 L72 60 L90 60" fill="none" stroke="#A855F7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
             </div>
             </div>
             </div>
