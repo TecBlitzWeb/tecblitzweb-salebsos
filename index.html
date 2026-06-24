@@ -7544,7 +7544,7 @@
             </div>
             <div class="prospect-card-actions"><button class="btn btn-outline btn-sm" onclick='editProspectSafe("${prospectId}")'>Edit</button>${(USERS[currentUser]?.tier==='ceo')?`<button class="btn btn-sm" style="background:var(--red-light);color:var(--red);border:none;" onclick="deleteProspect('${prospectId}')">×</button>`:''}</div>
         </div>
-        <div class="prospect-pain">${esc(p.pain||'No pain line set')}</div>
+        ${(p.pain && String(p.pain).trim()) ? `<div class="prospect-pain">${esc(p.pain)}</div>` : ''}
         ${(p.script && isExpanded)?`<div class="script-box">${esc(p.script)}</div>`:''}
         ${p.script?`<button class="btn btn-outline btn-sm prospect-toggle-btn" onclick='toggleProspectCard("${String(p.id)}")'>${isExpanded?'▲ Hide script':'▼ Show script'}</button>`:''}
         <div class="prospect-footer">
