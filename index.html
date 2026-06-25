@@ -5447,13 +5447,7 @@
                 <option value="">All Reps</option>
             </select>
             </div>
-            <div class="pipeline-tabs">
-            <button class="pipeline-tab active" onclick="pipelineSetTab('all',this)">All</button>
-            <button class="pipeline-tab" onclick="pipelineSetTab('new',this)">New — Awaiting Mockup</button>
-            <button class="pipeline-tab" onclick="pipelineSetTab('pending',this)">Mockup Sent</button>
-            <button class="pipeline-tab" onclick="pipelineSetTab('called',this)">Callback Done</button>
-            <button class="pipeline-tab" onclick="pipelineSetTab('closed',this)">Closed</button>
-            </div>
+            <div class="pstat-bar" id="pipeline-stat-bar" style="margin-bottom:14px;"></div>
             <div id="pipeline-content" style="display:grid;grid-template-columns:1fr;gap:20px;"></div>
         </div>
 
@@ -11221,7 +11215,6 @@
 
     function pipelineSetTab(tab, btn){
     pipelineCurrentTab = tab;
-    document.querySelectorAll('.pipeline-tab').forEach(t => t.classList.remove('active'));
     if(btn) btn.classList.add('active');
     renderPipeline();
     }
@@ -11278,6 +11271,27 @@
     // Search filter
     const q = (document.getElementById('pipeline-search')||{}).value?.trim().toLowerCase()||'';
     if(q) leads = leads.filter(l => l.biz.toLowerCase().includes(q));
+
+    const plBase = leads.slice();
+    const plCounts = { all: plBase.length, new:0, pending:0, called:0, closed:0 };
+    plBase.forEach(l => {
+        if(l.status==='won' || l.status==='lost') plCounts.closed++;
+        else if(plCounts[l.status]!==undefined) plCounts[l.status]++;
+    });
+    const plDefs = [
+        ['all','All','all','var(--purple-mid)'],
+        ['new','New','new','var(--amber)'],
+        ['pending','Mockup Sent','pending','var(--purple)'],
+        ['called','Callback Done','called','var(--cyan)'],
+        ['closed','Closed','closed','var(--text-2)'],
+    ];
+    const plBar = document.getElementById('pipeline-stat-bar');
+    if(plBar){
+        plBar.innerHTML = plDefs.map(([val,label,key,accent]) =>
+            `<div class="pstat-chip${pipelineCurrentTab===val?' active':''}" style="--chip-accent:${accent};" onclick="pipelineSetTab('${val}')">`+
+            `<span class="pstat-num">${plCounts[key]}</span><span class="pstat-lbl">${label}</span></div>`
+        ).join('');
+    }
 
     // Tab filter
     if(pipelineCurrentTab !== 'all'){
