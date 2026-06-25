@@ -5465,21 +5465,10 @@
                 <button class="btn btn-purple btn-header-log-call" onclick="openModal('call-modal')">+ Log Call</button>
             </div>
             </div>
-            <div class="tab-bar" id="mycalls-tabs" style="margin-bottom:14px;">
-            <button type="button" class="tab active" onclick="myCallsSetTab('all',this)">All calls</button>
-            <button type="button" class="tab" onclick="myCallsSetTab('no-answer',this)">No answer</button>
-            </div>
+            <div class="pstat-bar" id="mycalls-stat-bar" style="margin-bottom:14px;"></div>
             <div class="search-bar">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9CA3AF" stroke-width="1.5"/><path d="M10.5 10.5L13 13" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/></svg>
             <input type="text" id="calls-search" placeholder="Search calls..." oninput="renderMyCalls()">
-            <select id="calls-filter" onchange="renderMyCalls()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;">
-                <option value="">All Outcomes</option>
-                <option>Interested</option>
-                <option>Follow-up needed</option>
-                <option>WhatsApp sent</option>
-                <option>Not interested</option>
-                <option>No answer</option>
-            </select>
             </div>
             <div class="table-wrap">
             <table>
@@ -8099,17 +8088,39 @@
     openModal('biz-timeline-modal');
     }
 
+    let _myCallsStatus = '';
+    function myCallsSetStatus(v){ _myCallsStatus = v; renderMyCalls(); }
+
     function renderMyCalls(){
     const tbody = document.getElementById('calls-tbody');
     let calls = filterCallsForCurrentUser(getCalls());
     const q = (document.getElementById('calls-search')||{}).value||'';
-    const f = (document.getElementById('calls-filter')||{}).value||'';
     if(q) calls = calls.filter(c=>(c.biz||'').toLowerCase().includes(q.toLowerCase())||((c.notes||'').toLowerCase().includes(q.toLowerCase())));
-    if(_myCallsTab === 'no-answer'){
-        calls = calls.filter(function(c){ return c.outcome === NO_ANSWER_OUTCOME; });
-    } else if(f) {
-        calls = calls.filter(c=>c.outcome===f);
+
+    const mcBase = calls; // post-search, pre-outcome — faceting base
+    const MC_OUT = ['Interested','Follow-up needed','WhatsApp sent','Not interested','No answer'];
+    const mcCounts = { __all__: mcBase.length };
+    MC_OUT.forEach(o => mcCounts[o] = 0);
+    mcBase.forEach(c => { if(mcCounts[c.outcome] !== undefined) mcCounts[c.outcome]++; });
+
+    const mcDefs = [
+      ['', 'All', '__all__', 'var(--purple-mid)'],
+      ['Interested', 'Interested', 'Interested', 'var(--green)'],
+      ['Follow-up needed', 'Follow-up', 'Follow-up needed', 'var(--amber)'],
+      ['WhatsApp sent', 'WhatsApp', 'WhatsApp sent', 'var(--cyan)'],
+      ['Not interested', 'Not Interested', 'Not interested', 'var(--red)'],
+      ['No answer', 'No Answer', 'No answer', 'var(--text-2)'],
+    ];
+    const mcBar = document.getElementById('mycalls-stat-bar');
+    if(mcBar){
+      mcBar.innerHTML = mcDefs.map(([val,label,key,accent]) =>
+        `<div class="pstat-chip${_myCallsStatus===val?' active':''}" style="--chip-accent:${accent};" onclick="myCallsSetStatus('${val}')">`+
+        `<span class="pstat-num">${mcCounts[key]}</span><span class="pstat-lbl">${label}</span></div>`
+      ).join('');
     }
+
+    calls = _myCallsStatus ? mcBase.filter(c => c.outcome === _myCallsStatus) : mcBase;
+
     calls.sort((a,b)=>b.date.localeCompare(a.date));
     if(!calls.length){
         tbody.innerHTML=`<tr><td colspan="6" class="empty-state">No calls logged yet.</td></tr>`;
