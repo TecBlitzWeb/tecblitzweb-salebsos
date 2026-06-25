@@ -8847,11 +8847,11 @@
     TOMORROW'S RECOMMENDATION`;
 
     try {
-        const res = await fetch('https://api.anthropic.com/v1/messages',{
+        const res = await fetch('/api/claude',{
         method:'POST',
-        headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+        headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
-            model:'claude-sonnet-4-20250514',
+            model:'claude-sonnet-4-6',
             max_tokens:1000,
             messages:[{role:'user',content:prompt}]
         })
@@ -8876,7 +8876,7 @@
         });
         out.innerHTML=`<div class="ai-report-box">${rendered}</div>`;
     } catch(e){
-        out.innerHTML=`<div class="ai-report-box"><div style="color:var(--red);">Error: ${e.message}. Ensure you're using Claude.ai with API access enabled.</div></div>`;
+        out.innerHTML=`<div class="ai-report-box"><div style="color:var(--red);">Error: ${e.message}. AI report failed. Try again.</div></div>`;
     }
     btn.disabled=false;
     btn.innerHTML='<svg style="display:inline;vertical-align:middle;margin-right:6px;" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.5 3.5L12 6l-3.5 1.5L7 11l-1.5-3.5L2 6l3.5-1.5L7 1z" fill="white"/></svg>Generate AI Report';
@@ -9269,11 +9269,11 @@
     aiChatHistory.push({role:'user', content: text});
 
     try {
-        const res = await fetch('https://api.anthropic.com/v1/messages',{
+        const res = await fetch('/api/claude',{
         method:'POST',
-        headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+        headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
-            model:'claude-sonnet-4-20250514',
+            model:'claude-sonnet-4-6',
             max_tokens:600,
             system: systemPrompt,
             messages: aiChatHistory
