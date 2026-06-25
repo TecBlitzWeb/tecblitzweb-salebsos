@@ -11591,6 +11591,13 @@
     // CEO INTERESTED LEADS INBOX
     // ════════════════════════════════════════
 
+    let ceoInboxTab = 'all';
+    function ceoInboxSetTab(t){
+      ceoInboxTab = t;
+      const c = document.getElementById('ceo-leads-inbox-body');
+      if(c) ceoInboxRender(c);
+    }
+
     function ceoInboxRender(container){
     const leads = getLeads();
     // Show all leads (new + pending = unprocessed, but all visible for CEO)
@@ -11614,7 +11621,26 @@
     const ORDER = ['new','pending','called'];
     const sorted = [...allOpen].sort((a,b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status));
 
-    container.innerHTML = sorted.map(l => {
+    // Faceted counts over all open leads (independent of selected tab)
+    const ibCounts = { __all__: allOpen.length, new:0, pending:0, called:0 };
+    allOpen.forEach(l => { if(ibCounts[l.status] !== undefined) ibCounts[l.status]++; });
+
+    const ibDefs = [
+      ['all','All','__all__','var(--purple-mid)'],
+      ['new','New','new','var(--amber)'],
+      ['pending','Mockup Sent','pending','var(--purple)'],
+      ['called','Callback','called','var(--cyan)'],
+    ];
+    const ibBar = `<div class="pstat-bar">` + ibDefs.map(([val,label,key,accent]) =>
+      `<div class="pstat-chip${ceoInboxTab===val?' active':''}" style="--chip-accent:${accent};" onclick="ceoInboxSetTab('${val}')">`+
+      `<span class="pstat-num">${ibCounts[key]}</span>`+
+      `<span class="pstat-lbl">${label}</span>`+
+      `</div>`).join('') + `</div>`;
+
+    const ibView = (ceoInboxTab === 'all') ? sorted : sorted.filter(l => l.status === ceoInboxTab);
+
+    container.innerHTML = ibBar + (ibView.length
+      ? ibView.map(l => {
         const repName = USERS[l.rep]?.name || l.rep;
         const isNew = l.status === 'new';
         const statusEmoji = { new:'●', pending:'○', called:'◌' }[l.status] || '•';
@@ -11644,7 +11670,8 @@
             </div>
         </div>
         </div>`;
-    }).join('');
+    }).join('')
+      : `<div style="text-align:center;padding:18px 0;color:var(--text-2);font-size:13px;">No leads in this stage.</div>`);
     }
 
     // CEO jobs dashboard + interested-leads inbox
