@@ -986,6 +986,13 @@
     .info-row{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--text-2);}
     .info-row strong{color:var(--text);font-weight:600;}
 
+    .pstat-bar{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 18px;}
+    .pstat-chip{flex:1 1 120px;min-width:108px;cursor:pointer;background:var(--glass-card);border:1px solid rgba(255,255,255,0.08);border-left:3px solid var(--chip-accent,var(--text-2));border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:3px;transition:transform var(--t-fast),box-shadow var(--t-fast),border-color var(--t-fast),background var(--t-fast);box-shadow:0 4px 22px rgba(0,0,0,0.32);}
+    .pstat-chip:hover{transform:translateY(-2px);box-shadow:0 10px 34px rgba(0,0,0,0.45);border-color:var(--chip-accent,rgba(168,85,247,0.4));}
+    .pstat-chip.active{border-color:var(--chip-accent);box-shadow:0 0 0 1px var(--chip-accent),0 0 24px -8px var(--chip-accent);background:var(--glass-card-hover);}
+    .pstat-num{font-size:22px;font-weight:700;font-family:'Syne',sans-serif;line-height:1;color:var(--text);}
+    .pstat-lbl{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text-2);}
+
     .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px;margin-bottom:32px;}
     /* Bento dashboard — asymmetric 12-col (desktop) */
     .stat-grid.stat-grid-bento{grid-template-columns:repeat(12,1fr);gap:18px;align-items:stretch;}
@@ -5385,6 +5392,7 @@
                 <option value="No answer">No answer</option>
             </select>
             </div>
+            <div class="pstat-bar" id="prospect-stat-bar"></div>
             <div class="prospect-grid" id="prospect-grid"></div>
         </div>
 
@@ -7561,6 +7569,25 @@
         stEl.innerHTML = stDefs.map(([val, label, key]) =>
             `<option value="${val}" ${curSt === val ? 'selected' : ''}>${label} (${statusCounts[key]})</option>`
         ).join('');
+    }
+    const barEl = document.getElementById('prospect-stat-bar');
+    if (barEl) {
+      const curStBar = (document.getElementById('prospect-filter-status')||{}).value||'';
+      const chipDefs = [
+        ['', 'All', '__all__', 'var(--purple-mid)'],
+        ['__new__', 'New', '__new__', 'var(--text-2)'],
+        ['Interested', 'Interested', 'Interested', 'var(--green)'],
+        ['Follow-up needed', 'Follow-up', 'Follow-up needed', 'var(--amber)'],
+        ['WhatsApp sent', 'WhatsApp', 'WhatsApp sent', 'var(--cyan)'],
+        ['Not interested', 'Not Interested', 'Not interested', 'var(--red)'],
+        ['No answer', 'No Answer', 'No answer', 'var(--text-2)'],
+      ];
+      barEl.innerHTML = chipDefs.map(([val,label,key,accent]) =>
+        `<div class="pstat-chip${curStBar===val?' active':''}" style="--chip-accent:${accent};" onclick="var s=document.getElementById('prospect-filter-status');if(s){s.value='${val}';renderProspects();}">`+
+        `<span class="pstat-num">${statusCounts[key]}</span>`+
+        `<span class="pstat-lbl">${label}</span>`+
+        `</div>`
+      ).join('');
     }
 
     if(!ps.length){
