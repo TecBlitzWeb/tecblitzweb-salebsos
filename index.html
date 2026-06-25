@@ -5375,6 +5375,15 @@
                 <option value="Business Website – Rs. 120,000">Business Website</option>
                 <option value="eCommerce – Rs. 240,000">eCommerce</option>
             </select>
+            <select id="prospect-filter-status" onchange="renderProspects()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;">
+                <option value="">All Statuses</option>
+                <option value="__new__">New (no calls)</option>
+                <option value="Interested">Interested</option>
+                <option value="Follow-up needed">Follow-up needed</option>
+                <option value="WhatsApp sent">WhatsApp sent</option>
+                <option value="Not interested">Not interested</option>
+                <option value="No answer">No answer</option>
+            </select>
             </div>
             <div class="prospect-grid" id="prospect-grid"></div>
         </div>
@@ -7510,6 +7519,14 @@
     if(ft) ps = ps.filter(p=>p.type===ft);
     if(fAssign) ps = ps.filter(p=>p.assignedTo===fAssign);
     if(fPkg) ps = ps.filter(p=>p.pkg===fPkg);
+    const fStatus = (document.getElementById('prospect-filter-status')||{}).value||'';
+    if(fStatus){
+      ps = ps.filter(p=>{
+        const act = getProspectActivity(p.name);
+        if(fStatus === '__new__') return act.count === 0;
+        return act.count > 0 && act.last === fStatus;
+      });
+    }
 
     // Newest first
     ps = ps.slice().sort((a,b)=> (b.id||0) - (a.id||0));
