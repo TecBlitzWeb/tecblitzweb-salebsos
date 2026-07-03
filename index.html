@@ -245,7 +245,7 @@
 
     /* ── APP SHELL ── */
     #app{display:none;min-height:100vh;}
-    .app-layout{display:flex;min-height:100vh;}
+    .app-layout{display:flex;min-height:100vh;max-width:100vw;overflow-x:clip;}
 
     /* ── SIDEBAR — Glassy Minimal 2026 ── */
     .sidebar{
@@ -808,7 +808,7 @@
     body.light .pipeline-title { color: #0F172A; }
     body.light .rev-label { color: #64748B; }
 
-    .main-content{margin-left:var(--sidebar);flex:1;padding:32px 36px 40px;min-height:100vh;background:transparent;}
+    .main-content{margin-left:var(--sidebar);flex:1;padding:32px 36px 40px;min-height:100vh;background:transparent;min-width:0;overflow-x:clip;}
     .page-header{margin-bottom:28px;}
     #page-dashboard .dash-page-header{overflow:visible;}
     #page-dashboard .dash-header-actions{overflow:visible;display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
@@ -3127,17 +3127,13 @@
         margin-bottom: var(--space-5);
     }
     #page-dashboard .dash-fav-scroll {
-        display: flex;
-        gap: 10px;
-        overflow-x: auto;
-        padding-bottom: 6px;
-        -webkit-overflow-scrolling: touch;
-        scroll-snap-type: x proximity;
+        display:grid;
+        grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+        gap:12px;
+        padding-bottom:2px;
     }
     #page-dashboard .dash-fav-card {
-        flex: 0 0 auto;
-        width: min(220px, 78vw);
-        scroll-snap-align: start;
+        width:auto;
         text-align: left;
         font: inherit;
         color: inherit;
@@ -3237,6 +3233,8 @@
         }
         #page-dashboard .hero-card1 { left: 0; }
         #page-dashboard .hero-card2 { right: 0; }
+        #page-dashboard .dash-fav-scroll{display:flex;overflow-x:auto;gap:10px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;}
+        #page-dashboard .dash-fav-card{flex:0 0 auto;width:min(220px,78vw);scroll-snap-align:start;}
     }
 
     @media (max-width: 480px) {
