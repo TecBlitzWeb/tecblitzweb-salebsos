@@ -5438,6 +5438,38 @@
         flex: 0 1 auto;
         max-width: 100%;
     }
+
+@media (min-width:769px){
+  /* Collapsed rail (default) */
+  .sidebar{ width:72px; overflow-x:hidden; }
+  .main-content{ margin-left:72px; }
+
+  .sidebar .nav-item{ white-space:nowrap; font-size:0; }
+  .sidebar .sidebar-bottom .logout-btn{ font-size:0; }
+  .sidebar .nav-badge{ display:none; }
+  .sidebar .brand-name,
+  .sidebar .brand-sub,
+  .sidebar .sidebar-user-info,
+  .sidebar .nav-section-label{ opacity:0; transition:opacity .15s ease; }
+
+  /* Expanded on hover OR keyboard focus */
+  .sidebar:hover,
+  .sidebar:focus-within{ width:var(--sidebar); box-shadow:6px 0 28px rgba(0,0,0,0.35); }
+  .sidebar:hover .nav-item,
+  .sidebar:focus-within .nav-item{ font-size:13px; }
+  .sidebar:hover .sidebar-bottom .logout-btn,
+  .sidebar:focus-within .sidebar-bottom .logout-btn{ font-size:12px; }
+  .sidebar:hover .nav-badge,
+  .sidebar:focus-within .nav-badge{ display:inline-block; }
+  .sidebar:hover .brand-name,
+  .sidebar:focus-within .brand-name,
+  .sidebar:hover .brand-sub,
+  .sidebar:focus-within .brand-sub,
+  .sidebar:hover .sidebar-user-info,
+  .sidebar:focus-within .sidebar-user-info,
+  .sidebar:hover .nav-section-label,
+  .sidebar:focus-within .nav-section-label{ opacity:1; }
+}
     </style>
 
     </head>
