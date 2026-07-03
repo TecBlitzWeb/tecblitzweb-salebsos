@@ -613,8 +613,10 @@
     body.dark .btn-outline{ background: #1C1C28; border-color: rgba(255,255,255,0.08); color: var(--text-2); }
     body.dark .script-box{ background: #1C1C28; border-color: rgba(255,255,255,0.08); }
     body.dark .tab-bar{ background: #1C1C28; border-color: rgba(255,255,255,0.08); }
+    body.dark .tab{ background:transparent; border-color:transparent; }
     body.dark .tab:not(.active){ color: var(--text-2); }
-    body.dark .tab.active{ background:rgba(168,85,247,0.2); color:#fff; }
+    body.dark .tab:not(.active):hover{ background:rgba(255,255,255,0.08); color:var(--text); }
+    body.dark .tab.active{ background:rgba(168,85,247,0.2); color:#fff; border-color:rgba(168,85,247,0.3); }
     body.dark .login-left{ background:transparent; }
     body.dark .pin-btn{ background: #1C1C28; border-color: rgba(255,255,255,0.08); color: #F8FAFC; }
     body.dark .pin-btn:hover{ background:rgba(168,85,247,0.15); }
@@ -740,7 +742,8 @@
     body.light .btn-outline:hover { border-color: #7C3AED; color: #7C3AED; background: rgba(124,58,237,0.05); }
     body.light .script-box { background: #F8FAFC; border-color: rgba(0,0,0,0.08); color: #374151; }
     body.light .tab-bar { background: #F1F5F9; border-color: rgba(0,0,0,0.08);  }
-    body.light .tab { color: #64748B; }
+    body.light .tab { color: #64748B; background: transparent; border-color: transparent; }
+    body.light .tab:not(.active):hover { background: rgba(0,0,0,0.05); color: #374151; }
     body.light .tab.active { background: rgba(124,58,237,0.12); color: #7C3AED; box-shadow: none; border-color: rgba(124,58,237,0.2); }
     body.light .bar-track { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.05); }
     body.light .bar-val { color: #7C3AED; }
@@ -942,6 +945,19 @@
     .prospect-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:18px;}
     .prospect-card{background:var(--glass-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;display:flex;flex-direction:column;gap:10px;transition: transform .2s ease, border-color .2s ease;cursor:default;}
     .prospect-card:hover{box-shadow:0 8px 32px rgba(123,47,255,0.13), 0 2px 8px rgba(0,0,0,0.07);transform:translateY(-3px);border-color:var(--purple-mid);}
+    .dash-rep-balance-row{cursor:pointer;transition:background-color .15s ease,border-color .15s ease;border-radius:8px;margin:0 -8px;padding-left:8px!important;padding-right:8px!important;}
+    .dash-rep-balance-row:hover{background:rgba(168,85,247,0.08);border-bottom-color:rgba(168,85,247,0.25)!important;}
+    body.dark .dash-rep-balance-row:hover{background:rgba(168,85,247,0.12);}
+    .rep-balance-prospect-row{cursor:pointer;}
+    .dash-recent-call-row,.dash-today-call-row{cursor:pointer;transition:background-color .15s ease;}
+    .dash-recent-call-row:hover,.dash-today-call-row:hover{background:rgba(168,85,247,0.08);}
+    body.dark .dash-recent-call-row:hover,body.dark .dash-today-call-row:hover{background:rgba(168,85,247,0.12);}
+    #page-followups .followup-card.followup-row-clickable{cursor:pointer;transition:background-color .15s ease,border-color .15s ease;}
+    #page-followups .followup-card.followup-row-clickable:hover{background:rgba(168,85,247,0.08) !important;box-shadow:none;transform:none;border-color:rgba(168,85,247,0.2);}
+    body.dark #page-followups .followup-card.followup-row-clickable:hover{background:rgba(168,85,247,0.12) !important;}
+    #dash-followups .dash-followup-card{cursor:pointer;transition:background-color .15s ease;}
+    #dash-followups .dash-followup-card:hover{background:rgba(168,85,247,0.08) !important;box-shadow:none;transform:none;}
+    body.dark #dash-followups .dash-followup-card:hover{background:rgba(168,85,247,0.12) !important;}
     .prospect-card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
     .prospect-biz{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
     .prospect-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
@@ -981,7 +997,8 @@
     .inline-flex{display:inline-flex;align-items:center;gap:6px;}
     .script-box{background:#1C1C28;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--text-2);line-height:1.6;white-space:pre-wrap;}
     .tab-bar{display:flex;gap:4px;margin-bottom:20px;background:#1C1C28;border:1px solid var(--border);padding:4px;border-radius:12px;width:fit-content;}
-    .tab{padding:8px 18px;border-radius:var(--radius-pill);font-size:13px;font-weight:600;font-family:'Syne',sans-serif;cursor:pointer;color:var(--text-2);transition:background var(--t-fast),color var(--t-fast),box-shadow var(--t-fast),border-color var(--t-fast);}
+    .tab{padding:8px 18px;border-radius:var(--radius-pill);font-size:13px;font-weight:600;font-family:'Syne',sans-serif;cursor:pointer;color:var(--text-2);background:transparent;border:1px solid transparent;transition:background var(--t-fast),color var(--t-fast),box-shadow var(--t-fast),border-color var(--t-fast);}
+    .tab:not(.active):hover{background:rgba(255,255,255,0.06);color:var(--text);}
     .tab.active{background:rgba(168,85,247,0.2);color:#fff;box-shadow:0 0 12px var(--glow-purple);border:1px solid rgba(168,85,247,0.3);}
     .info-row{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--text-2);}
     .info-row strong{color:var(--text);font-weight:600;}
@@ -1360,6 +1377,8 @@
         font-size:16px;
         border-radius:12px;
         }
+        #page-prospects .prospect-filters-wrap{width:100%;}
+        #page-prospects .prospect-filters-btn{width:100%;min-height:48px;font-size:16px;justify-content:center;}
 
         /* Tables → card layout (no horizontal scroll); All Calls uses #ac-card-list */
         .table-wrap:not(#ac-table-wrap){
@@ -2269,6 +2288,58 @@
     body.dark .pipeline-tab { background: #1C1C28; border-color: rgba(255,255,255,0.08); }
     .mockup-note-box { background: rgba(168,85,247,0.1); border-left: 3px solid var(--purple); border-radius: 6px; padding: 10px 12px; font-size: 12px; color: var(--text-2); margin-bottom: 12px; line-height: 1.5; }
     body.dark .mockup-note-box { background: rgba(168,85,247,0.08); }
+
+    /* Client Profile Modal */
+    .client-profile-modal { max-width:640px; width:92%; max-height:85vh; display:flex; flex-direction:column; }
+    .cp-body { overflow-y:auto; flex:1; min-height:0; padding-top:4px; }
+    .cp-summary-card { margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--border); }
+    .cp-summary-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .cp-summary-top h3 { margin:0; font-family:'Syne',sans-serif; font-size:18px; font-weight:700; color:var(--text); line-height:1.3; flex:1; }
+    .cp-summary-top #cp-fav-btn { background:none; border:none; font-size:22px; cursor:pointer; color:var(--text-2); padding:2px 4px; line-height:1; flex-shrink:0; }
+    .cp-stat-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+    .cp-added-text { font-size:11px; color:var(--text-2); margin-top:8px; font-family:'Outfit',sans-serif; }
+    .cp-meta-chip { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; color:var(--text-2); background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:100px; padding:4px 10px; font-family:'Outfit',sans-serif; }
+    body.dark .cp-meta-chip { background:rgba(255,255,255,0.04); }
+    .cp-meta-chip svg { width:12px; height:12px; flex-shrink:0; }
+    .cp-section-card { background:var(--glass-card); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:12px; }
+    body.dark .cp-section-card { background:#14141c; }
+    .cp-section-title { font-family:'Syne',sans-serif; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-2); margin:0 0 12px; }
+    .cp-field { display:flex; gap:10px; align-items:flex-start; }
+    .cp-field-full { grid-column:1 / -1; }
+    .cp-field-icon { width:32px; height:32px; flex:0 0 32px; display:flex; align-items:center; justify-content:center; background:rgba(168,85,247,.1); border-radius:8px; color:var(--purple); }
+    .cp-field-icon svg { width:16px; height:16px; }
+    .cp-field-body { flex:1; min-width:0; }
+    .cp-field-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-2); margin-bottom:3px; font-family:'Outfit',sans-serif; }
+    .cp-field-value { font-size:13px; color:var(--text); line-height:1.45; font-family:'Outfit',sans-serif; word-break:break-word; }
+    .cp-field-value a { color:var(--purple); text-decoration:none; }
+    .cp-field-value a:hover { text-decoration:underline; }
+    .cp-field-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .cp-rep-select { display:block; margin-top:6px; width:100%; max-width:220px; padding:6px 10px; font-size:12px; font-family:'Outfit',sans-serif; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:6px; color:var(--text); }
+    body.dark .cp-rep-select { background:#1C1C28; }
+    .cp-pain-wrap .cp-pain-full { display:none; }
+    .cp-pain-wrap.expanded .cp-pain-preview { display:none; }
+    .cp-pain-wrap.expanded .cp-pain-full { display:block; }
+    .cp-pain-preview, .cp-pain-full { font-size:13px; color:var(--text); line-height:1.5; white-space:pre-wrap; font-family:'Outfit',sans-serif; }
+    .cp-pain-preview { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .cp-pain-toggle { background:none; border:none; color:var(--purple); font-size:11px; font-weight:600; cursor:pointer; padding:4px 0 0; font-family:'Outfit',sans-serif; }
+    .cp-pain-toggle:hover { text-decoration:underline; }
+    .cp-empty-muted { font-size:12px; color:var(--text-2); font-style:italic; padding:4px 0; font-family:'Outfit',sans-serif; }
+    .cp-lead-item { padding:10px 0; border-bottom:1px solid var(--border); }
+    .cp-lead-item:last-child { border-bottom:none; padding-bottom:0; }
+    .cp-lead-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; }
+    .cp-lead-notes { font-size:12px; color:var(--text-2); line-height:1.45; margin-top:4px; font-family:'Outfit',sans-serif; }
+    .cp-timeline { display:flex; flex-direction:column; gap:0; padding-left:4px; }
+    .cp-timeline-step { display:flex; gap:12px; align-items:flex-start; position:relative; padding-bottom:14px; }
+    .cp-timeline-step:last-child { padding-bottom:0; }
+    .cp-timeline-step:not(:last-child)::before { content:''; position:absolute; left:3px; top:10px; bottom:0; width:2px; background:var(--border); }
+    .cp-timeline-dot { width:8px; height:8px; border-radius:50%; background:var(--purple); flex:0 0 8px; margin-top:5px; position:relative; z-index:1; }
+    .cp-timeline-body { flex:1; min-width:0; }
+    .cp-timeline-head { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:4px; }
+    .cp-timeline-date { font-size:10px; color:var(--text-2); white-space:nowrap; font-family:'Outfit',sans-serif; }
+    .cp-call-note { font-size:12px; color:var(--text-2); line-height:1.45; padding:6px 10px; background:rgba(255,255,255,0.04); border-radius:6px; border-left:2px solid var(--border); font-family:'Outfit',sans-serif; }
+    body.dark .cp-call-note { background:#1C1C28; }
+    @media (max-width:520px) { .cp-field-grid { grid-template-columns:1fr; } }
+
     .callback-outcome-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
     .callback-outcome-btn { padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: var(--text-2); cursor: pointer; font-family: 'Outfit', sans-serif; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
     .callback-outcome-btn:hover { transform: translateY(-1px); }
@@ -2931,11 +3002,25 @@
         box-shadow: var(--shadow-card);
         transition: transform .18s ease, opacity .18s ease;
     }
-    #page-dashboard #dash-stats .stat-card:hover {
+    #page-dashboard #dash-stats .stat-card:hover,
+    #page-dashboard #dash-stats .stat-card-clickable:hover {
         background: var(--color-bg-elevated);
-        border-color: var(--border-subtle);
+        border-color: rgba(168,85,247,0.38);
         box-shadow: var(--shadow-card-hover);
         transform: translateY(-3px);
+    }
+    #page-dashboard #dash-stats .stat-card-clickable {
+        cursor: pointer;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+        appearance: none;
+        -webkit-appearance: none;
+        width: 100%;
+    }
+    #page-dashboard #dash-stats .stat-card-clickable:focus-visible {
+        outline: 2px solid rgba(168,85,247,0.55);
+        outline-offset: 2px;
     }
     #page-dashboard #dash-stats .stat-card-top {
         display: block;
@@ -3013,6 +3098,115 @@
         margin-top: 4px;
         line-height: 1.3;
         opacity: 0.85;
+    }
+    #page-dashboard #dash-stats .stat-card-main {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 2px;
+        min-height: 36px;
+    }
+    #page-dashboard #dash-stats .stat-card-visual {
+        flex-shrink: 0;
+        opacity: 0.88;
+        line-height: 0;
+    }
+    #page-dashboard #dash-stats .stat-sparkline {
+        width: 72px;
+        height: 28px;
+        display: block;
+    }
+    #page-dashboard #dash-stats .stat-ring {
+        width: 34px;
+        height: 34px;
+        display: block;
+    }
+
+    #page-dashboard #dash-favourites-wrap {
+        margin-bottom: var(--space-5);
+    }
+    #page-dashboard .dash-fav-scroll {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+    }
+    #page-dashboard .dash-fav-card {
+        flex: 0 0 auto;
+        width: min(220px, 78vw);
+        scroll-snap-align: start;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        background: var(--color-bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        box-shadow: var(--shadow-card);
+        transition: transform .18s ease, border-color .18s ease, background .18s ease;
+    }
+    #page-dashboard .dash-fav-card:hover {
+        border-color: rgba(168,85,247,0.42);
+        background: var(--color-bg-elevated);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-card-hover);
+    }
+    #page-dashboard .dash-fav-card:focus-visible {
+        outline: 2px solid rgba(168,85,247,0.55);
+        outline-offset: 2px;
+    }
+    #page-dashboard .dash-fav-biz {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--color-text-primary, var(--text));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.25;
+    }
+    #page-dashboard .dash-fav-meta {
+        font-size: 11px;
+        color: var(--color-text-secondary, var(--text-2));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    #page-dashboard .dash-fav-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 2px;
+    }
+    #page-dashboard .dash-fav-rep {
+        font-size: 11px;
+        color: var(--color-text-secondary, var(--text-2));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+    }
+    #page-dashboard .dash-fav-foot .badge {
+        flex-shrink: 0;
+        font-size: 10px;
+    }
+    #page-dashboard .dash-fav-empty {
+        padding: 14px 16px;
+        border-radius: var(--radius-md);
+        border: 1px dashed var(--border-subtle);
+        background: rgba(168,85,247,0.04);
+        font-size: 13px;
+        color: var(--color-text-secondary, var(--text-2));
+        text-align: center;
     }
 
     @media (max-width: 599px) {
@@ -3165,19 +3359,49 @@
         letter-spacing: 0;
     }
 
-    #page-prospects .prospect-dates {
+    .prospect-meta-chips {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-top: var(--space-2);
+        line-height: 1.3;
+    }
+
+    .prospect-meta-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
         font-family: var(--font-body);
         font-size: var(--text-xs);
         font-weight: 500;
-        line-height: var(--leading-body);
-        color: var(--text-2);
-        margin-top: var(--space-2);
-        overflow-wrap: break-word;
-        word-break: normal;
+        color: #CBD5E1;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 999px;
+        padding: 3px 9px;
+        white-space: nowrap;
+        max-width: 100%;
     }
 
-    #page-prospects .prospect-dates span + span {
-        margin-left: var(--space-2);
+    .prospect-meta-chip > span:last-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .prospect-meta-icon {
+        flex-shrink: 0;
+        width: 12px;
+        height: 12px;
+        opacity: 0.85;
+        stroke: currentColor;
+        fill: none;
+    }
+
+    body.light .prospect-meta-chip {
+        color: #475569;
+        background: rgba(15, 23, 42, 0.04);
+        border-color: rgba(15, 23, 42, 0.1);
     }
 
     #page-prospects .prospect-card .badge-purple {
@@ -3378,15 +3602,7 @@
         box-sizing: border-box;
     }
 
-    #page-prospects .search-bar select {
-        flex: 1 1 8rem;
-        min-width: 0;
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-
-    #page-prospects .search-bar input,
-    #page-prospects .search-bar select {
+    #page-prospects .search-bar input {
         font-family: var(--font-body) !important;
         font-size: 1rem !important;
         line-height: var(--leading-body);
@@ -3396,6 +3612,131 @@
         border-radius: var(--radius-sm) !important;
         padding: var(--space-2) var(--space-3) !important;
         min-height: var(--touch-min);
+    }
+
+    #page-prospects .prospect-filters-wrap {
+        position: relative;
+        flex: 0 0 auto;
+    }
+
+    #page-prospects .prospect-filters-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: var(--font-body);
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        background: var(--color-bg-elevated);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-sm);
+        padding: var(--space-2) var(--space-3);
+        min-height: var(--touch-min);
+        cursor: pointer;
+        transition: border-color var(--t-fast), background var(--t-fast);
+        white-space: nowrap;
+    }
+
+    #page-prospects .prospect-filters-btn:hover,
+    #page-prospects .prospect-filters-btn[aria-expanded="true"] {
+        border-color: var(--purple-mid);
+        background: var(--glass-card-hover, rgba(255, 255, 255, 0.06));
+    }
+
+    #page-prospects .prospect-filters-btn.has-active-filters {
+        border-color: rgba(168, 85, 247, 0.45);
+    }
+
+    #page-prospects .prospect-filters-badge {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--purple-mid);
+        box-shadow: 0 0 0 2px var(--color-bg-elevated);
+        flex-shrink: 0;
+    }
+
+    #page-prospects .prospect-filters-badge[hidden] {
+        display: none;
+    }
+
+    #page-prospects .prospect-filters-popover {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 120;
+        min-width: 220px;
+        max-width: min(280px, calc(100vw - 32px));
+        background: var(--color-bg-elevated, #1C1C28);
+        border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+        border-radius: var(--radius-sm, 8px);
+        padding: var(--space-3);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+    }
+
+    #page-prospects .prospect-filters-popover[hidden] {
+        display: none;
+    }
+
+    #page-prospects .prospect-filters-popover-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-2);
+        font-size: var(--text-xs);
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    #page-prospects .prospect-filters-clear {
+        background: none;
+        border: none;
+        padding: 0;
+        font-family: var(--font-body);
+        font-size: var(--text-xs);
+        font-weight: 600;
+        color: var(--purple-mid);
+        cursor: pointer;
+        text-transform: none;
+        letter-spacing: 0;
+    }
+
+    #page-prospects .prospect-filters-clear:hover {
+        color: var(--color-accent-hover, var(--purple));
+        text-decoration: underline;
+    }
+
+    #page-prospects .prospect-filter-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    #page-prospects .prospect-filter-label {
+        font-family: var(--font-body);
+        font-size: var(--text-xs);
+        font-weight: 600;
+        color: var(--color-text-secondary);
+    }
+
+    #page-prospects .prospect-filters-popover select {
+        width: 100%;
+        box-sizing: border-box;
+        font-family: var(--font-body) !important;
+        font-size: 0.875rem !important;
+        line-height: var(--leading-body);
+        color: var(--color-text-primary) !important;
+        background: var(--color-bg-elevated) !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: var(--radius-sm) !important;
+        padding: var(--space-2) var(--space-3) !important;
+        min-height: var(--touch-min);
+        outline: none;
     }
 
     #page-prospects .page-header .btn-purple {
@@ -3855,6 +4196,13 @@
         font-size: var(--text-sm);
         font-weight: 600;
         color: var(--text-2);
+        background: transparent;
+        border: 1px solid transparent;
+    }
+
+    .tab:not(.active):hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--color-text-primary);
     }
 
     .tab.active {
@@ -5078,10 +5426,12 @@
         }
     }
 
-    #page-dashboard #dash-stats .stat-card {
+    #page-dashboard #dash-stats .stat-card,
+    #page-dashboard #dash-stats .stat-card-clickable {
         transition: transform .18s ease, opacity .18s ease !important;
     }
-    #page-dashboard #dash-stats .stat-card:hover {
+    #page-dashboard #dash-stats .stat-card:hover,
+    #page-dashboard #dash-stats .stat-card-clickable:hover {
         transform: translateY(-3px) !important;
     }
 
@@ -5210,6 +5560,7 @@
             <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M5 6h6M5 10h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
             Jobs / Leads
             <span class="nav-badge nav-badge-ceo" data-jobs-ceo-badge style="display:none;"></span>
+            <span class="nav-badge" data-jobs-rep-badge style="display:none;"></span>
             </div>
             <div class="nav-item" onclick="goPage('mycalls')">
             <svg viewBox="0 0 16 16" fill="none"><path d="M3 3h10v10H3z" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M6 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -5308,6 +5659,10 @@
             </div>
             </div>
             <div class="stat-grid stat-grid-bento" id="dash-stats"></div>
+            <div id="dash-favourites-wrap">
+            <div class="section-head"><h3>★ Favourites</h3></div>
+            <div id="dash-favourites"></div>
+            </div>
             <div id="dash-rep-remaining-prospects-wrap" style="margin-top:24px;display:none;">
             <div class="section-head"><h3>Reps — Balance to Call</h3></div>
             <div id="dash-rep-remaining-prospects"></div>
@@ -5330,9 +5685,11 @@
                 <span id="dash-recent-range-label" style="font-size:11px;color:var(--text-2);"></span>
                 <div style="display:flex;gap:4px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:3px;">
                     <button class="ac-dr-btn active" data-dash-range="all" onclick="dashSetRange('all',this)">All</button>
+                    <button class="ac-dr-btn" data-dash-range="today" onclick="dashSetRange('today',this)">Today</button>
                     <button class="ac-dr-btn" data-dash-range="week" onclick="dashSetRange('week',this)">This Week</button>
                     <button class="ac-dr-btn" data-dash-range="month" onclick="dashSetRange('month',this)">This Month</button>
                 </div>
+                <span id="dash-recent-rep-filter-slot"></span>
                 </div>
             </div>
             <div id="dash-recent-calls"></div>
@@ -5349,48 +5706,64 @@
             </div>
             <div class="search-bar">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9CA3AF" stroke-width="1.5"/><path d="M10.5 10.5L13 13" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/></svg>
-            <input type="text" id="prospect-search" placeholder="Search prospects..." oninput="renderProspects()">
-            <select id="prospect-filter-area" onchange="renderProspects()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;">
-                <option value="">All Areas</option>
-            </select>
-            <select id="prospect-filter-type" onchange="renderProspects()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;">
-                <option value="">All Types</option>
-                <option>Auto Repair</option>
-                <option>Beauty Salon / Spa</option>
-                <option>Car Sales</option>
-                <option>Clinic / Pharmacy</option>
-                <option>Event Planner</option>
-                <option>Gym / Fitness</option>
-                <option>Hotel / Guesthouse</option>
-                <option>Law Firm / Consultancy</option>
-                <option>Logistics / Courier</option>
-                <option>Real Estate</option>
-                <option>Restaurant / Cafe</option>
-                <option>Retail Shop</option>
-                <option>School / Tuition Centre</option>
-                <option>Spare Parts</option>
-                <option>Vehicle Rental</option>
-                <option>Wholesale / Distributor</option>
-                <option>Other</option>
-            </select>
-            <select id="prospect-filter-assign" onchange="renderProspects()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;">
-                <option value="">All Assignees</option>
-            </select>
-            <select id="prospect-filter-pkg" onchange="renderProspects()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;">
-                <option value="">All Packages</option>
-                <option value="Landing Page – Rs. 65,000">Landing Page</option>
-                <option value="Business Website – Rs. 120,000">Business Website</option>
-                <option value="eCommerce – Rs. 240,000">eCommerce</option>
-            </select>
-            <select id="prospect-filter-status" onchange="renderProspects()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;">
-                <option value="">All Statuses</option>
-                <option value="__new__">New (no calls)</option>
-                <option value="Interested">Interested</option>
-                <option value="Follow-up needed">Follow-up needed</option>
-                <option value="WhatsApp sent">WhatsApp sent</option>
-                <option value="Not interested">Not interested</option>
-                <option value="No answer">No answer</option>
-            </select>
+            <input type="text" id="prospect-search" placeholder="Search prospects..." oninput="renderProspectsDebounced()">
+            <div class="prospect-filters-wrap" id="prospect-filters-wrap">
+                <button type="button" class="prospect-filters-btn" id="prospect-filters-btn" aria-expanded="false" aria-haspopup="true" onclick="toggleProspectFiltersPopover(event)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                    Filters
+                    <span class="prospect-filters-badge" id="prospect-filters-badge" hidden aria-hidden="true"></span>
+                </button>
+                <div class="prospect-filters-popover" id="prospect-filters-popover" hidden>
+                    <div class="prospect-filters-popover-head">
+                        <span>Filters</span>
+                        <button type="button" class="prospect-filters-clear" onclick="clearProspectPanelFilters()">Clear filters</button>
+                    </div>
+                    <label class="prospect-filter-field">
+                        <span class="prospect-filter-label">Area</span>
+                        <select id="prospect-filter-area" onchange="renderProspects();updateProspectFiltersBadge();">
+                            <option value="">All Areas</option>
+                        </select>
+                    </label>
+                    <label class="prospect-filter-field">
+                        <span class="prospect-filter-label">Type</span>
+                        <select id="prospect-filter-type" onchange="renderProspects();updateProspectFiltersBadge();">
+                            <option value="">All Types</option>
+                            <option>Auto Repair</option>
+                            <option>Beauty Salon / Spa</option>
+                            <option>Car Sales</option>
+                            <option>Clinic / Pharmacy</option>
+                            <option>Event Planner</option>
+                            <option>Gym / Fitness</option>
+                            <option>Hotel / Guesthouse</option>
+                            <option>Law Firm / Consultancy</option>
+                            <option>Logistics / Courier</option>
+                            <option>Real Estate</option>
+                            <option>Restaurant / Cafe</option>
+                            <option>Retail Shop</option>
+                            <option>School / Tuition Centre</option>
+                            <option>Spare Parts</option>
+                            <option>Vehicle Rental</option>
+                            <option>Wholesale / Distributor</option>
+                            <option>Other</option>
+                        </select>
+                    </label>
+                    <label class="prospect-filter-field">
+                        <span class="prospect-filter-label">Assignee</span>
+                        <select id="prospect-filter-assign" onchange="renderProspects();updateProspectFiltersBadge();">
+                            <option value="">All Assignees</option>
+                        </select>
+                    </label>
+                    <label class="prospect-filter-field">
+                        <span class="prospect-filter-label">Package</span>
+                        <select id="prospect-filter-pkg" onchange="renderProspects();updateProspectFiltersBadge();">
+                            <option value="">All Packages</option>
+                            <option value="Landing Page – Rs. 65,000">Landing Page</option>
+                            <option value="Business Website – Rs. 120,000">Business Website</option>
+                            <option value="eCommerce – Rs. 240,000">eCommerce</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
             </div>
             <div class="pstat-bar" id="prospect-stat-bar"></div>
             <div class="prospect-grid" id="prospect-grid"></div>
@@ -5442,7 +5815,7 @@
             </div>
             <div class="search-bar" id="pipeline-filter-bar" style="margin-bottom:14px;">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9CA3AF" stroke-width="1.5"/><path d="M10.5 10.5L13 13" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/></svg>
-            <input type="text" id="pipeline-search" placeholder="Search by business name..." oninput="renderPipeline()" style="max-width:260px;">
+            <input type="text" id="pipeline-search" placeholder="Search by business name..." oninput="renderPipelineDebounced()" style="max-width:260px;">
             <select id="pipeline-rep-filter" onchange="renderPipeline()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;display:none;">
                 <option value="">All Reps</option>
             </select>
@@ -5462,7 +5835,7 @@
             <div class="pstat-bar" id="mycalls-stat-bar" style="margin-bottom:14px;"></div>
             <div class="search-bar">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9CA3AF" stroke-width="1.5"/><path d="M10.5 10.5L13 13" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/></svg>
-            <input type="text" id="calls-search" placeholder="Search calls..." oninput="renderMyCalls()">
+            <input type="text" id="calls-search" placeholder="Search calls..." oninput="myCallsOnSearchInput()">
             </div>
             <div class="table-wrap">
             <table>
@@ -5527,7 +5900,7 @@
             <!-- Search -->
             <div style="position:relative;flex:1;min-width:160px;">
                 <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;" width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9CA3AF" stroke-width="1.5"/><path d="M10.5 10.5L13 13" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/></svg>
-                <input id="ac-search" type="text" placeholder="Search name, number, status..." oninput="acApplyFilters()" style="width:100%;padding:8px 12px 8px 32px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);outline:none;font-family:'Outfit',sans-serif;">
+                <input id="ac-search" type="text" placeholder="Search name, number, status..." oninput="acApplyFiltersDebounced()" style="width:100%;padding:8px 12px 8px 32px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);outline:none;font-family:'Outfit',sans-serif;">
             </div>
             <!-- Status Filter -->
             <select id="ac-status-filter" onchange="acApplyFilters()" style="padding:8px 12px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);outline:none;font-family:'Outfit',sans-serif;cursor:pointer;">
@@ -5798,7 +6171,7 @@
 
                 <!-- Search + filter -->
                 <div class="tm-search-row">
-                <input type="text" class="tm-search-input" id="tm-search" placeholder="Search by name, email, or role…" oninput="tmRenderTable()">
+                <input type="text" class="tm-search-input" id="tm-search" placeholder="Search by name, email, or role…" oninput="tmRenderTableDebounced()">
                 <select class="tm-filter-select" id="tm-filter-tier" onchange="tmRenderTable()">
                     <option value="">All Tiers</option>
                     <option value="management">Management</option>
@@ -6069,6 +6442,36 @@
         <button class="btn btn-outline" onclick="closeModal('biz-timeline-modal')">Close</button>
         </div>
     </div>
+    </div>
+
+    <!-- REP BALANCE TO CALL MODAL -->
+    <div class="modal-overlay" id="rep-balance-modal">
+      <div class="modal" style="max-width:520px;">
+        <h3 id="rep-balance-title"></h3>
+        <p id="rep-balance-sub" style="font-size:13px;color:var(--text-2);margin-top:6px;margin-bottom:16px;"></p>
+        <div id="rep-balance-body" style="max-height:60vh;overflow-y:auto;"></div>
+        <div style="margin-top:16px;text-align:right;">
+          <button class="btn btn-outline" onclick="closeModal('rep-balance-modal')">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLIENT PROFILE MODAL -->
+    <div class="modal-overlay" id="client-profile-modal">
+      <div class="modal client-profile-modal">
+        <div class="cp-summary-card">
+          <div class="cp-summary-top">
+            <h3 id="cp-title"></h3>
+            <button type="button" id="cp-fav-btn" onclick="event.stopPropagation();void toggleClientFavourite(_cpCurrentBiz,event)" aria-label="Toggle favourite">☆</button>
+          </div>
+          <div id="cp-chips" class="cp-stat-chips"></div>
+          <div id="cp-added" class="cp-added-text"></div>
+        </div>
+        <div id="cp-body" class="cp-body"></div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('client-profile-modal')">Close</button>
+        </div>
+      </div>
     </div>
 
     <!-- ══════════════ TEAM MGMT: ADD REP MODAL ══════════════ -->
@@ -6999,6 +7402,7 @@
     });
     async function _doFocusSync(){
     if(!currentUser) return;
+    if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache();
     const cloudProspects = await loadFromCloud('prospects');
     if(cloudProspects && cloudProspects.length > 0){
         ls('prospects', cloudProspects.map(normalizeProspectFromCloud).filter(Boolean));
@@ -7020,50 +7424,31 @@
         if(myCallsPage && myCallsPage.classList.contains('active')) renderMyCalls();
         const revPage = document.getElementById('page-revenue');
         if(revPage && revPage.classList.contains('active')) renderRevenue();
+        const prospectsPage = document.getElementById('page-prospects');
+        if(prospectsPage && prospectsPage.classList.contains('active')) renderProspects();
     }
     const cloudLeads = await loadFromCloud('interested_leads');
     if(cloudLeads){
-        // Normalise Supabase rows → internal lead shape (mirrors launchApp mapping)
-        const leads = cloudLeads.map(r => ({
-        id:              r.id              || r.lead_id           || ('lead_' + Date.now() + Math.random()),
-        biz:             r.biz             || r.business_name     || '',
-        rep:             r.rep             || '',
-        callDate:        r.callDate        || r.call_date         || '',
-        callNotes:       r.callNotes       || r.call_notes        || '',
-        phone:           r.phone           || '',
-        pkg:             r.pkg             || '',
-        bizType:         r.bizType         || r.biz_type          || '',
-        status:          r.status          || 'new',
-        mockupNotes:     r.mockupNotes     || r.mockup_notes      || '',
-        mockupUrl:       r.mockupUrl       || r.mockup_url        || '',
-        mockupSentBy:    r.mockupSentBy    || r.mockup_sent_by    || '',
-        mockupSentAt:    r.mockupSentAt    || r.mockup_sent_at    || '',
-        callbackNotes:   r.callbackNotes   || r.callback_notes    || '',
-        callbackOutcome: r.callbackOutcome || r.callback_outcome  || '',
-        callbackAt:      r.callbackAt      || r.callback_at       || '',
-        jobId:           r.jobId           || r.job_id            || null,
-        createdAt:       r.createdAt       || r.created_at        || new Date().toISOString()
-        }));
+        const leads = cloudLeads.map(normalizeLeadFromCloud).filter(Boolean);
         ls('interested_leads', mergeByIdPreserveLocal(leads, getLeads()));
         console.log('✓ Auto-synced leads on focus:', leads.length, 'records');
         updatePipelineNavBadge();
         updateFollowbackNavBadge();
+        updateRepJobsNavBadge();
         // Re-render Pipeline page if active
         const pipelinePage = document.getElementById('page-pipeline');
         if(pipelinePage && pipelinePage.classList.contains('active')){
         renderPipeline();
         }
-        // Re-render Jobs page (CEO inbox) if active — FIX: was previously missing
         const jobsPage = document.getElementById('page-jobs');
         if(jobsPage && jobsPage.classList.contains('active')){
-        if(isCEO(currentUser) || isMgmt(currentUser)){
-            if(typeof renderJobsPage === 'function') await renderJobsPage();
-        }
+        if(typeof renderJobsPage === 'function') await renderJobsPage();
         } else {
-        // Even if Jobs page isn't open, refresh the nav badge + inbox DOM if it exists
         const inbox = document.getElementById('ceo-leads-inbox-body');
         if(inbox && (isCEO(currentUser) || isMgmt(currentUser))) ceoInboxRender(inbox);
         }
+        const prospectsPage = document.getElementById('page-prospects');
+        if(prospectsPage && prospectsPage.classList.contains('active')) renderProspects();
         const revPage2 = document.getElementById('page-revenue');
         if(revPage2 && revPage2.classList.contains('active')){
         renderRevenue();
@@ -7207,7 +7592,99 @@
     // ════════════════════════════════════════
     // NAVIGATION
     // ════════════════════════════════════════
+    function todayYMD(){
+    const d = new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    }
+
+    let _myCallsDateFilter = '';
+    let _dashKeepMyCallsDateFilter = false;
+
+    function clearProspectFilters(){
+    const search = document.getElementById('prospect-search');
+    if(search) search.value = '';
+    ['prospect-filter-area','prospect-filter-type','prospect-filter-assign','prospect-filter-pkg'].forEach(function(id){
+        const el = document.getElementById(id);
+        if(el) el.value = '';
+    });
+    _prospectStatusFilter = '';
+    _prospectFavOnly = false;
+    updateProspectFiltersBadge();
+    }
+
+    function clearProspectPanelFilters(){
+    ['prospect-filter-area','prospect-filter-type','prospect-filter-assign','prospect-filter-pkg'].forEach(function(id){
+        const el = document.getElementById(id);
+        if(el) el.value = '';
+    });
+    updateProspectFiltersBadge();
+    renderProspects();
+    }
+
+    function toggleProspectFiltersPopover(e){
+    if(e) e.stopPropagation();
+    const pop = document.getElementById('prospect-filters-popover');
+    const btn = document.getElementById('prospect-filters-btn');
+    if(!pop) return;
+    const open = pop.hidden;
+    pop.hidden = !open;
+    if(btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    function updateProspectFiltersBadge(){
+    const badge = document.getElementById('prospect-filters-badge');
+    const btn = document.getElementById('prospect-filters-btn');
+    const active = ['prospect-filter-area','prospect-filter-type','prospect-filter-assign','prospect-filter-pkg'].some(function(id){
+        const el = document.getElementById(id);
+        return el && el.value !== '';
+    });
+    if(badge) badge.hidden = !active;
+    if(btn) btn.classList.toggle('has-active-filters', active);
+    }
+
+    (function bindProspectFiltersOutsideClick(){
+    if(window._prospectFiltersOutsideBound) return;
+    window._prospectFiltersOutsideBound = true;
+    document.addEventListener('click', function(e){
+        const wrap = document.getElementById('prospect-filters-wrap');
+        const pop = document.getElementById('prospect-filters-popover');
+        const btn = document.getElementById('prospect-filters-btn');
+        if(!wrap || !pop || pop.hidden) return;
+        if(!wrap.contains(e.target)){
+            pop.hidden = true;
+            if(btn) btn.setAttribute('aria-expanded', 'false');
+        }
+    });
+    })();
+
+    function dashNavCallsToday(){
+    _myCallsDateFilter = todayYMD();
+    _dashKeepMyCallsDateFilter = true;
+    goPage('mycalls');
+    }
+
+    function dashNavTotalCalls(){
+    if(isMgmt(currentUser)) goPage('allcalls');
+    else goPage('mycalls');
+    }
+
+    function dashNavInterestedLeads(){
+    if(isMgmt(currentUser)) goPage('pipeline');
+    else goPage('jobs');
+    }
+
+    function dashNavFollowups7d(){
+    goPage('followups');
+    }
+
+    function dashNavProspects(){
+    clearProspectFilters();
+    goPage('prospects');
+    }
+
     function goPage(id){
+    if(id === 'mycalls' && !_dashKeepMyCallsDateFilter) _myCallsDateFilter = '';
+    _dashKeepMyCallsDateFilter = false;
     try { localStorage.setItem('sos_last_page', id); } catch(_e){}
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -7389,16 +7866,19 @@
         pain: (document.getElementById('p-pain').value || '').trim(),
         script: document.getElementById('p-script').value.trim(),
         createdAt: id ? undefined : new Date().toISOString(),
+        createdBy: id ? undefined : currentUser,
     };
     if(!obj.name){ showToast('Business name is required','error'); return; }
     let ps = getProspects();
-    if(id){ ps = ps.map(p=>p.id===id?{...p,...obj,createdAt:p.createdAt}:p); }
+    const existing = id ? ps.find(p=>p.id===id) : null;
+    if(id){ ps = ps.map(p=>p.id===id?{...p,...obj,createdAt:p.createdAt,createdBy:p.createdBy,favourite:p.favourite}:p); }
     else { ps.push(obj); }
     ls('prospects', ps);
+    if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache('prospects');
     
     // SYNC TO SUPABASE
     if(sbReady && sbClient){
-        sbClient.from('prospects').upsert([{
+        const cloudRow = {
         id: obj.id,          // keep as string (TEXT) — don't parseInt
         name: obj.name,
         type: obj.type,
@@ -7408,10 +7888,12 @@
         pkg: obj.pkg,
         pain: obj.pain,
         script: obj.script,
-        createdBy: currentUser,
+        favourite: existing ? !!existing.favourite : false,
         createdAt: obj.createdAt,
         updatedAt: new Date().toISOString()
-        }]).then(({ error }) => {
+        };
+        if(!id) cloudRow.createdby = currentUser;
+        sbClient.from('prospects').upsert([cloudRow]).then(({ error }) => {
         if(error) console.error('❌ Prospect save failed:', error.message, '| code:', error.code);
         else console.log('✓ Prospect synced to cloud');
         });
@@ -7443,11 +7925,15 @@
     });
     }
 
-    async function refreshProspectsAssigneeDropdown(){
-    if(window.PROSPECTS_ASSIGNEES && typeof PROSPECTS_ASSIGNEES.refresh === 'function'){
-        await PROSPECTS_ASSIGNEES.refresh();
-    } else if(typeof refreshSalesUsersForProspects === 'function'){
-        await refreshSalesUsersForProspects();
+    async function refreshProspectsAssigneeDropdown(forceRefresh){
+    const SALES_USERS_TTL = 60000;
+    const usersFresh = window._salesUsersCachedAt && (Date.now() - window._salesUsersCachedAt) < SALES_USERS_TTL;
+    if(forceRefresh || !usersFresh){
+        if(window.PROSPECTS_ASSIGNEES && typeof PROSPECTS_ASSIGNEES.refresh === 'function'){
+            await PROSPECTS_ASSIGNEES.refresh(forceRefresh);
+        } else if(typeof refreshSalesUsersForProspects === 'function'){
+            await refreshSalesUsersForProspects(forceRefresh);
+        }
     }
     const assignEl = document.getElementById('prospect-filter-assign');
     if(!assignEl) return;
@@ -7478,9 +7964,50 @@
     const tb = new Date(b).getTime();
     return !isNaN(ta) && !isNaN(tb) && ta === tb;
     }
+    function prospectCreatedByLabel(createdBy){
+    if(createdBy == null || String(createdBy).trim() === '') return '—';
+    if(USERS[createdBy]) return userLabel(createdBy);
+    return String(createdBy);
+    }
+    function prospectCreatedByDisplayName(createdBy){
+    if(createdBy == null || String(createdBy).trim() === '') return null;
+    if(USERS[createdBy]) return userLabel(createdBy);
+    const s = String(createdBy).trim();
+    if(!s || s === '—' || s === 'undefined' || s === 'null') return null;
+    return s;
+    }
+    const _prospectMetaIconCal = '<svg class="prospect-meta-icon" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
+    const _prospectMetaIconUser = '<svg class="prospect-meta-icon" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+    const _prospectMetaIconUpd = '<svg class="prospect-meta-icon" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg>';
+    function buildProspectMetaChipsHtml(p){
+    const createdRaw = p.createdAt || p.created_at;
+    const updatedRaw = p.updatedAt || p.updated_at;
+    const addedLabel = fmtProspectTs(createdRaw);
+    const addedByName = prospectCreatedByDisplayName(p.createdBy != null ? p.createdBy : (p.created_by != null ? p.created_by : p.added_by));
+    const updatedLabel = fmtProspectTs(updatedRaw);
+    const showUpdated = updatedRaw && !prospectTsEqual(createdRaw, updatedRaw);
+    let chips = '';
+    if(addedLabel && addedLabel !== '—'){
+        chips += '<span class="prospect-meta-chip" title="Added">' + _prospectMetaIconCal + '<span>' + esc(addedLabel) + '</span></span>';
+    }
+    if(addedByName){
+        chips += '<span class="prospect-meta-chip" title="Added by">' + _prospectMetaIconUser + '<span>' + esc(addedByName) + '</span></span>';
+    }
+    if(showUpdated && updatedLabel && updatedLabel !== '—'){
+        chips += '<span class="prospect-meta-chip" title="Updated">' + _prospectMetaIconUpd + '<span>' + esc(updatedLabel) + '</span></span>';
+    }
+    return chips ? '<div class="prospect-meta-chips">' + chips + '</div>' : '';
+    }
 
     // Tracks which prospect cards are expanded (survives re-renders). Default: all collapsed.
     const _expandedProspects = new Set();
+    let _prospectFavOnly = false;
+    let _prospectStatusFilter = '';
+    function prospectSetStatusFilter(val){
+    _prospectStatusFilter = val;
+    renderProspects();
+    }
+    function prospectSetFavourites(){ _prospectFavOnly = !_prospectFavOnly; renderProspects(); }
     function toggleProspectCard(id){
       if(_expandedProspects.has(id)) _expandedProspects.delete(id);
       else _expandedProspects.add(id);
@@ -7490,72 +8017,65 @@
     async function renderProspects(){
     await refreshProspectsAssigneeDropdown();
     const grid = document.getElementById('prospect-grid');
+    const searchEl = document.getElementById('prospect-search');
+    const areaEl = document.getElementById('prospect-filter-area');
+    const typeEl = document.getElementById('prospect-filter-type');
+    const assignEl = document.getElementById('prospect-filter-assign');
+    const pkgEl = document.getElementById('prospect-filter-pkg');
     let ps = getProspects();
     const u = USERS[currentUser];
+    const activityMap = buildProspectActivityMap(filterCallsForCurrentUser(getCalls()));
     ps = ps.filter(p => prospectVisibleToUser(p, u));
-    // Reps: hide prospects already in the interested-leads pipeline (open/non-closed)
-    if(u && u.tier === 'rep'){
-        const openLeadBizNames = getLeads()
-            .filter(l => l.status !== 'won' && l.status !== 'lost' && l.status !== 'closed')
-            .map(l => (l.biz||'').trim().toLowerCase());
-        ps = ps.filter(p => !openLeadBizNames.includes((p.name||'').trim().toLowerCase()));
-    }
-    const q = (document.getElementById('prospect-search')||{}).value||'';
-    const fa = (document.getElementById('prospect-filter-area')||{}).value||'';
-    const ft = (document.getElementById('prospect-filter-type')||{}).value||'';
-    const fAssign = (document.getElementById('prospect-filter-assign')||{}).value||'';
-    const fPkg = (document.getElementById('prospect-filter-pkg')||{}).value||'';
+    const q = (searchEl||{}).value||'';
+    const fa = (areaEl||{}).value||'';
+    const ft = (typeEl||{}).value||'';
+    const fAssign = (assignEl||{}).value||'';
+    const fPkg = (pkgEl||{}).value||'';
     if(q){const ql=q.toLowerCase();const qd=q.replace(/\D/g,'');ps = ps.filter(p=>{const nameHit=(p.name||'').toLowerCase().includes(ql);const areaHit=(p.area||'').toLowerCase().includes(ql);const phoneHit=qd.length>=3 && (p.phone||'').replace(/\D/g,'').includes(qd);return nameHit||areaHit||phoneHit;});}
     if(fa) ps = ps.filter(p=>p.area===fa);
     if(ft) ps = ps.filter(p=>p.type===ft);
     if(fAssign) ps = ps.filter(p=>p.assignedTo===fAssign);
     if(fPkg) ps = ps.filter(p=>p.pkg===fPkg);
+    const openLeadBizNames = (u && u.tier === 'rep') ? getOpenPipelineBizNames() : null;
     const statusBase = ps.slice();
-    const statusCounts = { __all__: statusBase.length, __new__: 0, 'Interested': 0, 'Follow-up needed': 0, 'WhatsApp sent': 0, 'Not interested': 0, 'No answer': 0 };
+    const statusCounts = { __all__: 0, __new__: 0, 'Interested': 0, 'Follow-up needed': 0, 'WhatsApp sent': 0, 'Not interested': 0, 'No answer': 0 };
     statusBase.forEach(p => {
-        const act = getProspectActivity(p.name);
+        const act = getProspectActivity(p.name, activityMap);
         if (act.count === 0) statusCounts.__new__++;
         else if (statusCounts[act.last] !== undefined) statusCounts[act.last]++;
+        const inPipeline = openLeadBizNames && openLeadBizNames.has(normalizeBizName(p.name));
+        if(!inPipeline) statusCounts.__all__++;
     });
-    const fStatus = (document.getElementById('prospect-filter-status')||{}).value||'';
+    const fStatus = _prospectStatusFilter || '';
     if(fStatus){
       ps = ps.filter(p=>{
-        const act = getProspectActivity(p.name);
+        const act = getProspectActivity(p.name, activityMap);
         if(fStatus === '__new__') return act.count === 0;
         return act.count > 0 && act.last === fStatus;
       });
     }
+    // Reps: hide pipeline prospects from the default list only — outcome filters (e.g. Interested) still show them
+    if(openLeadBizNames && (!fStatus || fStatus === '__new__')){
+        ps = ps.filter(p => !openLeadBizNames.has(normalizeBizName(p.name)));
+    }
+    const allPs = getProspects();
+    const favBizSet = new Set();
+    allPs.forEach(function(p){ if(p.favourite) favBizSet.add(normalizeBizName(p.name)); });
+    if(_prospectFavOnly) ps = ps.filter(p => favBizSet.has(normalizeBizName(p.name)));
 
     // Newest first
     ps = ps.slice().sort((a,b)=> (b.id||0) - (a.id||0));
 
     // populate area filter
-    const allPs = getProspects();
     const areas = [...new Set(allPs.map(p=>p.area).filter(Boolean))];
-    const areaEl = document.getElementById('prospect-filter-area');
     if(areaEl){
         const cur = areaEl.value;
         areaEl.innerHTML='<option value="">All Areas</option>'+areas.map(a=>`<option ${a===cur?'selected':''}>${a}</option>`).join('');
     }
-    const stEl = document.getElementById('prospect-filter-status');
-    if (stEl) {
-        const curSt = stEl.value;
-        const stDefs = [
-            ['', 'All Statuses', '__all__'],
-            ['__new__', 'New (no calls)', '__new__'],
-            ['Interested', 'Interested', 'Interested'],
-            ['Follow-up needed', 'Follow-up needed', 'Follow-up needed'],
-            ['WhatsApp sent', 'WhatsApp sent', 'WhatsApp sent'],
-            ['Not interested', 'Not interested', 'Not interested'],
-            ['No answer', 'No answer', 'No answer'],
-        ];
-        stEl.innerHTML = stDefs.map(([val, label, key]) =>
-            `<option value="${val}" ${curSt === val ? 'selected' : ''}>${label} (${statusCounts[key]})</option>`
-        ).join('');
-    }
     const barEl = document.getElementById('prospect-stat-bar');
     if (barEl) {
-      const curStBar = (document.getElementById('prospect-filter-status')||{}).value||'';
+      const curStBar = _prospectStatusFilter || '';
+      const psFavCount = statusBase.filter(p => favBizSet.has(normalizeBizName(p.name))).length;
       const chipDefs = [
         ['', 'All', '__all__', 'var(--purple-mid)'],
         ['__new__', 'New', '__new__', 'var(--text-2)'],
@@ -7566,12 +8086,15 @@
         ['No answer', 'No Answer', 'No answer', 'var(--text-2)'],
       ];
       barEl.innerHTML = chipDefs.map(([val,label,key,accent]) =>
-        `<div class="pstat-chip${curStBar===val?' active':''}" style="--chip-accent:${accent};" onclick="var s=document.getElementById('prospect-filter-status');if(s){s.value='${val}';renderProspects();}">`+
+        `<div class="pstat-chip${curStBar===val?' active':''}" style="--chip-accent:${accent};" onclick="prospectSetStatusFilter('${val}')">`+
         `<span class="pstat-num">${statusCounts[key]}</span>`+
         `<span class="pstat-lbl">${label}</span>`+
         `</div>`
-      ).join('');
+      ).join('') +
+        `<div class="pstat-chip${_prospectFavOnly?' active':''}" style="--chip-accent:var(--amber);" onclick="prospectSetFavourites()">`+
+        `<span class="pstat-num">${psFavCount}</span><span class="pstat-lbl">★ Favourites</span></div>`;
     }
+    updateProspectFiltersBadge();
 
     if(!ps.length){
         grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1;"><svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="19" stroke="#E5E7EB" stroke-width="2"/><path d="M14 20h12M20 14v12" stroke="#E5E7EB" stroke-width="2" stroke-linecap="round"/></svg>No prospects yet.</div>`;
@@ -7583,22 +8106,22 @@
         const repName = p.assignedTo ? userLabel(p.assignedTo) + repCOOName : '—';
         const prospectId = esc(p.id);
         const isExpanded = _expandedProspects.has(String(p.id));
-        const _act = getProspectActivity(p.name);
-        const createdRaw = p.createdAt || p.created_at;
-        const updatedRaw = p.updatedAt || p.updated_at;
-        const addedLabel = fmtProspectTs(createdRaw);
-        const updatedLabel = fmtProspectTs(updatedRaw);
-        const showUpdated = updatedRaw && !prospectTsEqual(createdRaw, updatedRaw);
-        const datesLine = `<div class="prospect-dates"><span>Added: ${esc(addedLabel)}</span>${showUpdated ? `<span>Updated: ${esc(updatedLabel)}</span>` : ''}</div>`;
+        const _act = getProspectActivity(p.name, activityMap);
+        const metaChips = buildProspectMetaChipsHtml(p);
+        const nameFav = favBizSet.has(normalizeBizName(p.name));
         return `<div class="prospect-card">
         <div class="prospect-card-header">
-            <div onclick='toggleProspectCard("${String(p.id)}")' style="cursor:pointer;">
-            <div class="prospect-biz">${esc(p.name)}<span style="margin-left:6px;font-size:12px;opacity:0.7;">${isExpanded ? '▲' : '▼'}</span>${_act.count > 0 ? `<span title="${esc(_act.last)}" style="display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:8px;vertical-align:middle;background:${prospectActivityDotColor(_act.last)};"></span>` : ''}</div>
+            <div>
+            <div class="prospect-biz" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <button type="button" class="fav-star-btn" data-biz="${escAttr(p.name)}" style="background:none;border:none;font-size:15px;cursor:pointer;padding:0;line-height:1;color:${nameFav?'var(--amber)':'var(--text-2)'};">${nameFav?'★':'☆'}</button>
+                <button type="button" class="biz-timeline-link biz-name-link" data-biz="${escAttr(p.name)}" style="background:none;border:none;padding:0;font:inherit;font-weight:700;text-align:left;">${esc(p.name)}</button>
+                <span onclick='toggleProspectCard("${String(p.id)}")' style="cursor:pointer;font-size:12px;opacity:0.7;">${isExpanded ? '▲' : '▼'}</span>${_act.count > 0 ? `<span title="${esc(_act.last)}" style="display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:2px;vertical-align:middle;background:${prospectActivityDotColor(_act.last)};"></span>` : ''}
+            </div>
             <div class="prospect-meta" style="margin-top:4px;">
                 <span class="badge badge-purple">${esc(p.type)}</span>
                 <span class="prospect-area">${esc(p.area)}</span>
             </div>
-            ${datesLine}
+            ${metaChips}
             </div>
             <div class="prospect-card-actions" onclick="event.stopPropagation()"><button class="btn btn-outline btn-sm" onclick='editProspectSafe("${prospectId}")'>Edit</button>${(USERS[currentUser]?.tier==='ceo')?`<button class="btn btn-sm" style="background:var(--red-light);color:var(--red);border:none;" onclick="deleteProspect('${prospectId}')">×</button>`:''}</div>
         </div>
@@ -7620,16 +8143,71 @@
     }).join('');
     }
 
-    function getProspectActivity(bizName){
-      const key = (bizName||'').trim().toLowerCase();
-      const calls = getCalls().filter(c => ((c.biz||'').trim().toLowerCase()) === key);
-      if(!calls.length) return { count:0, last:null };
-      calls.sort((a,b)=>{
-        const ad=(a.date||'')+'T'+(a.time||'00:00');
-        const bd=(b.date||'')+'T'+(b.time||'00:00');
-        return bd.localeCompare(ad);
+    function canonicalCallOutcome(outcome){
+      const o = String(outcome || '').trim();
+      if(!o) return '';
+      const low = o.toLowerCase();
+      if(low === 'interested') return 'Interested';
+      if(low === 'follow-up needed' || low === 'follow-up') return 'Follow-up needed';
+      if(low === 'whatsapp sent') return 'WhatsApp sent';
+      if(low === 'not interested') return 'Not interested';
+      if(low === 'no answer') return 'No answer';
+      return o;
+    }
+
+    function buildProspectActivityMap(calls){
+      const map = new Map();
+      (calls || []).forEach(function(c){
+        const key = normalizeBizName(c.biz);
+        if(!key) return;
+        let entry = map.get(key);
+        if(!entry){ entry = { calls: [] }; map.set(key, entry); }
+        entry.calls.push(c);
       });
-      return { count: calls.length, last: calls[0].outcome || '' };
+      map.forEach(function(entry){
+        entry.calls.sort(function(a,b){
+          const ad=(a.date||'')+'T'+(a.time||'00:00');
+          const bd=(b.date||'')+'T'+(b.time||'00:00');
+          return bd.localeCompare(ad);
+        });
+        entry.count = entry.calls.length;
+        entry.last = entry.calls.length ? canonicalCallOutcome(entry.calls[0].outcome) : null;
+      });
+      return map;
+    }
+
+    function getProspectActivity(bizName, activityMap){
+      const key = normalizeBizName(bizName);
+      if(activityMap){
+        const entry = activityMap.get(key);
+        if(entry && entry.count) return { count: entry.count, last: entry.last };
+      } else {
+        const calls = filterCallsForCurrentUser(getCalls()).filter(function(c){
+          return normalizeBizName(c.biz) === key;
+        });
+        if(calls.length){
+          calls.sort((a,b)=>{
+            const ad=(a.date||'')+'T'+(a.time||'00:00');
+            const bd=(b.date||'')+'T'+(b.time||'00:00');
+            return bd.localeCompare(ad);
+          });
+          return { count: calls.length, last: canonicalCallOutcome(calls[0].outcome) };
+        }
+      }
+      // Open interested_leads row counts as Interested even if calls are still syncing
+      const openLead = getLeads().filter(leadVisibleToUser).find(function(l){
+        return normalizeBizName(l.biz) === key && l.status !== 'won' && l.status !== 'lost';
+      });
+      if(openLead) return { count: 1, last: 'Interested' };
+      return { count:0, last:null };
+    }
+
+    function getOpenPipelineBizNames(){
+      return new Set(getLeads()
+        .filter(leadVisibleToUser)
+        .filter(function(l){ return l.status !== 'won' && l.status !== 'lost' && l.status !== 'closed'; })
+        .map(function(l){ return normalizeBizName(l.biz); })
+        .filter(Boolean));
     }
     function prospectActivityDotColor(outcome){
       switch(outcome){
@@ -7717,8 +8295,10 @@
         pkg: p.pkg || '',
         pain: p.pain || '',
         script: p.script || '',
-        createdAt: p.createdAt || p.created_at || null,
-        updatedAt: p.updatedAt || p.updated_at || null
+        createdAt: p.createdAt || p.created_at || p.createdat || null,
+        updatedAt: p.updatedAt || p.updated_at || p.updatedat || null,
+        createdBy: p.createdBy != null ? p.createdBy : (p.created_by != null ? p.created_by : (p.createdby != null ? p.createdby : null)),
+        favourite: !!(p.favourite === true || p.favourite === 'true' || p.Favourite === true)
     };
     }
     function prospectVisibleToUser(p, u){
@@ -7895,6 +8475,7 @@
     if(id){ calls = calls.map(c=>c.id===id?{...c,...obj,createdAt:c.createdAt}:c); }
     else { calls.push(obj); }
     ls('calls', calls);
+    if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache('calls');
     
     // SYNC TO SUPABASE
     if(sbReady && sbClient){
@@ -7935,16 +8516,19 @@
         pipelineAddLead(obj);
         updatePipelineNavBadge();
         updateFollowbackNavBadge();
-        // Re-render pipeline page if currently active
+        updateRepJobsNavBadge();
         const pipelinePage = document.getElementById('page-pipeline');
         if(pipelinePage && pipelinePage.classList.contains('active')){
         renderPipeline();
         }
-        // Remove prospect card from Prospects page immediately
-        const prospectsPage = document.getElementById('page-prospects');
-        if(prospectsPage && prospectsPage.classList.contains('active')){
-        renderProspects();
+        const jobsPage = document.getElementById('page-jobs');
+        if(jobsPage && jobsPage.classList.contains('active') && typeof renderJobsPage === 'function'){
+        renderJobsPage().catch(function(e){ console.error(e); });
         }
+    }
+    const prospectsPage = document.getElementById('page-prospects');
+    if(prospectsPage && prospectsPage.classList.contains('active')){
+        renderProspects();
     }
     showToast(id?'Call updated':'Call logged','success');
     }
@@ -7958,8 +8542,11 @@
         return;
         }
         ls('calls', calls.filter(c=>c.id!==id));
+        if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache('calls');
         renderMyCalls();
         renderDashboard();
+        const prospectsPage = document.getElementById('page-prospects');
+        if(prospectsPage && prospectsPage.classList.contains('active')) renderProspects();
         showToast('Call deleted');
     });
     }
@@ -8082,13 +8669,390 @@
     openModal('biz-timeline-modal');
     }
 
+    var _cpCurrentBiz = '';
+
+    function findProspectByBizName(bizName){
+    const norm = normalizeBizName(bizName);
+    if(!norm) return null;
+    return getProspects().find(function(p){ return normalizeBizName(p.name) === norm; }) || null;
+    }
+
+    function isClientFavourite(bizName){
+    const p = findProspectByBizName(bizName);
+    return !!(p && p.favourite);
+    }
+
+    function updateLocalProspectCache(id, patch){
+    const idStr = String(id);
+    const ps = getProspects().map(function(p){
+        if(String(p.id) !== idStr) return p;
+        return Object.assign({}, p, patch, { updatedAt: patch.updatedAt || new Date().toISOString() });
+    });
+    ls('prospects', ps);
+    }
+
+    function prospectAssigneeForCurrentUser(){
+    if(!currentUser) return '';
+    const u = USERS[currentUser];
+    return (u && u.name && String(u.name).trim()) ? String(u.name).trim() : String(currentUser).trim();
+    }
+
+    async function patchProspectFields(id, patch){
+    const body = Object.assign({}, patch);
+    if(body.assignedTo !== undefined){
+        body.assignedto = body.assignedTo;
+        delete body.assignedTo;
+    }
+    if(window.APP_API && typeof APP_API.patchProspectById === 'function'){
+        const numId = APP_API.toBigintId(id);
+        const res = await APP_API.patchProspectById(id, body);
+        if(res.error){
+        console.error('patchProspectFields failed', { id: id, bigintId: numId, patch: body, error: res.error, data: res.data });
+        const msg = res.error.message || res.error.msg || res.error.hint || JSON.stringify(res.error);
+        throw new Error(msg);
+        }
+        return res.data;
+    }
+    throw new Error('Cloud not ready');
+    }
+
+    async function createMinimalProspect(bizName, favourite){
+    const name = String(bizName || '').trim();
+    if(!name) throw new Error('Missing business name');
+    const now = new Date().toISOString();
+    const assignee = prospectAssigneeForCurrentUser();
+    const cloudRow = {
+        name: name,
+        favourite: !!favourite,
+        assignedto: assignee,
+        createdby: currentUser || '',
+        createdAt: now
+    };
+    if(!window.APP_API || typeof APP_API.insertProspectRow !== 'function'){
+        throw new Error('Cloud not ready');
+    }
+    const res = await APP_API.insertProspectRow(cloudRow);
+    if(res.error){
+        console.error('createMinimalProspect insert failed', { row: cloudRow, error: res.error, data: res.data });
+        const msg = res.error.message || res.error.msg || res.error.hint || JSON.stringify(res.error);
+        throw new Error(msg);
+    }
+    const inserted = Array.isArray(res.data) ? res.data[0] : res.data;
+    if(!inserted || inserted.id == null){
+        console.error('createMinimalProspect insert returned no id', { row: cloudRow, error: res.error, data: res.data });
+        throw new Error('Insert succeeded but no prospect id returned');
+    }
+    const local = normalizeProspectFromCloud(Object.assign({}, inserted, { favourite: !!favourite }));
+    if(local) local.favourite = !!favourite;
+    const ps = getProspects();
+    ps.push(local || {
+        id: String(inserted.id),
+        name: name,
+        assignedTo: assignee,
+        favourite: !!favourite,
+        createdAt: now,
+        createdBy: currentUser || ''
+    });
+    ls('prospects', ps);
+    if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function'){
+        APP_API.invalidateRoleTableCache('prospects');
+    }
+    return local || findProspectByBizName(name);
+    }
+
+    function buildClientRepAssignOptions(curAssign){
+    const reps = (typeof tmListSalesRepUids === 'function')
+        ? tmListSalesRepUids()
+        : Object.keys(USERS).filter(function(uid){ var u = USERS[uid]; return u && u.tier === 'rep'; });
+    let html = '<option value="">— Unassigned —</option>';
+    reps.forEach(function(uid){
+        const sel = (curAssign && canonicalRepKey(curAssign) === canonicalRepKey(uid)) ? ' selected' : '';
+        html += '<option value="' + esc(uid) + '"' + sel + '>' + esc(userLabel(uid)) + '</option>';
+    });
+    return html;
+    }
+
+    function canReassignClientRep(){
+    return isCEO(currentUser) || isScopedManager(currentUser);
+    }
+
+    async function onClientProfileRepChange(selectEl){
+    if(!selectEl) return;
+    const prospectId = selectEl.getAttribute('data-prospect-id');
+    if(!prospectId) return;
+    const repUid = selectEl.value;
+    try {
+        await patchProspectFields(prospectId, { assignedto: repUid || null, updatedAt: new Date().toISOString() });
+        updateLocalProspectCache(prospectId, { assignedTo: repUid || '' });
+        showToast('Rep assignment updated', 'success');
+        if(_cpCurrentBiz) openClientProfile(_cpCurrentBiz);
+        if(typeof renderProspects === 'function') renderProspects();
+    } catch(e){
+        console.error('assign rep failed', e);
+        showToast('Failed to update assignment', 'error');
+    }
+    }
+
+    async function toggleClientFavourite(bizName, evt){
+    if(evt && evt.stopPropagation) evt.stopPropagation();
+    const label = bizName || _cpCurrentBiz;
+    if(!label) return;
+    _cpCurrentBiz = label;
+    try {
+        let prospect = findProspectByBizName(label);
+        const nextFav = prospect ? !prospect.favourite : true;
+        if(!prospect){
+        prospect = await createMinimalProspect(label, nextFav);
+        } else {
+        await patchProspectFields(prospect.id, { favourite: nextFav });
+        updateLocalProspectCache(prospect.id, { favourite: nextFav });
+        }
+        const btn = document.getElementById('cp-fav-btn');
+        if(btn){
+        btn.textContent = nextFav ? '★' : '☆';
+        btn.style.color = nextFav ? 'var(--amber)' : '';
+        }
+        if(typeof renderMyCalls === 'function') renderMyCalls();
+        if(typeof renderProspects === 'function') renderProspects();
+        if(document.getElementById('page-dashboard')?.classList.contains('active') && typeof renderDashboard === 'function') renderDashboard();
+    } catch(e){
+        console.error('toggleClientFavourite failed', { bizName: label, error: e });
+        showToast('Could not update favourite', 'error');
+    }
+    }
+
+    function toggleCpPain(btn){
+    const wrap = btn && btn.closest('.cp-pain-wrap');
+    if(!wrap) return;
+    const expanded = wrap.classList.toggle('expanded');
+    btn.textContent = expanded ? 'Show less' : 'Show more';
+    }
+
+    const CP_IC = {
+        phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>',
+        pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0116 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+        tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29a1 1 0 001.41 0l7.59-7.59a1 1 0 000-1.41L12 2z"/><circle cx="7" cy="7" r="1.5"/></svg>',
+        pkg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>',
+        user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+        rep: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
+        cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+        edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>',
+        pain: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>',
+        call: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>',
+        lead: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
+    };
+
+    function cpFieldHtml(iconKey, label, valueHtml, extraClass){
+        return '<div class="cp-field' + (extraClass ? ' ' + extraClass : '') + '">' +
+            '<div class="cp-field-icon" aria-hidden="true">' + (CP_IC[iconKey] || '') + '</div>' +
+            '<div class="cp-field-body">' +
+            '<div class="cp-field-label">' + esc(label) + '</div>' +
+            '<div class="cp-field-value">' + valueHtml + '</div>' +
+            '</div></div>';
+    }
+
+    function cpPhoneTelHref(phone){
+        const digits = String(phone || '').replace(/[^\d+]/g, '');
+        return digits ? 'tel:' + digits : '#';
+    }
+
+    function cpPainNeedsToggle(text){
+        const s = String(text || '');
+        return s.length > 160 || (s.match(/\n/g) || []).length >= 2;
+    }
+
+    function openClientProfile(bizName){
+    const norm = normalizeBizName(bizName);
+    if(!norm){
+        showToast('No business name', 'error');
+        return;
+    }
+    _cpCurrentBiz = bizName;
+    const prospect = getProspects().find(function(p){ return normalizeBizName(p.name) === norm; });
+    const calls = getCalls()
+        .filter(function(c){ return normalizeBizName(c.biz) === norm && callVisibleToUser(c); })
+        .sort(function(a,b){
+            const da = (a.date || '') + 'T' + (a.time || '00:00');
+            const db = (b.date || '') + 'T' + (b.time || '00:00');
+            return da.localeCompare(db);
+        });
+    const leads = getLeads().filter(function(l){ return normalizeBizName(l.biz) === norm; });
+    const titleEl = document.getElementById('cp-title');
+    const chipsEl = document.getElementById('cp-chips');
+    const addedEl = document.getElementById('cp-added');
+    const bodyEl = document.getElementById('cp-body');
+    const favBtn = document.getElementById('cp-fav-btn');
+    if(!titleEl || !chipsEl || !addedEl || !bodyEl) return;
+    const label = String(bizName || '').trim() || 'Unknown business';
+    titleEl.textContent = label;
+    const addedRaw = prospect ? (prospect.createdAt || prospect.created_at) : null;
+    const addedSub = addedRaw ? fmtProspectTs(addedRaw) : '—';
+    const assignedName = prospect && prospect.assignedTo ? userLabel(prospect.assignedTo) : 'Unassigned';
+    chipsEl.innerHTML =
+        '<span class="cp-meta-chip">' + CP_IC.call + esc(calls.length) + ' call' + (calls.length !== 1 ? 's' : '') + '</span>' +
+        '<span class="cp-meta-chip">' + CP_IC.lead + esc(leads.length) + ' lead' + (leads.length !== 1 ? 's' : '') + '</span>' +
+        '<span class="cp-meta-chip">' + CP_IC.rep + esc(assignedName) + '</span>';
+    addedEl.textContent = 'Added ' + addedSub;
+    if(favBtn){
+        const isFav = isClientFavourite(bizName);
+        favBtn.textContent = isFav ? '★' : '☆';
+        favBtn.style.color = isFav ? 'var(--amber)' : '';
+    }
+    let html = '';
+    html += '<div class="cp-section-card"><h4 class="cp-section-title">Prospect Info</h4>';
+    if(prospect){
+        const createdRaw = prospect.createdAt || prospect.created_at;
+        const updatedRaw = prospect.updatedAt || prospect.updated_at;
+        const phoneVal = prospect.phone
+            ? '<a href="' + escAttr(cpPhoneTelHref(prospect.phone)) + '">' + esc(prospect.phone) + '</a>'
+            : '—';
+        html += '<div class="cp-field-grid">';
+        html += cpFieldHtml('phone', 'Phone', phoneVal, 'cp-field-phone');
+        html += cpFieldHtml('user', 'Name', esc(prospect.name || '—'));
+        html += cpFieldHtml('pin', 'Area', esc(prospect.area || '—'));
+        html += cpFieldHtml('tag', 'Type', esc(prospect.type || '—'));
+        html += cpFieldHtml('pkg', 'Package', esc(prospect.pkg || '—'));
+        const repValue = esc(assignedName) +
+            (canReassignClientRep()
+                ? '<select class="cp-rep-select" data-prospect-id="' + esc(String(prospect.id)) + '" onchange="onClientProfileRepChange(this)">' +
+                    buildClientRepAssignOptions(prospect.assignedTo) +
+                    '</select>'
+                : '');
+        html += cpFieldHtml('rep', 'Assigned Rep', repValue);
+        html += cpFieldHtml('cal', 'Created', esc(fmtProspectTs(createdRaw)));
+        html += cpFieldHtml('edit', 'Added by', esc(prospectCreatedByLabel(prospect.createdBy)));
+        html += cpFieldHtml('cal', 'Updated', esc(fmtProspectTs(updatedRaw)));
+        html += '</div>';
+        const painText = prospect.pain && String(prospect.pain).trim();
+        if(painText){
+            const needsToggle = cpPainNeedsToggle(painText);
+            html += '<div class="cp-field cp-field-full cp-pain-wrap' + (needsToggle ? '' : ' expanded') + '" style="margin-top:12px;">' +
+                '<div class="cp-field-icon" aria-hidden="true">' + CP_IC.pain + '</div>' +
+                '<div class="cp-field-body">' +
+                '<div class="cp-field-label">Pain</div>' +
+                '<div class="cp-pain-preview">' + esc(painText) + '</div>' +
+                '<div class="cp-pain-full">' + esc(painText) + '</div>' +
+                (needsToggle ? '<button type="button" class="cp-pain-toggle" onclick="toggleCpPain(this)">Show more</button>' : '') +
+                '</div></div>';
+        }
+    } else {
+        html += '<div class="cp-empty-muted">No prospect record — star this client to create one.</div>';
+    }
+    html += '</div>';
+    html += '<div class="cp-section-card"><h4 class="cp-section-title">Interested Leads</h4>';
+    if(!leads.length){
+        html += '<div class="cp-empty-muted">No leads on record.</div>';
+    } else {
+        leads.forEach(function(l){
+            const notes = [l.callNotes, l.mockupNotes, l.callbackNotes, l.notes].filter(Boolean).join(' · ');
+            const dateStr = l.callDate ? fmt(l.callDate) : (l.createdAt ? fmtProspectTs(l.createdAt) : '—');
+            html += '<div class="cp-lead-item">' +
+                '<div class="cp-lead-top">' +
+                '<span class="badge badge-purple">' + esc(l.status || '—') + '</span>' +
+                '<span class="cp-timeline-date">' + esc(dateStr) + '</span>' +
+                '</div>' +
+                (notes ? '<div class="cp-lead-notes">' + esc(notes) + '</div>' : '') +
+                '</div>';
+        });
+    }
+    html += '</div>';
+    html += '<div class="cp-section-card"><h4 class="cp-section-title">Call History</h4>';
+    if(!calls.length){
+        html += '<div class="cp-empty-muted">No calls found for this business.</div>';
+    } else {
+        html += '<div class="cp-timeline">';
+        calls.forEach(function(c){
+            html += '<div class="cp-timeline-step">' +
+                '<div class="cp-timeline-dot" aria-hidden="true"></div>' +
+                '<div class="cp-timeline-body">' +
+                '<div class="cp-timeline-head">' +
+                outcomeBadge(c.outcome) +
+                '<span class="cp-timeline-date">' + esc(fmt(c.date) + (c.time ? ' · ' + c.time : '')) + '</span>' +
+                '</div>' +
+                (c.notes ? '<div class="cp-call-note">' + esc(c.notes) + '</div>' : '') +
+                '</div></div>';
+        });
+        html += '</div>';
+    }
+    html += '</div>';
+    bodyEl.innerHTML = html;
+    openModal('client-profile-modal');
+    }
+
+    window.openClientProfile = openClientProfile;
+    window.toggleClientFavourite = toggleClientFavourite;
+    window.onClientProfileRepChange = onClientProfileRepChange;
+    window.toggleCpPain = toggleCpPain;
+
+    (function bindClientProfileDelegatedClicks(){
+    if(window._clientProfileClicksBound) return;
+    window._clientProfileClicksBound = true;
+    document.addEventListener('click', function(e){
+        const repProspectRow = e.target.closest('.rep-balance-prospect-row');
+        if(repProspectRow && repProspectRow.dataset.biz != null){
+        e.stopPropagation();
+        openClientProfile(repProspectRow.dataset.biz);
+        return;
+        }
+        const nameBtn = e.target.closest('.biz-name-link');
+        if(nameBtn && nameBtn.dataset.biz != null){
+        e.stopPropagation();
+        openClientProfile(nameBtn.dataset.biz);
+        return;
+        }
+        const dashRecentRow = e.target.closest('.dash-recent-call-row');
+        if(dashRecentRow && dashRecentRow.dataset.biz != null){
+        e.stopPropagation();
+        openClientProfile(dashRecentRow.dataset.biz);
+        return;
+        }
+        const dashTodayRow = e.target.closest('.dash-today-call-row');
+        if(dashTodayRow && dashTodayRow.dataset.biz != null){
+        e.stopPropagation();
+        openClientProfile(dashTodayRow.dataset.biz);
+        return;
+        }
+        const dashFollowupCard = e.target.closest('.dash-followup-card');
+        if(dashFollowupCard && dashFollowupCard.dataset.biz != null){
+        e.stopPropagation();
+        openClientProfile(dashFollowupCard.dataset.biz);
+        return;
+        }
+        const dashFavCard = e.target.closest('.dash-fav-card');
+        if(dashFavCard && dashFavCard.dataset.biz != null){
+        e.stopPropagation();
+        openClientProfile(dashFavCard.dataset.biz);
+        return;
+        }
+        const fuRow = e.target.closest('.followup-row-clickable');
+        if(fuRow && fuRow.dataset.biz != null){
+        if(e.target.closest('.followup-update-btn')) return;
+        e.stopPropagation();
+        openClientProfile(fuRow.dataset.biz);
+        return;
+        }
+        const favBtn = e.target.closest('.fav-star-btn');
+        if(favBtn && favBtn.dataset.biz != null){
+        e.stopPropagation();
+        toggleClientFavourite(favBtn.dataset.biz, e);
+        return;
+        }
+    });
+    })();
+
     let _myCallsStatus = '';
-    function myCallsSetStatus(v){ _myCallsStatus = v; renderMyCalls(); }
+    let _myCallsFavOnly = false;
+    function myCallsSetStatus(v){ _myCallsDateFilter = ''; _myCallsStatus = v; renderMyCalls(); }
+    function myCallsSetFavourites(){ _myCallsFavOnly = !_myCallsFavOnly; renderMyCalls(); }
+    function myCallsOnSearchInput(){ _myCallsDateFilter = ''; renderMyCallsDebounced(); }
 
     function renderMyCalls(){
     const tbody = document.getElementById('calls-tbody');
+    const searchEl = document.getElementById('calls-search');
+    const mcBar = document.getElementById('mycalls-stat-bar');
     let calls = filterCallsForCurrentUser(getCalls());
-    const q = (document.getElementById('calls-search')||{}).value||'';
+    if(_myCallsDateFilter) calls = calls.filter(c => c.date === _myCallsDateFilter);
+    const q = (searchEl||{}).value||'';
     if(q) calls = calls.filter(c=>(c.biz||'').toLowerCase().includes(q.toLowerCase())||((c.notes||'').toLowerCase().includes(q.toLowerCase())));
 
     const mcBase = calls; // post-search, pre-outcome — faceting base
@@ -8105,24 +9069,31 @@
       ['Not interested', 'Not Interested', 'Not interested', 'var(--red)'],
       ['No answer', 'No Answer', 'No answer', 'var(--text-2)'],
     ];
-    const mcBar = document.getElementById('mycalls-stat-bar');
+    const favBizSet = new Set();
+    getProspects().forEach(function(p){ if(p.favourite) favBizSet.add(normalizeBizName(p.name)); });
+    const mcFavCount = mcBase.filter(c => favBizSet.has(normalizeBizName(c.biz))).length;
     if(mcBar){
       mcBar.innerHTML = mcDefs.map(([val,label,key,accent]) =>
         `<div class="pstat-chip${_myCallsStatus===val?' active':''}" style="--chip-accent:${accent};" onclick="myCallsSetStatus('${val}')">`+
         `<span class="pstat-num">${mcCounts[key]}</span><span class="pstat-lbl">${label}</span></div>`
-      ).join('');
+      ).join('') +
+        `<div class="pstat-chip${_myCallsFavOnly?' active':''}" style="--chip-accent:var(--amber);" onclick="myCallsSetFavourites()">`+
+        `<span class="pstat-num">${mcFavCount}</span><span class="pstat-lbl">★ Favourites</span></div>`;
     }
 
     calls = _myCallsStatus ? mcBase.filter(c => c.outcome === _myCallsStatus) : mcBase;
+    if(_myCallsFavOnly) calls = calls.filter(c => favBizSet.has(normalizeBizName(c.biz)));
 
     calls.sort((a,b)=>b.date.localeCompare(a.date));
     if(!calls.length){
         tbody.innerHTML=`<tr><td colspan="6" class="empty-state">No calls logged yet.</td></tr>`;
         return;
     }
-    tbody.innerHTML = calls.map(c=>`
+    tbody.innerHTML = calls.map(c=>{
+        const bizFav = favBizSet.has(normalizeBizName(c.biz));
+        return `
         <tr>
-        <td><strong><button type="button" class="biz-timeline-link" style="background:none;border:none;padding:0;font:inherit;font-weight:700;" onclick="openBizTimeline(${JSON.stringify(c.biz)},'mycalls')">${esc(c.biz)}</button></strong></td>
+        <td><strong style="display:flex;align-items:center;gap:6px;"><button type="button" class="fav-star-btn" data-biz="${escAttr(c.biz)}" style="background:none;border:none;font-size:15px;cursor:pointer;padding:0;line-height:1;color:${bizFav?'var(--amber)':'var(--text-2)'};">${bizFav?'★':'☆'}</button><button type="button" class="biz-timeline-link biz-name-link" data-biz="${escAttr(c.biz)}" style="background:none;border:none;padding:0;font:inherit;font-weight:700;">${esc(c.biz)}</button></strong></td>
         <td>${outcomeBadge(c.outcome)}</td>
         <td>${fmt(c.date)}</td>
         <td>${c.followup?fmt(c.followup):'—'}</td>
@@ -8133,13 +9104,15 @@
             <button class="btn btn-sm" style="background:var(--red-light);color:var(--red);border:none;" onclick="deleteCall('${c.id}')">×</button>
             </div>
         </td>
-        </tr>`).join('');
+        </tr>`;
+    }).join('');
     }
 
     // ════════════════════════════════════════
     // DASHBOARD
     // ════════════════════════════════════════
-    var _dashRange = 'all'; // 'all' | 'week' | 'month'
+    var _dashRange = 'all'; // 'all' | 'today' | 'week' | 'month'
+    var _dashRepFilter = '';
 
     function dashSetRange(range, btn){
     _dashRange = range;
@@ -8149,29 +9122,82 @@
     if(typeof renderDashboard === 'function') renderDashboard();
     }
 
+    function dashSetRepFilter(val){
+    _dashRepFilter = val || '';
+    if(typeof renderDashboard === 'function') renderDashboard();
+    }
+
     function renderDashRecentCalls(){
     const u = USERS[currentUser];
     let myCalls = filterCallsForCurrentUser(getCalls());
 
-    // Filter by range
+    const showRepFilter = window.SALES_OS
+        ? (SALES_OS.isDirectorCEO(currentUser, USERS) || SALES_OS.isCoCEO(currentUser, USERS))
+        : (isDirectorCEO(currentUser) || isCoCEO(currentUser));
+    const repFilterSlot = document.getElementById('dash-recent-rep-filter-slot');
+    if(repFilterSlot){
+        if(showRepFilter){
+            const visibleRepSet = new Set(getVisibleRepUIDs().map(canonicalRepKey));
+            const repOptions = Object.entries(USERS)
+                .filter(function(entry){ return tmIsSalesRepRole(entry[1]) && visibleRepSet.has(canonicalRepKey(entry[0])); })
+                .sort(function(a, b){ return userLabel(a[0]).localeCompare(userLabel(b[0])); });
+            const curCanon = _dashRepFilter ? canonicalRepKey(_dashRepFilter) : '';
+            repFilterSlot.innerHTML =
+                '<select id="dash-recent-rep-filter" onchange="dashSetRepFilter(this.value)" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer;">' +
+                '<option value="">All Reps</option>' +
+                repOptions.map(function(entry){
+                    const uid = entry[0];
+                    const selected = curCanon === canonicalRepKey(uid) ? ' selected' : '';
+                    return '<option value="' + escAttr(uid) + '"' + selected + '>' + esc(userLabel(uid)) + '</option>';
+                }).join('') +
+                '</select>';
+        } else {
+            _dashRepFilter = '';
+            repFilterSlot.innerHTML = '';
+        }
+    }
+
+    // Filter by range and rep
     let filtered = myCalls.filter(c=>c);
     const rangeLabel = document.getElementById('dash-recent-range-label');
-    if(_dashRange==='week'){
+    if(_dashRange==='today'){
+        const today = todayYMD();
+        filtered = filtered.filter(function(c){
+        var ymd = dashParseCallDateYmd(c);
+        return ymd && ymd === today;
+        });
+    } else if(_dashRange==='week'){
         const wb = dashCalendarWeekBounds();
         filtered = filtered.filter(function(c){
         var ymd = dashParseCallDateYmd(c);
         return ymd && ymd >= wb.start && ymd <= wb.end;
         });
-        if(rangeLabel) rangeLabel.textContent = filtered.length + ' call' + (filtered.length!==1?'s':'') + ' this week (' + wb.start + ' – ' + wb.end + ')';
     } else if(_dashRange==='month'){
         const mb = dashCalendarMonthBounds();
         filtered = filtered.filter(function(c){
         var ymd = dashParseCallDateYmd(c);
         return ymd && ymd >= mb.start && ymd <= mb.end;
         });
-        if(rangeLabel) rangeLabel.textContent = filtered.length + ' call' + (filtered.length!==1?'s':'') + ' this month';
-    } else {
-        if(rangeLabel) rangeLabel.textContent = filtered.length + ' total call' + (filtered.length!==1?'s':'');
+    }
+
+    if(_dashRepFilter){
+        const repCanon = canonicalRepKey(_dashRepFilter);
+        filtered = filtered.filter(function(c){ return canonicalRepKey(c.rep) === repCanon; });
+    }
+
+    if(rangeLabel){
+        const n = filtered.length;
+        const callWord = n + ' call' + (n!==1?'s':'');
+        if(_dashRange==='today'){
+            rangeLabel.textContent = callWord + ' today';
+        } else if(_dashRange==='week'){
+            const wb = dashCalendarWeekBounds();
+            rangeLabel.textContent = callWord + ' this week (' + wb.start + ' – ' + wb.end + ')';
+        } else if(_dashRange==='month'){
+            rangeLabel.textContent = callWord + ' this month';
+        } else {
+            rangeLabel.textContent = n + ' total call' + (n!==1?'s':'');
+        }
     }
 
     // Sort newest first by date+time
@@ -8193,11 +9219,11 @@
         <th>Date</th><th>Time</th>${showRep?'<th>Rep</th>':''}
         <th>Business</th><th>Outcome</th><th>Follow-up</th><th>Notes</th>
         </tr></thead>
-        <tbody>${filtered.map(c=>`<tr>
+        <tbody>${filtered.map(c=>`<tr class="dash-recent-call-row" data-biz="${escAttr(c.biz)}">
         <td style="white-space:nowrap;">${fmt(c.date||'')}</td>
         <td style="white-space:nowrap;color:var(--text-2);">${c.time||'—'}</td>
         ${showRep?`<td style="color:var(--text-2);font-size:12px;">${esc(USERS[c.rep]?.name||c.rep||'—')}</td>`:''}
-        <td><strong>${esc(c.biz)}</strong></td>
+        <td><strong><button type="button" class="biz-timeline-link biz-name-link" data-biz="${escAttr(c.biz)}" style="background:none;border:none;padding:0;font:inherit;font-weight:700;">${esc(c.biz)}</button></strong></td>
         <td>${outcomeBadge(c.outcome)}</td>
         <td style="white-space:nowrap;">${c.followup?fmt(c.followup):'—'}</td>
         <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2);">${esc(c.notes||'—')}</td>
@@ -8260,14 +9286,17 @@
         if(!groups[groupKey]){
             groups[groupKey] = {
                 label: assigneeRowLabel(rawAssign),
-                count: 0
+                count: 0,
+                prospects: []
             };
         }
         groups[groupKey].count++;
+        groups[groupKey].prospects.push(p);
     });
+    window._dashBalanceGroups = groups;
 
     const rows = Object.keys(groups).map(function(key){
-        return { label: groups[key].label, count: groups[key].count };
+        return { key: key, label: groups[key].label, count: groups[key].count };
     }).sort(function(a, b){
         return b.count - a.count || String(a.label).localeCompare(String(b.label));
     });
@@ -8289,7 +9318,7 @@
         '<div style="font-family:var(--font-display, \'Syne\', sans-serif);font-size:clamp(1.5rem, 4vw, 2rem);font-weight:800;color:var(--color-accent, var(--purple));margin-bottom:16px;">Balance to call: ' + totalUncalled + '</div>' +
         '<ul style="list-style:none;margin:0;padding:0;">' +
         rows.map(function(r){
-            return '<li style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-subtle, var(--border));font-size:14px;">' +
+            return '<li class="dash-rep-balance-row" data-rep-key="' + escAttr(r.key) + '" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-subtle, var(--border));font-size:14px;">' +
                 '<span style="color:var(--color-text-primary, var(--text));font-weight:500;">' + esc(r.label) + '</span>' +
                 '<span style="font-weight:700;color:var(--color-accent, var(--purple));min-width:2ch;text-align:right;">' + r.count + '</span>' +
             '</li>';
@@ -8301,7 +9330,137 @@
         '</div>';
     }
 
+    function openRepUncalledProspects(repKey){
+    const groups = window._dashBalanceGroups || {};
+    const group = groups[repKey];
+    if(!group) return;
+    const titleEl = document.getElementById('rep-balance-title');
+    const subEl = document.getElementById('rep-balance-sub');
+    const bodyEl = document.getElementById('rep-balance-body');
+    if(!titleEl || !subEl || !bodyEl) return;
+    titleEl.textContent = group.label;
+    subEl.textContent = group.count + ' prospect' + (group.count !== 1 ? 's' : '') + ' not yet called';
+    if(!group.prospects.length){
+        bodyEl.innerHTML = '<div class="empty-state" style="padding:12px 0;">No uncalled prospects.</div>';
+    } else {
+        bodyEl.innerHTML = group.prospects.map(function(p){
+            return '<div class="prospect-card rep-balance-prospect-row" data-biz="' + escAttr(p.name) + '" style="margin-bottom:10px;padding:12px;">' +
+                '<div class="prospect-biz" style="color:var(--text);">' + esc(p.name) + '</div>' +
+                '<div class="prospect-meta" style="margin-top:4px;">' +
+                    '<span class="badge badge-purple">' + esc(p.type) + '</span>' +
+                    '<span class="prospect-area" style="color:var(--text-2);">' + esc(p.area) + '</span>' +
+                '</div>' +
+                buildProspectMetaChipsHtml(p) +
+                '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;font-size:13px;">' +
+                    '<span class="prospect-pkg" style="color:var(--cyan);">' + esc(p.pkg) + '</span>' +
+                    '<span class="info-row" style="color:var(--text-2);"><strong style="color:var(--text);">' + esc(p.phone) + '</strong></span>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+    }
+    openModal('rep-balance-modal');
+    }
+    window.openRepUncalledProspects = openRepUncalledProspects;
+
+    (function bindDashRepBalanceClicks(){
+    if(window._dashRepBalanceClicksBound) return;
+    window._dashRepBalanceClicksBound = true;
+    document.addEventListener('click', function(e){
+        const row = e.target.closest('[data-rep-key]');
+        if(!row || !row.closest('#dash-rep-remaining-prospects')) return;
+        const showCeoPanel = window.SALES_OS
+            && (SALES_OS.isDirectorCEO(currentUser, USERS) || SALES_OS.isCoCEO(currentUser, USERS));
+        if(!showCeoPanel) return;
+        const key = row.dataset.repKey;
+        if(key) openRepUncalledProspects(key);
+    });
+    })();
+
     var _dashStatCountGen = 0;
+
+    function getVisibleFavouriteProspects(u){
+    const allPs = getProspects();
+    const favBizSet = new Set();
+    allPs.forEach(function(p){ if(p.favourite) favBizSet.add(normalizeBizName(p.name)); });
+    return allPs.filter(function(p){
+        return prospectVisibleToUser(p, u) && favBizSet.has(normalizeBizName(p.name));
+    });
+    }
+
+    function dashLast7DayCounts(calls){
+    const out = [];
+    for(let i = 6; i >= 0; i--){
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const ymd = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        out.push(calls.filter(function(c){ return c.date === ymd; }).length);
+    }
+    return out;
+    }
+
+    function dashNext7DayFollowupCounts(calls, todayYmd){
+    const out = [];
+    const base = new Date(todayYmd + 'T12:00:00');
+    for(let i = 0; i < 7; i++){
+        const d = new Date(base);
+        d.setDate(base.getDate() + i);
+        const ymd = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        out.push(calls.filter(function(c){ return c.followup === ymd; }).length);
+    }
+    return out;
+    }
+
+    function dashSparklineSvg(counts, accent){
+    const w = 80, h = 28, pad = 2;
+    const max = Math.max(1, ...counts);
+    const n = counts.length || 1;
+    const step = (w - pad * 2) / n;
+    const barW = Math.max(2, step - 2);
+    const rects = counts.map(function(cnt, i){
+        const bh = cnt ? Math.max(3, Math.round((cnt / max) * (h - pad * 2))) : 2;
+        const x = pad + i * step + (step - barW) / 2;
+        const y = h - pad - bh;
+        const op = cnt ? (i === n - 1 ? 1 : 0.72) : 0.18;
+        return '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + bh + '" rx="1.5" fill="' + accent + '" opacity="' + op + '"/>';
+    }).join('');
+    return '<svg class="stat-visual stat-sparkline" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true">' + rects + '</svg>';
+    }
+
+    function dashRingSvg(pct, color){
+    const p = Math.min(1, Math.max(0, pct));
+    const r = 13, cx = 16, cy = 16, sw = 3.5;
+    const circ = 2 * Math.PI * r;
+    const off = circ * (1 - p);
+    return '<svg class="stat-visual stat-ring" viewBox="0 0 32 32" aria-hidden="true">' +
+        '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="rgba(168,85,247,0.14)" stroke-width="' + sw + '"/>' +
+        '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="' + sw + '" stroke-dasharray="' + circ.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '" stroke-linecap="round" transform="rotate(-90 ' + cx + ' ' + cy + ')"/>' +
+        '</svg>';
+    }
+
+    function renderDashFavourites(u, activityMap){
+    const el = document.getElementById('dash-favourites');
+    if(!el) return;
+    const favs = getVisibleFavouriteProspects(u).slice().sort(function(a, b){ return (b.id || 0) - (a.id || 0); });
+    if(!favs.length){
+        el.innerHTML = '<div class="dash-fav-empty">No favourites yet — star a prospect to pin it here</div>';
+        return;
+    }
+    el.innerHTML = '<div class="dash-fav-scroll">' + favs.map(function(p){
+        const act = getProspectActivity(p.name, activityMap);
+        const rawAssign = String(p.assignedTo || p.assignedto || '').trim();
+        const repLabel = rawAssign ? assigneeRowLabel(rawAssign) : 'Unassigned';
+        const badgeHtml = act.last ? outcomeBadge(act.last) : '<span class="badge badge-gray" style="font-size:10px;">No calls</span>';
+        return '<button type="button" class="dash-fav-card" data-biz="' + escAttr(p.name) + '" aria-label="Open ' + escAttr(p.name) + ' profile">' +
+            '<div class="dash-fav-biz">' + esc(p.name) + '</div>' +
+            '<div class="dash-fav-meta">' + esc(p.area || '—') + '</div>' +
+            '<div class="dash-fav-foot">' +
+                '<span class="dash-fav-rep">' + esc(repLabel) + '</span>' +
+                badgeHtml +
+            '</div>' +
+        '</button>';
+    }).join('') + '</div>';
+    }
+
     function animateDashStatCounts(){
     var gen = ++_dashStatCountGen;
     var root = document.getElementById('dash-stats');
@@ -8369,6 +9528,13 @@
 
     const allProspects = getProspects();
     let myProspects = allProspects.filter(p => prospectVisibleToUser(p, u));
+    const activityMap = buildProspectActivityMap(myCalls);
+
+    const calls7d = dashLast7DayCounts(myCalls);
+    const followups7d = dashNext7DayFollowupCounts(myCalls, today);
+    const interestedPct = myCalls.length ? interested.length / myCalls.length : 0;
+    const calledProspects = myProspects.filter(function(p){ return getProspectActivity(p.name, activityMap).count > 0; }).length;
+    const prospectCalledPct = myProspects.length ? calledProspects / myProspects.length : 0;
 
     var _icPhone='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>';
     var _icStack='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>';
@@ -8376,12 +9542,14 @@
     var _icCal='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
     var _icUsers='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>';
     document.getElementById('dash-stats').innerHTML=`
-        <div class="stat-card stat-accent-purple stat-bento-hero"><div class="stat-card-top"><div><div class="stat-label">Calls Today</div></div><div class="stat-card-icon" aria-hidden="true">${_icPhone}</div></div><div class="stat-num"><span class="stat-num-value">${todayCalls.length}</span></div><div class="stat-sub">as of ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div></div>
-        <div class="stat-card stat-accent-cyan stat-bento-side"><div class="stat-card-top"><div><div class="stat-label">Total Calls</div></div><div class="stat-card-icon" aria-hidden="true">${_icStack}</div></div><div class="stat-num stat-num-solid"><span class="stat-num-value">${myCalls.length}</span></div><div class="stat-sub">${u.tier==='rep'?'your calls':'all team'}</div></div>
-        <div class="stat-card stat-accent-purple stat-bento-sm"><div class="stat-card-top"><div><div class="stat-label">Interested Leads</div></div><div class="stat-card-icon" aria-hidden="true">${_icStar}</div></div><div class="stat-num stat-num-cyan"><span class="stat-num-value">${interested.length}</span></div><div class="stat-sub">of ${myCalls.length} total</div></div>
-        <div class="stat-card stat-accent-cyan stat-bento-mid"><div class="stat-card-top"><div><div class="stat-label">Follow-ups (7d)</div></div><div class="stat-card-icon" aria-hidden="true">${_icCal}</div></div><div class="stat-num stat-num-solid"><span class="stat-num-value">${fueDue.length}</span></div><div class="stat-sub">due this week</div></div>
-        <div class="stat-card stat-accent-cyan stat-bento-xs"><div class="stat-card-top"><div><div class="stat-label">Prospects</div></div><div class="stat-card-icon" aria-hidden="true">${_icUsers}</div></div><div class="stat-num stat-num-cyan"><span class="stat-num-value">${myProspects.length}</span></div><div class="stat-sub">${u.tier==='rep'?'assigned to you':'total prospects'}</div></div>
+        <button type="button" class="stat-card stat-card-clickable stat-accent-purple stat-bento-hero" onclick="dashNavCallsToday()" aria-label="Calls Today — view today's calls"><div class="stat-card-top"><div><div class="stat-label">Calls Today</div></div><div class="stat-card-icon" aria-hidden="true">${_icPhone}</div></div><div class="stat-card-main"><div class="stat-num"><span class="stat-num-value">${todayCalls.length}</span></div><div class="stat-card-visual">${dashSparklineSvg(calls7d, '#A855F7')}</div></div><div class="stat-sub">as of ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div></button>
+        <button type="button" class="stat-card stat-card-clickable stat-accent-cyan stat-bento-side" onclick="dashNavTotalCalls()" aria-label="Total Calls — view all calls"><div class="stat-card-top"><div><div class="stat-label">Total Calls</div></div><div class="stat-card-icon" aria-hidden="true">${_icStack}</div></div><div class="stat-card-main"><div class="stat-num stat-num-solid"><span class="stat-num-value">${myCalls.length}</span></div><div class="stat-card-visual">${dashSparklineSvg(calls7d, '#22D3EE')}</div></div><div class="stat-sub">${u.tier==='rep'?'your calls':'all team'}</div></button>
+        <button type="button" class="stat-card stat-card-clickable stat-accent-purple stat-bento-sm" onclick="dashNavInterestedLeads()" aria-label="Interested Leads — view pipeline"><div class="stat-card-top"><div><div class="stat-label">Interested Leads</div></div><div class="stat-card-icon" aria-hidden="true">${_icStar}</div></div><div class="stat-card-main"><div class="stat-num stat-num-cyan"><span class="stat-num-value">${interested.length}</span></div><div class="stat-card-visual">${dashRingSvg(interestedPct, '#22D3EE')}</div></div><div class="stat-sub">of ${myCalls.length} total</div></button>
+        <button type="button" class="stat-card stat-card-clickable stat-accent-cyan stat-bento-mid" onclick="dashNavFollowups7d()" aria-label="Follow-ups due in the next 7 days"><div class="stat-card-top"><div><div class="stat-label">Follow-ups (7d)</div></div><div class="stat-card-icon" aria-hidden="true">${_icCal}</div></div><div class="stat-card-main"><div class="stat-num stat-num-solid"><span class="stat-num-value">${fueDue.length}</span></div><div class="stat-card-visual">${dashSparklineSvg(followups7d, '#FBBF24')}</div></div><div class="stat-sub">due this week</div></button>
+        <button type="button" class="stat-card stat-card-clickable stat-accent-cyan stat-bento-xs" onclick="dashNavProspects()" aria-label="Prospects — view full list"><div class="stat-card-top"><div><div class="stat-label">Prospects</div></div><div class="stat-card-icon" aria-hidden="true">${_icUsers}</div></div><div class="stat-card-main"><div class="stat-num stat-num-cyan"><span class="stat-num-value">${myProspects.length}</span></div><div class="stat-card-visual">${dashRingSvg(prospectCalledPct, '#A855F7')}</div></div><div class="stat-sub">${u.tier==='rep'?'assigned to you':'total prospects'}</div></button>
     `;
+
+    renderDashFavourites(u, activityMap);
 
     renderDashRepBalanceToCall(allProspects, myCalls);
 
@@ -8389,7 +9557,7 @@
     if(!todayCalls.length){ tcc.innerHTML=`<div class="empty-state" style="padding:24px 0;">No calls logged today.</div>`; }
     else {
         tcc.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Business</th><th>Outcome</th><th>Notes</th></tr></thead><tbody>${
-        todayCalls.map(c=>`<tr><td><strong>${esc(c.biz)}</strong></td><td>${outcomeBadge(c.outcome)}</td><td style="color:var(--text-2);">${esc(c.notes||'—')}</td></tr>`).join('')
+        todayCalls.map(c=>`<tr class="dash-today-call-row" data-biz="${escAttr(c.biz)}"><td><strong>${esc(c.biz)}</strong></td><td>${outcomeBadge(c.outcome)}</td><td style="color:var(--text-2);">${esc(c.notes||'—')}</td></tr>`).join('')
         }</tbody></table></div>`;
     }
 
@@ -8402,7 +9570,7 @@
         const isToday = c.followup===today;
         const isOver = c.followup<today;
         const bg = isOver?'var(--red-light)':isToday?'var(--amber-light)':'var(--glass-card)';
-        return `<div class="followup-card" style="border-left:3px solid ${isOver?'var(--red)':isToday?'var(--amber)':'var(--border)'};background:${bg};margin-bottom:8px;">
+        return `<div class="followup-card dash-followup-card" data-biz="${escAttr(c.biz)}" style="border-left:3px solid ${isOver?'var(--red)':isToday?'var(--amber)':'var(--border)'};background:${bg};margin-bottom:8px;">
             <div><div class="followup-biz">${esc(c.biz)}</div><div class="followup-date">${fmt(c.followup)}${isToday?' — <strong style="color:var(--amber)">Today</strong>':''}</div>${c.notes?`<div class="followup-notes">${esc(c.notes)}</div>`:''}</div>
             <div>${outcomeBadge(c.outcome)}</div>
         </div>`;
@@ -8431,6 +9599,7 @@
         showToast('Cloud sync not ready yet','error');
         return;
         }
+        if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache('calls');
         const cloudCalls = await loadCallsFromCloud();
         if(!cloudCalls){ throw new Error('Could not load calls'); }
         const calls = cloudCalls.map(normalizeCloudCallRow).filter(Boolean);
@@ -8515,7 +9684,7 @@
         const labelCount = fullCount != null ? fullCount : items.length;
         return `<div class="followup-group ${cls}">
         <div class="followup-group-label">${label} (${labelCount})</div>
-        ${visible.map(c=>`<div class="followup-card" style="display:flex;align-items:center;gap:8px;padding:10px 12px;flex-wrap:wrap;background:var(--glass-card);border-radius:10px;margin-bottom:6px;">
+        ${visible.map(c=>`<div class="followup-card followup-row-clickable" data-biz="${escAttr(c.biz)}" style="display:flex;align-items:center;gap:8px;padding:10px 12px;flex-wrap:wrap;border-radius:10px;margin-bottom:6px;">
             <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
             <div style="font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${(c.outcome==='No answer'||c.outcome==='Follow-up needed')?'★ ':''}${esc(c.biz)}</div>
             ${c.notes?`<div style="font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;margin-top:2px;">${esc(c.notes)}</div>`:''}
@@ -8523,7 +9692,7 @@
             <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;">
             <span style="font-size:11px;color:var(--text-2);white-space:nowrap;">${fmt(c.followup)}</span>
             ${outcomeBadge(c.outcome)}
-            <button class="btn btn-outline btn-sm" onclick='openModal("call-modal",${JSON.stringify(c)})'>Update</button>
+            <button type="button" class="btn btn-outline btn-sm followup-update-btn" onclick='event.stopPropagation();openModal("call-modal",${JSON.stringify(c)})'>Update</button>
             </div>
         </div>`).join('')}
         ${moreCount > 0 ? `<button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="window._fuShown['${key}']+=10; renderFollowups();">Show ${Math.min(10,moreCount)} more (${moreCount} left)</button>` : ''}
@@ -8558,7 +9727,7 @@
         '<div class="followup-group-label">Overdue (' + leads.length + ')</div>' +
         leads.map(function(l){
             const dueYmd = callbackAtYmd(l.callbackAt);
-            return '<div class="followup-card">' +
+            return '<div class="followup-card followup-row-clickable" data-biz="' + escAttr(l.biz) + '">' +
                 '<div>' +
                 '<div class="followup-biz">' + esc(l.biz) + '</div>' +
                 '<div class="followup-date">' + fmt(dueYmd) + '</div>' +
@@ -8886,6 +10055,7 @@
     // UTILS
     // ════════════════════════════════════════
     function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function escAttr(s){ return esc(s).replace(/'/g,'&#39;'); }
     function fmt(d){ if(!d) return '—'; const [y,m,dy]=d.split('-'); return `${dy}/${m}/${y}`; }
 
     let toastTimer;
@@ -10722,10 +11892,11 @@
     // Apply saved profile picture
     refreshSidebarAvatar();
     // Update pipeline badge on load
-    setTimeout(function(){ updatePipelineNavBadge(); updateFollowbackNavBadge(); }, 300);
+    setTimeout(function(){ updatePipelineNavBadge(); updateFollowbackNavBadge(); updateRepJobsNavBadge(); }, 300);
     // LOAD DATA FROM SUPABASE CLOUD — runs immediately if ready, else waits up to 2s
     async function runCloudLoad(){
         if(!sbReady || !sbClient) return;
+        if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache();
         var loadProspectsFn = (window.SALES_OS && SALES_OS.loadProspects) ? SALES_OS.loadProspects(currentUser, USERS) : loadFromCloud('prospects');
         var loadCallsFn = (window.SALES_OS && SALES_OS.loadCalls) ? SALES_OS.loadCalls(currentUser, USERS) : loadFromCloud('calls');
         var loadLeadsFn = (window.SALES_OS && SALES_OS.loadLeads) ? SALES_OS.loadLeads(currentUser, USERS) : loadFromCloud('interested_leads');
@@ -10757,30 +11928,11 @@
         var error = res && res.error;
         if(error){ console.error('❌ interested_leads load error:', error.message, '| code:', error.code); return; }
         if(data){
-            // Normalise Supabase rows → internal lead shape (guards against column-name drift)
-            const leads = data.map(r => ({
-            id:              r.id              || r.lead_id        || ('lead_' + Date.now() + Math.random()),
-            biz:             r.biz             || r.business_name  || '',
-            rep:             r.rep             || '',
-            callDate:        r.callDate        || r.call_date      || '',
-            callNotes:       r.callNotes       || r.call_notes     || '',
-            phone:           r.phone           || '',
-            pkg:             r.pkg             || '',
-            bizType:         r.bizType         || r.biz_type       || '',
-            status:          r.status          || 'new',
-            mockupNotes:     r.mockupNotes     || r.mockup_notes   || '',
-            mockupUrl:       r.mockupUrl       || r.mockup_url     || '',
-            mockupSentBy:    r.mockupSentBy    || r.mockup_sent_by || '',
-            mockupSentAt:    r.mockupSentAt    || r.mockup_sent_at || '',
-            callbackNotes:   r.callbackNotes   || r.callback_notes || '',
-            callbackOutcome: r.callbackOutcome || r.callback_outcome || '',
-            callbackAt:      r.callbackAt      || r.callback_at    || '',
-            jobId:           r.jobId           || r.job_id         || null,
-            createdAt:       r.createdAt       || r.created_at     || new Date().toISOString()
-            }));
+            const leads = data.map(normalizeLeadFromCloud).filter(Boolean);
             ls('interested_leads', mergeByIdPreserveLocal(leads, getLeads()));
             updatePipelineNavBadge();
         updateFollowbackNavBadge();
+        updateRepJobsNavBadge();
             console.log('✓ Loaded', leads.length, 'interested leads from cloud');
             // Re-render any active page that shows leads
             const pp = document.getElementById('page-pipeline');
@@ -10830,6 +11982,7 @@
         if(!currentUser || !sbReady || !sbClient) return;
         const dashPage = document.getElementById('page-dashboard');
         if(!dashPage || !dashPage.classList.contains('active')) return;
+        if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache('calls');
         var pollCalls = (window.SALES_OS && SALES_OS.loadCalls) ? SALES_OS.loadCalls(currentUser, USERS) : loadFromCloud('calls');
         pollCalls.then(function(res){
         const data = Array.isArray(res) ? res : (res && res.data);
@@ -10845,36 +11998,18 @@
     if(window._leadsPollTimer) clearInterval(window._leadsPollTimer);
     window._leadsPollTimer = setInterval(function(){
         if(!currentUser || !sbReady || !sbClient) return;
+        if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache('interested_leads');
         var pollLeads = (window.SALES_OS && SALES_OS.loadLeads) ? SALES_OS.loadLeads(currentUser, USERS) : loadFromCloud('interested_leads');
         pollLeads.then(function(res){
         const data = Array.isArray(res) ? res : (res && res.data);
         const error = res && res.error;
         if(error || !data) return;
-        // Normalise field names (same mapping used in launchApp + _doFocusSync)
-        const leads = data.map(function(r){ return {
-            id:              r.id              || r.lead_id           || ('lead_' + Date.now() + Math.random()),
-            biz:             r.biz             || r.business_name     || '',
-            rep:             r.rep             || '',
-            callDate:        r.callDate        || r.call_date         || '',
-            callNotes:       r.callNotes       || r.call_notes        || '',
-            phone:           r.phone           || '',
-            pkg:             r.pkg             || '',
-            bizType:         r.bizType         || r.biz_type          || '',
-            status:          r.status          || 'new',
-            mockupNotes:     r.mockupNotes     || r.mockup_notes      || '',
-            mockupUrl:       r.mockupUrl       || r.mockup_url        || '',
-            mockupSentBy:    r.mockupSentBy    || r.mockup_sent_by    || '',
-            mockupSentAt:    r.mockupSentAt    || r.mockup_sent_at    || '',
-            callbackNotes:   r.callbackNotes   || r.callback_notes    || '',
-            callbackOutcome: r.callbackOutcome || r.callback_outcome  || '',
-            callbackAt:      r.callbackAt      || r.callback_at       || '',
-            jobId:           r.jobId           || r.job_id            || null,
-            createdAt:       r.createdAt       || r.created_at        || new Date().toISOString()
-        };});
+        const leads = data.map(normalizeLeadFromCloud).filter(Boolean);
         const prev = (ls('interested_leads') || []).length;
         ls('interested_leads', mergeByIdPreserveLocal(leads, getLeads()));
         updatePipelineNavBadge();
         updateFollowbackNavBadge();
+        updateRepJobsNavBadge();
         // Re-render whichever page is currently visible
         const pipelinePage = document.getElementById('page-pipeline');
         if(pipelinePage && pipelinePage.classList.contains('active')){
@@ -10960,22 +12095,91 @@
     }
 
     async function jobRenderRepDash(){
+    const myLeads = getLeads()
+        .filter(leadVisibleToUser)
+        .filter(function(l){ return l.status !== 'won' && l.status !== 'lost'; })
+        .sort(function(a,b){
+            const order = { pending: 0, called: 1, new: 2 };
+            const oa = order[a.status] != null ? order[a.status] : 99;
+            const ob = order[b.status] != null ? order[b.status] : 99;
+            if(oa !== ob) return oa - ob;
+            return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        });
+    const pendingCount = myLeads.filter(function(l){ return l.status === 'pending'; }).length;
     const jobs = await getJobsForRep(currentUser);
     const content = document.getElementById('job-dashboard-content');
-    
+    if(!content) return;
+
+    let html = '';
+
+    html += `<div class="card" style="border-left:3px solid var(--green);margin-bottom:20px;">
+        <h3 style="margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--green);"></span>
+            My Interested Leads (${myLeads.length})
+        </h3>`;
+
+    if(!myLeads.length){
+        html += `<div class="empty-state" style="text-align:center;padding:24px;color:var(--text-2);font-size:13px;">
+            No interested leads yet. Log a call with outcome <strong>Interested</strong> to start the pipeline.
+        </div>`;
+    } else {
+        if(pendingCount > 0){
+            html += `<div class="mockup-note-box" style="border-left-color:var(--amber);background:rgba(251,191,36,0.1);margin-bottom:14px;">🔔 ${pendingCount} mockup${pendingCount !== 1 ? 's' : ''} sent — call these clients and close the deal</div>`;
+        }
+        html += myLeads.map(function(l){
+        const statusText = { new:'New — awaiting mockup', pending:'Mockup sent', called:'Callback logged' }[l.status] || l.status;
+        const statusColor = { new:'var(--amber)', pending:'var(--purple)', called:'var(--cyan)' }[l.status] || 'var(--text-2)';
+        const hasJob = !!l.jobId;
+        let actionsHtml = '';
+        if(l.status === 'pending'){
+            actionsHtml = `<div class="inbox-lead-actions">` +
+                (l.phone
+                    ? `<a href="tel:${esc(l.phone)}" class="btn-send-mockup" style="text-decoration:none;display:inline-flex;align-items:center;">📞 Call Client</a>`
+                    : `<button type="button" class="btn-send-mockup" disabled style="opacity:.55;cursor:not-allowed;">📞 Call Client</button>`) +
+                `<button class="btn-log-callback" onclick="pipelineOpenCallbackModal('${l.id}')">Log Callback</button>` +
+                `</div>`;
+        } else if(l.status === 'called'){
+            actionsHtml = `<div style="margin-top:8px;"><button class="btn-view-history" onclick="pipelineOpenCallbackModal('${l.id}')">Log Another Callback / Close</button></div>`;
+        }
+        return `<div class="inbox-lead-card" style="margin-bottom:10px;">
+            <div class="inbox-lead-dot${l.status === 'new' ? '' : ' processed'}"></div>
+            <div class="inbox-lead-body">
+            <div class="inbox-lead-biz">${esc(l.biz)}</div>
+            <div class="inbox-lead-meta">
+                <span>${fmt(l.callDate)}</span>
+                ${l.phone ? `<span>${esc(l.phone)}</span>` : ''}
+                ${l.pkg ? `<span>${esc(l.pkg)}</span>` : ''}
+                <span style="color:${statusColor};">${esc(statusText)}</span>
+                ${hasJob ? `<span style="color:var(--green);">Job ticket created</span>` : ''}
+            </div>
+            ${l.callNotes ? `<div class="inbox-lead-notes">${esc(l.callNotes)}</div>` : ''}
+            ${l.mockupNotes ? `<div class="inbox-lead-notes" style="border-left-color:var(--purple);">${esc(l.mockupNotes)}${l.mockupUrl ? ` <a href="${esc(l.mockupUrl)}" target="_blank" style="color:var(--purple);font-size:11px;">View mockup</a>` : ''}</div>` : ''}
+            ${actionsHtml}
+            </div>
+        </div>`;
+        }).join('');
+    }
+    html += `</div>`;
+
+    html += `<div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:6px;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+        Job Tickets (${jobs.length})
+    </div>`;
+
     if(!jobs.length){
-        content.innerHTML = '<div class="empty-state" style="text-align:center;padding:40px;color:var(--text-2);">No jobs assigned to you yet. Check back soon!</div>';
+        html += `<div class="empty-state" style="text-align:center;padding:32px;color:var(--text-2);">
+            ${myLeads.length ? 'No job tickets assigned to you yet. Management creates tickets after mockup review.' : 'No job tickets yet.'}
+        </div>`;
+        content.innerHTML = html;
+        updateRepJobsNavBadge();
         return;
     }
 
-    // Group by status
     const byStatus = { open: [], inprogress: [], won: [], lost: [] };
     jobs.forEach(j => byStatus[j.status].push(j));
 
-    let html = '';
     Object.entries(byStatus).forEach(([status, statusJobs]) => {
         if(!statusJobs.length) return;
-        // Sort newest first
         statusJobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         const statusLabel = { open:'Open', inprogress:'In Progress', won:'Won', lost:'Lost' }[status];
         const statusColor = { open:'--text-2', inprogress:'--amber', won:'--green', lost:'--red' }[status];
@@ -11008,6 +12212,7 @@
     });
 
     content.innerHTML = html;
+    updateRepJobsNavBadge();
     }
 
     async function jobUpdateStatus(jobId, newStatus){
@@ -11080,14 +12285,37 @@
 
     // Data helpers
     function getLeads(){ return getData('interested_leads',[]); }
-    function saveLeads(leads){ 
-    ls('interested_leads', leads);
-    if(sbReady && sbClient){
-        // Upsert only the columns that exist in the Supabase schema
-        const formatted = leads.map(l => ({
+
+    function normalizeLeadFromCloud(r){
+    if(!r) return null;
+    return {
+        id:              r.id              || r.lead_id        || ('lead_' + Date.now() + Math.random()),
+        biz:             r.biz             || r.business_name  || '',
+        rep:             canonicalRepKey(r.rep || r.assignedto || r.assigned_to || ''),
+        callDate:        r.callDate        || r.call_date      || '',
+        callNotes:       r.callNotes       || r.call_notes     || '',
+        phone:           r.phone           || '',
+        pkg:             r.pkg             || '',
+        bizType:         r.bizType         || r.biz_type       || '',
+        status:          r.status          || 'new',
+        mockupNotes:     r.mockupNotes     || r.mockup_notes   || '',
+        mockupUrl:       r.mockupUrl       || r.mockup_url     || '',
+        mockupSentBy:    r.mockupSentBy    || r.mockup_sent_by || '',
+        mockupSentAt:    r.mockupSentAt    || r.mockup_sent_at || '',
+        callbackNotes:   r.callbackNotes   || r.callback_notes || '',
+        callbackOutcome: r.callbackOutcome || r.callback_outcome || '',
+        callbackAt:      r.callbackAt      || r.callback_at    || '',
+        jobId:           r.jobId           || r.job_id         || null,
+        advance_cleared: !!r.advance_cleared,
+        createdAt:       r.createdAt       || r.created_at     || new Date().toISOString()
+    };
+    }
+
+    function formatLeadForCloud(l){
+    return {
         id: String(l.id),
         biz: l.biz,
-        rep: l.rep,
+        rep: canonicalRepKey(l.rep) || l.rep || '',
         callDate: l.callDate,
         callNotes: l.callNotes || '',
         phone: l.phone || '',
@@ -11103,7 +12331,13 @@
         callbackAt: l.callbackAt || '',
         advance_cleared: !!l.advance_cleared,
         createdAt: l.createdAt
-        }));
+    };
+    }
+
+    function saveLeads(leads){
+    ls('interested_leads', leads);
+    if(sbReady && sbClient){
+        const formatted = leads.map(formatLeadForCloud);
         sbClient.from('interested_leads').upsert(formatted)
         .then(({ error }) => {
             if(error) console.error('❌ saveLeads cloud sync FAILED:', error.message, '| code:', error.code);
@@ -11111,40 +12345,43 @@
         })
         .catch(e => console.error('❌ saveLeads cloud exception:', e));
     }
+    if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache('interested_leads');
     updateFollowbackNavBadge();
+    updateRepJobsNavBadge();
     }
 
     // Called from saveCall() when outcome === 'Interested'
     function pipelineAddLead(callObj){
-    // Guard: don't add leads with no business name
-    if(!callObj.biz || !callObj.biz.trim()){ 
+    if(!callObj.biz || !callObj.biz.trim()){
         console.warn('pipelineAddLead: skipped — no biz name on call', callObj.id);
         return;
     }
+    const repKey = canonicalRepKey(callObj.rep || currentUser);
     const leads = getLeads();
-    // Dedup: same biz + rep + callDate (exact call) already tracked and still open
-    const existing = leads.find(l => 
-        l.biz === callObj.biz && 
-        l.rep === callObj.rep && 
-        l.callDate === callObj.date &&
-        (l.status === 'new' || l.status === 'pending')
-    );
-    if(existing) return; // exact same call already tracked
+    const bizKey = normalizeBizName(callObj.biz);
+    // Dedup: same biz + rep already has an open lead in the pipeline
+    const existing = leads.find(function(l){
+        return normalizeBizName(l.biz) === bizKey &&
+        canonicalRepKey(l.rep) === repKey &&
+        (l.status === 'new' || l.status === 'pending' || l.status === 'called');
+    });
+    if(existing) return;
 
-    // Try to enrich with prospect data (phone, package)
     const prospects = getProspects();
-    const matchedProspect = prospects.find(p => p.name && p.name.trim().toLowerCase() === callObj.biz.trim().toLowerCase());
+    const matchedProspect = prospects.find(function(p){
+        return p.name && normalizeBizName(p.name) === bizKey;
+    });
 
     const lead = {
         id: 'lead_' + Date.now(),
         biz: callObj.biz,
-        rep: callObj.rep,
+        rep: repKey,
         callDate: callObj.date,
         callNotes: callObj.notes || '',
         phone: matchedProspect?.phone || '',
         pkg: matchedProspect?.pkg || '',
         bizType: matchedProspect?.type || '',
-        status: 'new', // new | pending | called | won | lost
+        status: 'new',
         mockupNotes: '',
         mockupUrl: '',
         mockupSentBy: '',
@@ -11158,6 +12395,7 @@
     saveLeads(leads);
     updatePipelineNavBadge();
     updateFollowbackNavBadge();
+    updateRepJobsNavBadge();
     console.log('✓ Lead added to pipeline:', lead.biz, '| Total leads:', leads.length);
     }
 
@@ -11169,12 +12407,11 @@
     const leads = getLeads();
     let added = 0;
     interestedCalls.forEach(c => {
-        // Check if this exact call already has a lead (match on biz+rep+callDate)
-        const exists = leads.find(l => 
-        l.biz === c.biz && 
-        l.rep === c.rep && 
-        l.callDate === c.date
-        );
+        const exists = leads.find(function(l){
+        return normalizeBizName(l.biz) === normalizeBizName(c.biz) &&
+        canonicalRepKey(l.rep) === canonicalRepKey(c.rep) &&
+        l.callDate === c.date;
+        });
         if(!exists){
         pipelineAddLead(c);
         added++;
@@ -11623,8 +12860,23 @@
       if(c) ceoInboxRender(c);
     }
 
+    function updateRepJobsNavBadge(){
+    const badge = document.querySelector('[data-jobs-rep-badge]');
+    if(!badge) return;
+    if(isMgmt(currentUser) || isCOO(currentUser)){
+        badge.textContent = '';
+        badge.style.display = 'none';
+        return;
+    }
+    const n = getLeads().filter(leadVisibleToUser).filter(function(l){
+        return l.status === 'pending';
+    }).length;
+    badge.textContent = n > 0 ? String(n) : '';
+    badge.style.display = n > 0 ? '' : 'none';
+    }
+
     function ceoInboxRender(container){
-    const leads = getLeads();
+    const leads = getLeads().filter(leadVisibleToUser);
     // Show all leads (new + pending = unprocessed, but all visible for CEO)
     const newLeads = leads.filter(l => l.status === 'new');
     const allOpen  = leads.filter(l => l.status !== 'won' && l.status !== 'lost');
@@ -12199,6 +13451,24 @@
     acRenderCards();
     acRenderChart();
     }
+
+    // ── Debounced search handlers (200ms) — avoids full re-render on every keystroke ──
+    function debounce(fn, wait){
+    var timer = null;
+    return function(){
+        var ctx = this, args = arguments;
+        clearTimeout(timer);
+        timer = setTimeout(function(){ fn.apply(ctx, args); }, wait);
+    };
+    }
+    var renderProspectsDebounced = debounce(function(){
+    var out = renderProspects();
+    if(out && typeof out.catch === 'function') out.catch(function(e){ console.error(e); });
+    }, 200);
+    var renderMyCallsDebounced = debounce(renderMyCalls, 200);
+    var renderPipelineDebounced = debounce(renderPipeline, 200);
+    var acApplyFiltersDebounced = debounce(acApplyFilters, 200);
+    var tmRenderTableDebounced = debounce(tmRenderTable, 200);
 
     // ── STATS ──
     function acRenderStats() {
