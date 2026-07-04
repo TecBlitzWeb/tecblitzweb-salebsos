@@ -5440,35 +5440,34 @@
     }
 
 @media (min-width:769px){
-  /* Collapsed rail (default) */
-  .sidebar{ width:72px; overflow-x:hidden; }
-  .main-content{ margin-left:72px; }
+  /* Icon rail — click toggle, NO hover expand */
+  .sidebar{ width:64px; overflow-x:hidden; transition:width .25s ease; }
+  .main-content{ margin-left:64px; }
 
-  .sidebar .nav-item{ white-space:nowrap; font-size:0; }
-  .sidebar .sidebar-bottom .logout-btn{ font-size:0; }
-  .sidebar .nav-badge{ display:none; }
+  .sidebar .sidebar-brand-top{ display:flex; align-items:center; justify-content:center; gap:10px; }
   .sidebar .brand-name,
   .sidebar .brand-sub,
   .sidebar .sidebar-user-info,
-  .sidebar .nav-section-label{ opacity:0; transition:opacity .15s ease; }
+  .sidebar .nav-section-label{ display:none; }
+  .sidebar .sidebar-user{ display:flex; align-items:center; justify-content:center; }
+  .sidebar .nav-item{ justify-content:center; white-space:nowrap; font-size:0; padding:8px 0; margin:2px 8px; min-height:0; gap:0; }
+  .sidebar .nav-badge{ display:none; }
+  .sidebar .sidebar-bottom .logout-btn{ justify-content:center; font-size:0; gap:0; }
 
-  /* Expanded on hover OR keyboard focus */
-  .sidebar:hover,
-  .sidebar:focus-within{ width:var(--sidebar); box-shadow:6px 0 28px rgba(0,0,0,0.35); }
-  .sidebar:hover .nav-item,
-  .sidebar:focus-within .nav-item{ font-size:13px; }
-  .sidebar:hover .sidebar-bottom .logout-btn,
-  .sidebar:focus-within .sidebar-bottom .logout-btn{ font-size:12px; }
-  .sidebar:hover .nav-badge,
-  .sidebar:focus-within .nav-badge{ display:inline-block; }
-  .sidebar:hover .brand-name,
-  .sidebar:focus-within .brand-name,
-  .sidebar:hover .brand-sub,
-  .sidebar:focus-within .brand-sub,
-  .sidebar:hover .sidebar-user-info,
-  .sidebar:focus-within .sidebar-user-info,
-  .sidebar:hover .nav-section-label,
-  .sidebar:focus-within .nav-section-label{ opacity:1; }
+  .rail-toggle{ display:flex; align-items:center; justify-content:center; width:34px; height:34px; flex-shrink:0; background:transparent; border:1px solid rgba(168,85,247,.25); border-radius:9px; color:#c4b5fd; cursor:pointer; transition:background .15s ease, border-color .15s ease; }
+  .rail-toggle:hover{ background:rgba(168,85,247,.14); border-color:rgba(168,85,247,.45); }
+
+  /* OPEN state (toggled) */
+  .sidebar.rail-open{ width:var(--sidebar); box-shadow:6px 0 28px rgba(0,0,0,.35); }
+  .sidebar.rail-open .sidebar-brand-top{ justify-content:flex-start; }
+  .sidebar.rail-open .brand-name,
+  .sidebar.rail-open .brand-sub,
+  .sidebar.rail-open .sidebar-user-info,
+  .sidebar.rail-open .nav-section-label{ display:block; }
+  .sidebar.rail-open .sidebar-user{ justify-content:flex-start; }
+  .sidebar.rail-open .nav-item{ justify-content:flex-start; font-size:13px; padding:10px 20px; margin:2px 10px; gap:10px; min-height:var(--touch-min); }
+  .sidebar.rail-open .nav-badge{ display:inline-block; }
+  .sidebar.rail-open .sidebar-bottom .logout-btn{ justify-content:flex-start; font-size:12px; gap:10px; }
 }
     </style>
 
@@ -5563,6 +5562,7 @@
         <aside class="sidebar">
         <div class="sidebar-brand">
             <div class="sidebar-brand-top">
+            <button class="rail-toggle" onclick="railToggle()" aria-label="Toggle sidebar" title="Toggle sidebar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
             <img src="" alt="" class="sidebar-brand-img" style="display:none;width:30px;height:30px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 2px 6px rgba(123,47,255,0.5));">
             <div>
             <div class="brand-name">Tec<span>Blitz</span>Web</div>
@@ -13996,4 +13996,26 @@
     <path d="M15 11.5A7 7 0 017.5 3a7 7 0 100 12 7 7 0 007.5-3.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
     </button>
+<script>
+(function(){
+  window.railToggle=function(){
+    var sb=document.querySelector('.sidebar'); if(!sb) return;
+    var open=sb.classList.toggle('rail-open');
+    try{ localStorage.setItem('sos_rail_open', open?'1':'0'); }catch(e){}
+  };
+  function initRail(){
+    var sb=document.querySelector('.sidebar'); if(!sb) return;
+    try{ if(localStorage.getItem('sos_rail_open')==='1') sb.classList.add('rail-open'); }catch(e){}
+    sb.querySelectorAll('.nav-item').forEach(function(el){
+      if(el.getAttribute('title')) return;
+      var c=el.cloneNode(true);
+      c.querySelectorAll('.nav-badge').forEach(function(b){b.remove();});
+      var t=(c.textContent||'').trim();
+      if(t) el.setAttribute('title',t);
+    });
+  }
+  if(document.readyState!=='loading') initRail();
+  else document.addEventListener('DOMContentLoaded', initRail);
+})();
+</script>
     </body>
