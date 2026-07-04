@@ -5444,7 +5444,7 @@
 
 @media (min-width:769px){
   /* Icon rail — click toggle, NO hover expand */
-  .sidebar{ width:64px; overflow-x:hidden; transition:width .25s ease; }
+  .sidebar{ width:64px; overflow-x:hidden; transition:width .28s cubic-bezier(0.4,0,0.2,1); }
   .main-content{ margin-left:64px; }
 
   .sidebar .sidebar-brand-top{ display:flex; align-items:center; justify-content:center; gap:10px; }
@@ -5462,7 +5462,8 @@
 
   /* OPEN state (toggled) — wider than --sidebar, tightened spacing so CEO's full 12-item menu fits with zero scroll */
   .sidebar.rail-open{ width:272px; box-shadow:6px 0 28px rgba(0,0,0,.35); }
-  body.rail-expanded .main-content{ margin-left:272px; transition:margin-left .25s ease; }
+  body.rail-expanded .main-content{ margin-left:272px; }
+  .main-content{ transition:margin-left .28s cubic-bezier(0.4,0,0.2,1); }
   .sidebar.rail-open .sidebar-brand{ padding:18px 16px 14px; }
   .sidebar.rail-open .sidebar-brand-top{ justify-content:flex-start; gap:8px; }
   .sidebar.rail-open .brand-text{ flex:1; min-width:0; }
