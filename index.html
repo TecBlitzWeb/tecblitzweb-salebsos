@@ -584,6 +584,9 @@
     }
     .biz-timeline-link:hover { color: var(--purple-mid); }
 
+    .cp-title-link { cursor: pointer; text-decoration-color: rgba(0, 229, 255, 0.35); text-underline-offset: 2px; }
+    .cp-title-link:hover { color: var(--purple-mid); text-decoration: underline; }
+
     /* ── DARK MODE — opaque surfaces ── */
     body.dark{
         --purple: #00E5FF;
@@ -6769,11 +6772,12 @@
       <div class="modal client-profile-modal">
         <div class="cp-summary-card">
           <div class="cp-summary-top">
-            <h3 id="cp-title"></h3>
+            <h3 id="cp-title" class="cp-title-link" title="View prospect card" onclick="void cpOpenProspectCard()"></h3>
             <button type="button" id="cp-fav-btn" onclick="event.stopPropagation();void toggleClientFavourite(_cpCurrentBiz,event)" aria-label="Toggle favourite">☆</button>
           </div>
           <div id="cp-chips" class="cp-stat-chips"></div>
           <div id="cp-added" class="cp-added-text"></div>
+          <div id="cp-notfound-note" class="cp-empty-muted" style="display:none;margin-top:6px;">Prospect not found</div>
         </div>
         <div id="cp-body" class="cp-body"></div>
         <div class="modal-footer">
@@ -8598,7 +8602,7 @@
         const _act = getProspectActivity(p.name, activityMap);
         const metaChips = buildProspectMetaChipsHtml(p);
         const nameFav = favBizSet.has(normalizeBizName(p.name));
-        return `<div class="prospect-card">
+        return `<div class="prospect-card" data-prospect-id="${prospectId}">
         <div class="prospect-card-header">
             <div>
             <div class="prospect-biz" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -9372,6 +9376,8 @@
     if(!titleEl || !chipsEl || !addedEl || !bodyEl) return;
     const label = String(bizName || '').trim() || 'Unknown business';
     titleEl.textContent = label;
+    const cpNoteEl = document.getElementById('cp-notfound-note');
+    if(cpNoteEl) cpNoteEl.style.display = 'none';
     const addedRaw = prospect ? (prospect.createdAt || prospect.created_at) : null;
     const addedSub = addedRaw ? fmtProspectTs(addedRaw) : '—';
     const assignedName = prospect && prospect.assignedTo ? userLabel(prospect.assignedTo) : 'Unassigned';
@@ -9466,7 +9472,26 @@
     openModal('client-profile-modal');
     }
 
+    async function cpOpenProspectCard(){
+    const noteEl = document.getElementById('cp-notfound-note');
+    const norm = normalizeBizName(_cpCurrentBiz);
+    const prospect = norm ? getProspects().find(function(p){ return normalizeBizName(p.name) === norm; }) : null;
+    if(!prospect){
+        if(noteEl){ noteEl.textContent = 'Prospect not found'; noteEl.style.display = ''; }
+        return;
+    }
+    if(noteEl) noteEl.style.display = 'none';
+    const pid = String(prospect.id);
+    closeModal('client-profile-modal');
+    _expandedProspects.add(pid);
+    goPage('prospects');
+    await renderProspects();
+    const card = document.querySelector('#prospect-grid [data-prospect-id="' + pid + '"]');
+    if(card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
     window.openClientProfile = openClientProfile;
+    window.cpOpenProspectCard = cpOpenProspectCard;
     window.toggleClientFavourite = toggleClientFavourite;
     window.onClientProfileRepChange = onClientProfileRepChange;
     window.toggleCpPain = toggleCpPain;
