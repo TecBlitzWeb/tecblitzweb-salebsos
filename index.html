@@ -465,6 +465,42 @@
     border-color:rgba(52,211,153,0.4);
     color:#6ee7b7;
     }
+    /* ── Announcements (broadcast) ── */
+    .announce-compose{
+    background:var(--color-bg-card);
+    border:1px solid var(--border);
+    border-radius:var(--radius-md);
+    padding:16px;
+    margin-bottom:18px;
+    }
+    .announce-compose textarea{
+    width:100%;
+    min-height:72px;
+    resize:vertical;
+    background:var(--color-bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
+    color:var(--text);
+    font-family:var(--font-body);
+    font-size:14px;
+    line-height:1.5;
+    padding:10px 12px;
+    outline:none;
+    }
+    .announce-compose textarea:focus{border-color:var(--border-strong);}
+    .announce-compose-actions{display:flex;justify-content:flex-end;margin-top:10px;}
+    .announce-list{display:flex;flex-direction:column;gap:12px;}
+    .announce-item{
+    background:var(--color-bg-card);
+    border:1px solid var(--border);
+    border-radius:var(--radius-md);
+    padding:16px 18px;
+    }
+    .announce-body{color:var(--text);font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
+    .announce-meta{margin-top:10px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);}
+    .announce-author{font-weight:600;color:var(--purple-mid);}
+    .announce-dot{opacity:.5;}
+    .announce-empty{color:var(--text-2);font-size:13px;text-align:center;padding:28px 0;}
     .sidebar-bottom{
     margin-top:0;
     padding:12px 10px;
@@ -5895,6 +5931,12 @@
             <span class="nav-badge badge-amber" id="followback-nav-badge"></span>
             </div>
 
+            <div class="nav-item" data-label="Announcements" onclick="goPage('announcements')">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M2 6v4h2l6 3V3L4 6H2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 6a2.5 2.5 0 010 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Announcements
+            <span class="nav-badge" id="announce-nav-badge" style="display:none;"></span>
+            </div>
+
             <div class="nav-item mgmt-only" data-label="Interested Leads" onclick="goPage('pipeline')" id="nav-pipeline">
             <svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h9M2 12h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="13" cy="12" r="2" fill="currentColor" opacity=".7"/></svg>
             Interested Leads
@@ -6112,6 +6154,18 @@
             <div id="job-dashboard-content" style="display:grid;grid-template-columns:1fr;gap:20px;">
             <!-- Will be filled by jobRender* functions -->
             </div>
+        </div>
+
+        <!-- ANNOUNCEMENTS -->
+        <div id="page-announcements" class="page">
+            <div class="page-header">
+            <div>
+                <h2>Announcements</h2>
+                <p>Company updates and deal news from leadership</p>
+            </div>
+            </div>
+            <div id="announce-compose" class="announce-compose" style="display:none;"></div>
+            <div id="announce-list" class="announce-list"></div>
         </div>
 
         <!-- INTERESTED LEADS PIPELINE -->
@@ -8156,6 +8210,7 @@
         pipeline: renderPipeline,
         mycalls: renderMyCalls,
         followups: renderFollowups,
+        announcements: renderAnnouncements,
         allcalls: function(){ if(typeof initAllCallsV2==='function'){ if(!_acInited){ _acInited=true; acLastUpdated=Date.now(); initAllCallsV2(); } else { acApplyFilters(); } } },
         performance: renderPerformance,
         revenue: renderRevenue,
@@ -12513,6 +12568,7 @@
     updatePipelineNavBadge();
     updateFollowbackNavBadge();
     updateRepJobsNavBadge();
+    fetchAnnouncements().then(updateAnnounceNavBadge).catch(function(){});
     // Background revalidate — never blocks UI
     if(sbReady && sbClient){
         startBackgroundSync();
@@ -12991,6 +13047,120 @@
     const openCount = leads.filter(l => l.status !== 'won' && l.status !== 'lost').length;
     const badge = document.getElementById('pipeline-nav-badge');
     if(badge) badge.textContent = openCount > 0 ? openCount : '';
+    }
+
+    // ════════════════════════════════════════
+    // ANNOUNCEMENTS (broadcast: CEO/Co-CEO → all)
+    // ════════════════════════════════════════
+    const ANNOUNCE_SEEN_KEY = 'sos_announce_last_seen';
+    let _announcements = [];
+    let _announceAuthorNames = {};
+
+    function announceGetLastSeen(){ try { return localStorage.getItem(ANNOUNCE_SEEN_KEY) || ''; } catch(_e){ return ''; } }
+    function announceSetLastSeen(iso){ try { if(iso) localStorage.setItem(ANNOUNCE_SEEN_KEY, iso); } catch(_e){} }
+
+    function announceRelativeTime(iso){
+    const then = new Date(iso).getTime();
+    if(!isFinite(then)) return '';
+    let s = Math.floor((Date.now() - then) / 1000);
+    if(s < 0) s = 0;
+    if(s < 60) return 'just now';
+    const m = Math.floor(s / 60);
+    if(m < 60) return m + 'm ago';
+    const h = Math.floor(m / 60);
+    if(h < 24) return h + 'h ago';
+    const d = Math.floor(h / 24);
+    if(d < 7) return d + 'd ago';
+    const w = Math.floor(d / 7);
+    if(w < 5) return w + 'w ago';
+    return new Date(iso).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    }
+
+    function announceAuthorName(authorId){
+    if(authorId && _announceAuthorNames[authorId]) return _announceAuthorNames[authorId];
+    return 'Management';
+    }
+
+    async function fetchAnnouncements(){
+    if(!sbReady || !sbClient) return _announcements;
+    try {
+        const res = await sbClient.from('announcements').select('*').order('created_at', { ascending: false });
+        if(res.error){ console.warn('announcements fetch:', res.error.message); return _announcements; }
+        _announcements = res.data || [];
+        try {
+        const namesRes = await sbClient.rpc('announcement_author_names');
+        if(namesRes && !namesRes.error && Array.isArray(namesRes.data)){
+            const map = {};
+            namesRes.data.forEach(function(r){ if(r && r.auth_user_id) map[r.auth_user_id] = r.name || ''; });
+            _announceAuthorNames = map;
+        }
+        } catch(e){ console.warn('announcement authors', e); }
+        return _announcements;
+    } catch(e){ console.warn('announcements fetch exception', e); return _announcements; }
+    }
+
+    function announceComposeMarkup(){
+    return '<textarea id="announce-compose-input" placeholder="Share an update, news, or deal announcement…" maxlength="2000"></textarea>'
+        + '<div class="announce-compose-actions"><button type="button" id="announce-post-btn" class="btn btn-purple" onclick="postAnnouncement()">Post announcement</button></div>';
+    }
+
+    async function postAnnouncement(){
+    if(!isCEO(currentUser)){ showToast('CEO or Co-CEO access required','error'); return; }
+    const ta = document.getElementById('announce-compose-input');
+    if(!ta) return;
+    const body = ta.value.trim();
+    if(!body){ showToast('Write something to announce','error'); return; }
+    if(!sbReady || !sbClient){ showToast('Not connected — try again','error'); return; }
+    const btn = document.getElementById('announce-post-btn');
+    if(btn) btn.disabled = true;
+    const ins = await sbClient.from('announcements').insert([{ body: body }]);
+    if(btn) btn.disabled = false;
+    if(ins.error){ console.error('postAnnouncement:', ins.error.message); showToast('Could not post announcement','error'); return; }
+    ta.value = '';
+    showToast('Announcement posted','success');
+    await fetchAnnouncements();
+    renderAnnouncements();
+    }
+
+    async function renderAnnouncements(){
+    const composeWrap = document.getElementById('announce-compose');
+    if(composeWrap){
+        if(isCEO(currentUser)){
+        composeWrap.style.display = '';
+        if(!document.getElementById('announce-compose-input')) composeWrap.innerHTML = announceComposeMarkup();
+        } else {
+        composeWrap.style.display = 'none';
+        composeWrap.innerHTML = '';
+        }
+    }
+    const list = document.getElementById('announce-list');
+    if(list && !_announcements.length) list.innerHTML = '<div class="announce-empty">Loading…</div>';
+    await fetchAnnouncements();
+    if(list){
+        if(!_announcements.length){
+        list.innerHTML = '<div class="announce-empty">No announcements yet.</div>';
+        } else {
+        list.innerHTML = _announcements.map(function(a){
+            return '<div class="announce-item"><div class="announce-body">' + esc(a.body)
+            + '</div><div class="announce-meta"><span class="announce-author">' + esc(announceAuthorName(a.author_id))
+            + '</span><span class="announce-dot">·</span><span class="announce-time">' + esc(announceRelativeTime(a.created_at))
+            + '</span></div></div>';
+        }).join('');
+        }
+    }
+    if(_announcements.length) announceSetLastSeen(_announcements[0].created_at);
+    updateAnnounceNavBadge();
+    }
+
+    function updateAnnounceNavBadge(){
+    const badge = document.getElementById('announce-nav-badge');
+    if(!badge) return;
+    const lastSeen = announceGetLastSeen();
+    const unread = _announcements.filter(function(a){
+        return a && a.created_at && (!lastSeen || a.created_at > lastSeen);
+    }).length;
+    badge.textContent = unread > 0 ? String(unread) : '';
+    badge.style.display = unread > 0 ? '' : 'none';
     }
 
     function renderPipeline(){
