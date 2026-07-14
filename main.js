@@ -523,7 +523,11 @@
     return { data: [], error: { message: "Supabase client not ready" } };
   }
 
-  async function refreshSalesUsersForProspects(){
+  async function refreshSalesUsersForProspects(force){
+    var TTL = 60000;
+    if(!force && window._teamMembersLive && window._salesUsersCachedAt && (Date.now() - window._salesUsersCachedAt) < TTL){
+      return { data: window._teamMembersLive, error: null };
+    }
     var res = await fetchFreshSalesUsersRows();
     if(res.error){
       console.warn("refreshSalesUsersForProspects:", res.error.message || res.error);
@@ -533,6 +537,7 @@
     rebuildUsersRegistryFromRows(rows);
     pruneStaleRepLocalCaches(rows);
     window._teamMembersLive = rows;
+    window._salesUsersCachedAt = Date.now();
     if(typeof window.mergeTeamMembersIntoUsers === "function"){
       window.mergeTeamMembersIntoUsers(rows);
     }
@@ -703,8 +708,12 @@
       sessionStorage.removeItem("members");
     }catch(_e2){}
     window._teamMembersLive = null;
+    window._salesUsersCachedAt = 0;
     window._salesUserIdByKey = {};
     window._salesUserKeyById = {};
+    if(window.APP_API && typeof window.APP_API.invalidateTeamMembersCache === "function"){
+      window.APP_API.invalidateTeamMembersCache();
+    }
   }
 
   async function fetchTeamMembersFresh(){

@@ -17,6 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./config.js"></script>
     <script src="./api.js"></script>
+    <script src="./local-store.js"></script>
     <script src="./main.js"></script>
     <style>
     :root {
@@ -346,6 +347,18 @@
     text-transform:uppercase;
     letter-spacing:0.06em;
     }
+    .sidebar-search{position:relative;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);max-height:60px;opacity:1;overflow:hidden;transition:max-height .28s cubic-bezier(0.4,0,0.2,1), opacity .28s cubic-bezier(0.4,0,0.2,1), padding .28s cubic-bezier(0.4,0,0.2,1), border-color .28s cubic-bezier(0.4,0,0.2,1);}
+    .sidebar-search-icon{position:absolute;left:24px;top:20px;color:var(--text-2);pointer-events:none;}
+    .sidebar-search-input{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:7px 10px 7px 28px;font-size:12.5px;color:var(--text);outline:none;transition:border-color .15s;}
+    .sidebar-search-input:focus{border-color:rgba(0,229,255,0.4);}
+    .sidebar-search-results{position:absolute;top:100%;left:14px;right:14px;margin-top:4px;background:#1a1a24;border:1px solid rgba(255,255,255,0.1);border-radius:10px;max-height:320px;overflow-y:auto;z-index:200;display:none;box-shadow:0 12px 30px rgba(0,0,0,0.4);}
+    .sidebar-search-results.open{display:block;}
+    .sidebar-search-result{padding:9px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);}
+    .sidebar-search-result:last-child{border-bottom:none;}
+    .sidebar-search-result:hover{background:rgba(0,229,255,0.08);}
+    .sidebar-search-result .ssr-name{font-size:12.5px;font-weight:600;color:var(--text);}
+    .sidebar-search-result .ssr-meta{font-size:11px;color:var(--text-2);margin-top:2px;}
+    .sidebar-search-empty{padding:14px 12px;font-size:12px;color:var(--text-2);text-align:center;}
     .sidebar-nav{flex:1 1 auto;padding:4px 0 12px;overflow-y:auto;min-height:0;scrollbar-width:thin;scrollbar-color:rgba(0,229,255,0.3) transparent;}
     .sidebar-nav::-webkit-scrollbar{width:3px;}
     .sidebar-nav::-webkit-scrollbar-track{background:transparent;}
@@ -699,6 +712,11 @@
     body.light .nav-section-label::after{background:rgba(15,23,42,0.08);}
     body.light .sidebar-brand{border-bottom-color:rgba(15,23,42,0.08);}
     body.light .sidebar-user{border-bottom-color:rgba(15,23,42,0.08);}
+    body.light .sidebar-search{border-bottom-color:rgba(15,23,42,0.08);}
+    body.light .sidebar-search-input{background:rgba(15,23,42,0.04);border-color:rgba(15,23,42,0.1);color:#0F172A;}
+    body.light .sidebar-search-results{background:#fff;border-color:rgba(15,23,42,0.1);}
+    body.light .sidebar-search-result{border-bottom-color:rgba(15,23,42,0.06);}
+    body.light .sidebar-search-result .ssr-name{color:#0F172A;}
     body.light .sidebar-bottom{border-top-color:rgba(15,23,42,0.08);}
     body.light .sidebar-bottom .logout-btn{color:rgba(15,23,42,0.55);}
     body.light .sidebar-bottom .logout-btn:hover{color:var(--red);}
@@ -1266,6 +1284,20 @@
         transform:translateX(0);
         pointer-events:auto;
         z-index:9999 !important;
+        }
+        /* Desktop rail layers — hidden on mobile drawer */
+        .sidebar-rail{ display:none !important; }
+        .sidebar-inner{
+        position:static !important;
+        width:100% !important;
+        opacity:1 !important;
+        pointer-events:auto !important;
+        z-index:auto !important;
+        display:flex !important;
+        flex-direction:column !important;
+        flex:1 !important;
+        min-height:0 !important;
+        overflow:hidden;
         }
         /* User profile header first on mobile drawer */
         .sidebar-brand{display:none;}
@@ -5568,21 +5600,82 @@
     }
 
 @media (min-width:769px){
-  /* Icon rail — click toggle, NO hover expand */
-  .sidebar{ width:64px; overflow-x:visible; overflow-y:hidden; transition:width .28s cubic-bezier(0.4,0,0.2,1), transform .28s cubic-bezier(0.4,0,0.2,1); }
-  .main-content{ margin-left:64px; }
+  /* Icon rail — outer shell animates width only; inner layers crossfade */
+  .sidebar{
+    width:64px;
+    overflow:hidden;
+    transition:width 300ms ease-in-out;
+  }
+  .sidebar.rail-open,
+  html.rail-expanded-init .sidebar{ width:272px; box-shadow:none; }
 
-  .sidebar .sidebar-brand-top{ display:flex; align-items:center; justify-content:center; gap:10px; }
-  .sidebar .brand-name,
-  .sidebar .brand-sub,
-  .sidebar .sidebar-user-info,
-  .sidebar .nav-section-label{ display:none; }
-  .sidebar:not(.rail-open) .sidebar-user{ display:none; }
-  .sidebar.rail-open .sidebar-user{ display:flex; }
-  .sidebar .nav-badge{ display:none; }
+  .main-content{ margin-left:64px; transition:margin-left 300ms ease-in-out; }
+  body.rail-expanded .main-content,
+  html.rail-expanded-init .main-content{ margin-left:272px; }
 
-  /* Collapsed rail — compact 40×40 icon buttons (Claude-style) */
-  .sidebar:not(.rail-open) .nav-item{
+  /* ── Crossfade layers ── */
+  .sidebar-rail,
+  .sidebar-inner{
+    position:absolute;
+    top:0; left:0; bottom:0;
+    display:flex;
+    flex-direction:column;
+  }
+  .sidebar-rail{
+    width:64px;
+    z-index:2;
+    opacity:1;
+    pointer-events:auto;
+    transition:opacity 150ms ease-in-out;
+    align-items:stretch;
+    overflow:visible;
+  }
+  .sidebar.rail-open .sidebar-rail,
+  html.rail-expanded-init .sidebar .sidebar-rail{
+    opacity:0;
+    pointer-events:none;
+    z-index:1;
+  }
+  .sidebar-inner{
+    width:272px;
+    z-index:1;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 150ms ease-in-out;
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+  }
+  .sidebar.rail-open .sidebar-inner,
+  html.rail-expanded-init .sidebar .sidebar-inner{
+    opacity:1;
+    pointer-events:auto;
+    z-index:2;
+    transition:opacity 200ms ease-in-out 100ms;
+  }
+
+  /* ── Collapsed icon rail layer ── */
+  .sidebar-rail-top{ padding:12px 0; flex-shrink:0; display:flex; justify-content:center; }
+  .sidebar-rail-nav{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:hidden;
+    padding:4px 0 12px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .sidebar-rail-bottom{
+    flex-shrink:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:2px;
+    padding:6px 0;
+    overflow:visible;
+  }
+  .sidebar-rail .nav-item,
+  .sidebar-rail .rail-logout-btn{
     justify-content:center;
     align-items:center;
     width:40px;
@@ -5594,77 +5687,58 @@
     gap:0;
     white-space:nowrap;
     font-size:13px;
+    overflow:hidden;
+    transition:background .15s ease;
   }
-  .sidebar:not(.rail-open) .nav-item:hover{
+  .sidebar-rail .nav-item:hover,
+  .sidebar-rail .rail-logout-btn:hover{
     background:rgba(0,229,255,0.14);
   }
-  .sidebar:not(.rail-open) .nav-item svg,
-  .sidebar:not(.rail-open) .logout-btn svg{width:18px;height:18px;flex-shrink:0;}
-  .sidebar:not(.rail-open) .sidebar-avatar{width:36px;height:36px;margin:0 auto;}
-  .sidebar:not(.rail-open) .sidebar-bottom{align-items:center;gap:3px;padding:8px 0;overflow:visible;}
-  .sidebar:not(.rail-open) .sidebar-bottom .nav-item,
-  .sidebar:not(.rail-open) .sidebar-bottom .logout-btn{
-    width:40px;height:40px;min-height:40px;padding:0;margin:0 auto;border-radius:10px;
-    justify-content:center;align-items:center;gap:0;
+  .sidebar-rail .nav-item svg,
+  .sidebar-rail .rail-logout-btn svg{ width:18px; height:18px; flex-shrink:0; }
+  .sidebar-rail .rail-profile-btn{
+    width:40px; height:40px; margin:0 auto; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    padding:0;
+    background:transparent; border:none; cursor:pointer;
+    position:relative; overflow:visible; flex-shrink:0;
+    transition:background .15s ease;
   }
-  .sidebar:not(.rail-open) .sidebar-bottom #mobile-sign-out-btn{
-    display:none;
+  .sidebar-rail .rail-profile-btn:hover{ background:rgba(0,229,255,0.14); }
+  .sidebar-rail .rail-profile-btn .rail-profile-avatar{
+    width:28px; height:28px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Syne',sans-serif; font-weight:700; font-size:12px;
+    background:var(--purple-light,rgba(0,229,255,0.2)); color:#8FF6FF;
   }
-  .sidebar:not(.rail-open) .sidebar-bottom .nav-item[onclick*="goPage('settings')"]{
-    display:none;
-  }
-  .sidebar.rail-open .sidebar-bottom .nav-item[onclick*="goPage('settings')"]{
-    display:flex;
-  }
-  .sidebar:not(.rail-open) .sidebar-bottom .rail-profile-btn{
-    display:flex;
-  }
-  .sidebar.rail-open .sidebar-bottom .rail-profile-btn{
-    display:none;
-  }
-  .sidebar .sidebar-bottom .rail-profile-btn{
-    width:40px;height:40px;margin:0 auto;border-radius:10px;
-    display:none;align-items:center;justify-content:center;
-    background:transparent;border:none;cursor:pointer;
-    position:relative;
-    overflow:visible;
-    flex-shrink:0;
-  }
-  .sidebar .sidebar-bottom .rail-profile-btn:hover{
-    background:rgba(0,229,255,0.14);
-  }
-  .sidebar .sidebar-bottom .rail-profile-btn .rail-profile-avatar{
-    width:28px;height:28px;border-radius:50%;
-    display:flex;align-items:center;justify-content:center;
-    font-family:'Syne',sans-serif;font-weight:700;font-size:12px;
-    background:var(--purple-light,rgba(0,229,255,0.2));color:#8FF6FF;
+  .sidebar-rail .rail-logout-btn{
+    background:transparent; border:none;
+    color:rgba(255,255,255,0.45); cursor:pointer;
   }
 
-  /* Hover tooltips on collapsed icons (fixed+anchor escapes nav scrollport clip) */
-  .sidebar:not(.rail-open) .nav-item,
-  .sidebar:not(.rail-open) .logout-btn{position:relative;}
-  .sidebar:not(.rail-open) .nav-item:hover::after,
-  .sidebar:not(.rail-open) .logout-btn:hover::after{
+  /* Hover tooltips on collapsed icons */
+  .sidebar-rail .nav-item,
+  .sidebar-rail .rail-logout-btn{ position:relative; }
+  .sidebar-rail .nav-item:hover::after,
+  .sidebar-rail .rail-logout-btn:hover::after{
     content:attr(data-label);
-    position:absolute;left:52px;top:50%;transform:translateY(-50%);
-    background:#1a1a24;color:#fff;font-size:12px;font-family:'Outfit',sans-serif;
-    padding:5px 10px;border-radius:6px;white-space:nowrap;
+    position:absolute; left:52px; top:50%; transform:translateY(-50%);
+    background:#1a1a24; color:#fff; font-size:12px; font-family:'Outfit',sans-serif;
+    padding:5px 10px; border-radius:6px; white-space:nowrap;
     box-shadow:0 4px 12px rgba(0,0,0,0.35);
-    pointer-events:none;z-index:200;
+    pointer-events:none; z-index:200;
   }
   @supports (left:anchor(right)){
-    .sidebar:not(.rail-open) .nav-item:hover::after,
-    .sidebar:not(.rail-open) .logout-btn:hover::after{
+    .sidebar-rail .nav-item:hover::after,
+    .sidebar-rail .rail-logout-btn:hover::after{
       position:fixed;
       left:calc(anchor(right) + 12px);
       top:anchor(center);
       transform:translateY(-50%);
     }
   }
-
-  /* Profile btn tooltip — hover/focus only, bottom-aligned so it never clips past the viewport */
-  .sidebar:not(.rail-open) .rail-profile-btn{position:relative;overflow:visible;}
-  .sidebar:not(.rail-open) .rail-profile-btn::after{
+  .sidebar-rail .rail-profile-btn{ position:relative; overflow:visible; }
+  .sidebar-rail .rail-profile-btn::after{
     content:attr(data-label);
     position:fixed;
     opacity:0;
@@ -5688,11 +5762,10 @@
     top:auto;
     transform:none;
   }
-  .sidebar:not(.rail-open) .rail-profile-btn:hover::after,
-  .sidebar:not(.rail-open) .rail-profile-btn:focus-visible::after{
+  .sidebar-rail .rail-profile-btn:hover::after,
+  .sidebar-rail .rail-profile-btn:focus-visible::after{
     opacity:1;
     visibility:visible;
-    /* Attach to the button (not the viewport) so it sits beside the icon */
     position:absolute;
     left:52px;
     bottom:0;
@@ -5700,8 +5773,8 @@
     transform:none;
   }
   @supports (left:anchor(right)){
-    .sidebar:not(.rail-open) .rail-profile-btn:hover::after,
-    .sidebar:not(.rail-open) .rail-profile-btn:focus-visible::after{
+    .sidebar-rail .rail-profile-btn:hover::after,
+    .sidebar-rail .rail-profile-btn:focus-visible::after{
       position:fixed;
       left:calc(anchor(right) + 12px);
       bottom:anchor(bottom);
@@ -5710,33 +5783,64 @@
     }
   }
 
-  .rail-toggle{ display:flex; align-items:center; justify-content:center; width:40px; height:40px; flex-shrink:0; background:transparent; border:1px solid rgba(0,229,255,.25); border-radius:10px; color:#8FF6FF; cursor:pointer; transition:background .15s ease, border-color .15s ease; }
-  .rail-toggle:hover{ background:rgba(0,229,255,.14); border-color:rgba(0,229,255,.45); }
-  .rail-toggle-icon{ transition:transform .25s ease; }
-  .sidebar.rail-open .rail-toggle-icon{ transform:scaleX(-1); }
+  /* ── Expanded inner layer (fixed 272px layout, never resizes) ── */
+  .sidebar-inner .sidebar-brand{ padding:14px 20px 12px; }
+  .sidebar-inner .sidebar-brand-top{ display:flex; align-items:center; justify-content:flex-start; gap:8px; }
+  .sidebar-inner .brand-text{ display:block; flex:1; min-width:0; }
+  .sidebar-inner .brand-name,
+  .sidebar-inner .brand-sub,
+  .sidebar-inner .sidebar-user-info,
+  .sidebar-inner .nav-section-label{ display:block; }
+  .sidebar-inner .sidebar-user{ display:flex; justify-content:flex-start; padding:10px 20px; }
+  .sidebar-inner .sidebar-search{
+    max-height:60px; opacity:1; padding:10px 14px;
+    pointer-events:auto; visibility:visible;
+    border-bottom-color:rgba(255,255,255,0.06);
+  }
+  .sidebar-inner .nav-section-label{ padding:7px 20px 3px; }
+  .sidebar-inner .nav-item{
+    justify-content:flex-start;
+    font-size:13px;
+    padding:5px 12px;
+    margin:1px 12px;
+    gap:10px;
+    min-height:32px;
+    width:auto;
+  }
+  .sidebar-inner .nav-badge{ display:inline-block; }
+  .sidebar-inner .nav-item .nav-label,
+  .sidebar-inner .logout-btn .nav-label{
+    opacity:1; max-width:none; overflow:visible;
+  }
+  .sidebar-inner .sidebar-bottom{ padding:8px 10px; align-items:stretch; }
+  .sidebar-inner .sidebar-bottom .nav-item,
+  .sidebar-inner .sidebar-bottom .logout-btn,
+  .sidebar-inner .sidebar-bottom #mobile-sign-out-btn{
+    justify-content:flex-start; font-size:12px; gap:10px;
+    padding:5px 12px; min-height:32px;
+    width:auto; margin:1px 12px;
+    background:transparent; border:none;
+    color:rgba(255,255,255,0.45);
+  }
+  .sidebar-inner .sidebar-bottom #mobile-sign-out-btn svg{ width:16px; height:16px; stroke:currentColor; }
 
-  .sidebar .nav-item .nav-label,
-  .sidebar .logout-btn .nav-label{ display:inline-block; vertical-align:middle; opacity:0; max-width:0; overflow:hidden; white-space:nowrap; transition:opacity .18s ease, max-width .28s cubic-bezier(0.4,0,0.2,1); }
-  .sidebar.rail-open .nav-item .nav-label,
-  .sidebar.rail-open .logout-btn .nav-label{ opacity:1; max-width:200px; }
+  /* Rail toggle buttons */
+  .rail-toggle{
+    display:flex; align-items:center; justify-content:center;
+    width:40px; height:40px; flex-shrink:0;
+    background:transparent; border:none; border-radius:10px;
+    color:rgba(255,255,255,0.55); cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  .sidebar-rail .rail-toggle{ margin:0 auto; }
+  .sidebar-inner .rail-toggle{ margin:0; }
+  .rail-toggle:hover{ background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.9); }
+  .rail-toggle-icon{ transition:transform 300ms ease-in-out; }
+  .sidebar.rail-open .rail-toggle-icon,
+  html.rail-expanded-init .sidebar .rail-toggle-icon{ transform:scaleX(-1); }
 
-  /* OPEN state (toggled) — wider than --sidebar, tightened spacing so CEO's full 12-item menu fits with zero scroll */
-  .sidebar.rail-open{ width:272px; box-shadow:6px 0 28px rgba(0,0,0,.35); }
-  body.rail-expanded .main-content{ margin-left:272px; }
-  .main-content{ transition:margin-left .28s cubic-bezier(0.4,0,0.2,1); }
-  .sidebar.rail-open .sidebar-brand{ padding:18px 16px 14px; }
-  .sidebar.rail-open .sidebar-brand-top{ justify-content:flex-start; gap:8px; }
-  .sidebar.rail-open .brand-text{ flex:1; min-width:0; }
-  .sidebar.rail-open .brand-name,
-  .sidebar.rail-open .brand-sub,
-  .sidebar.rail-open .sidebar-user-info,
-  .sidebar.rail-open .nav-section-label{ display:block; }
-  .sidebar.rail-open .sidebar-user{ justify-content:flex-start; padding:12px 16px; }
-  .sidebar.rail-open .nav-section-label{ padding:10px 16px 4px; }
-  .sidebar.rail-open .nav-item{ justify-content:flex-start; font-size:13px; padding:8px 16px; margin:1px 8px; gap:10px; min-height:38px; }
-  .sidebar.rail-open .nav-badge{ display:inline-block; }
-  .sidebar.rail-open .sidebar-bottom{ padding:8px 8px; }
-  .sidebar.rail-open .sidebar-bottom .logout-btn{ justify-content:flex-start; font-size:12px; gap:10px; padding:8px 12px; min-height:36px; }
+  /* Inner nav — no scroll, fit CEO nav */
+  .sidebar-inner .sidebar-nav{ flex:1 1 auto; overflow-y:hidden; min-height:0; }
 }
 /* ── STATIC UI OVERRIDE (perf) ── */
 *, *::before, *::after{
@@ -5749,22 +5853,23 @@
 .spinner{ animation: spin .7s linear infinite !important; }
 .ai-typing-dot{ animation: aiPulse 1.2s infinite !important; }
 .ac-dot-pulse{ animation: ac-pulse 1.4s infinite !important; }
+/* sidebar rail — restore transitions (perf override kills * transitions) */
+@media (min-width:769px){
+  .sidebar{ transition:width 300ms ease-in-out !important; }
+  .main-content{ transition:margin-left 300ms ease-in-out !important; }
+  .sidebar-rail,
+  .sidebar-inner{ transition:opacity 150ms ease-in-out !important; }
+  .sidebar.rail-open .sidebar-inner,
+  html.rail-expanded-init .sidebar .sidebar-inner{
+    transition:opacity 200ms ease-in-out 100ms !important;
+  }
+  .rail-toggle-icon{ transition:transform 300ms ease-in-out !important; }
+}
 /* ── SIDEBAR DENSITY (desktop) — fit CEO nav without scroll ── */
 @media (min-width:769px){
-  /* row height is the main lever: 44px touch target -> 34px for mouse */
-  .sidebar .nav-item{ min-height:34px; margin-top:1px; margin-bottom:1px; }
-  .sidebar .sidebar-bottom .logout-btn{ min-height:34px; margin-top:1px; margin-bottom:1px; }
-
-  /* expanded state: tighten the padded blocks */
-  .sidebar.rail-open .nav-item{ padding-top:6px; padding-bottom:6px; }
-  .sidebar.rail-open .sidebar-bottom .logout-btn{ padding-top:6px; padding-bottom:6px; }
-  .sidebar.rail-open .sidebar-brand{ padding:14px 20px 12px; }
-  .sidebar.rail-open .sidebar-user{ padding:10px 20px; }
-  .sidebar.rail-open .nav-section-label{ padding:9px 20px 4px; }
-  .sidebar.rail-open .sidebar-bottom{ padding:8px 10px; }
-
-  /* keep the middle nav as a graceful fallback if a window is very short */
-  .sidebar .sidebar-nav{ overflow-y:auto; }
+  .sidebar-inner .nav-item{ min-height:32px; margin-top:1px; margin-bottom:1px; }
+  .sidebar-inner .sidebar-bottom .logout-btn{ min-height:32px; margin-top:1px; margin-bottom:1px; }
+  .sidebar-inner .sidebar-nav{ overflow-y:hidden; }
 }
 
 /* ── SCROLLBARS — clean, theme-agnostic ── */
@@ -5782,37 +5887,31 @@
 .tm-modal::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,0.24); }
 
 /* 3. Sidebar rail: hide the bar entirely, keep scrollability (bottom is pinned) */
-.sidebar .sidebar-nav{ scrollbar-width:none; }
-.sidebar .sidebar-nav::-webkit-scrollbar{ width:0; height:0; display:none; }
+.sidebar .sidebar-nav,
+.sidebar .sidebar-rail-nav{ scrollbar-width:none; }
+.sidebar .sidebar-nav::-webkit-scrollbar,
+.sidebar .sidebar-rail-nav::-webkit-scrollbar{ width:0; height:0; display:none; }
 
-/* ── SIDEBAR RAIL — fit + no scroll + no movement (desktop) ── */
+/* ── SIDEBAR RAIL — desktop layers only (mobile drawer untouched) ── */
 @media (min-width:769px){
-  /* collapsed icons 40px -> 32px (overrides line ~5585, same specificity, later source) */
-  .sidebar:not(.rail-open) .nav-item{ height:32px; min-height:32px; margin:1px auto; }
-  .sidebar:not(.rail-open) .sidebar-bottom .nav-item,
-  .sidebar:not(.rail-open) .sidebar-bottom .logout-btn{ height:32px; min-height:32px; }
-  /* tighten brand + bottom padding */
-  .sidebar:not(.rail-open) .sidebar-brand{ padding:12px 0; }
-  .sidebar:not(.rail-open) .sidebar-bottom{ padding:6px 0; gap:2px; }
-  /* kill the scroll entirely so nothing shifts when the wheel is over the rail */
-  .sidebar:not(.rail-open) .sidebar-nav{ overflow-y:hidden; }
-}
-
-/* ── SIDEBAR — freeze both states, no scroll ── */
-@media (min-width:769px){
-  /* freeze the expanded nav too (Prompt 4 only froze the collapsed rail) */
-  .sidebar .sidebar-nav{ overflow-y:hidden; }
-  /* extra compaction on expanded so 12 items + labels fit without clipping */
-  .sidebar.rail-open .nav-item{ min-height:32px; padding-top:5px; padding-bottom:5px; }
-  .sidebar.rail-open .sidebar-bottom .logout-btn{ min-height:32px; padding-top:5px; padding-bottom:5px; }
-  .sidebar.rail-open .nav-section-label{ padding:7px 20px 3px; }
-}
-
-/* ── SIDEBAR — kill horizontal scrollbar quirk (visible+hidden = auto) ── */
-@media (min-width:769px){
-  .sidebar{ overflow-x:hidden; }
+  .sidebar-rail-nav{ overflow-y:hidden; }
 }
     </style>
+    <script>
+    (function(){
+    try{
+    var key='sidebarRailOpen';
+    if(localStorage.getItem(key)===null){
+      var leg=localStorage.getItem('sos_rail_open');
+      if(leg==='1') localStorage.setItem(key,'true');
+      else if(leg==='0') localStorage.setItem(key,'false');
+    }
+    if(localStorage.getItem(key)==='true' && window.matchMedia('(min-width:769px)').matches){
+      document.documentElement.classList.add('rail-expanded-init');
+    }
+    }catch(e){}
+    })();
+    </script>
 
     </head>
     <body>
@@ -5839,7 +5938,10 @@
     if(l) l.style.display = isDark ? 'none' : 'block';
     }
     if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', syncThemeFabIconsFromBody);
+    document.addEventListener('DOMContentLoaded', function(){
+        if(typeof requestIdleCallback === 'function') requestIdleCallback(syncThemeFabIconsFromBody);
+        else setTimeout(syncThemeFabIconsFromBody, 0);
+    });
     } else {
     syncThemeFabIconsFromBody();
     }
@@ -5854,7 +5956,10 @@
     if(l) l.style.display = isDark ? 'none' : 'block';
     }
     if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', syncThemeFabIconsFromBodyCatch);
+    document.addEventListener('DOMContentLoaded', function(){
+        if(typeof requestIdleCallback === 'function') requestIdleCallback(syncThemeFabIconsFromBodyCatch);
+        else setTimeout(syncThemeFabIconsFromBodyCatch, 0);
+    });
     } else {
     syncThemeFabIconsFromBodyCatch();
     }
@@ -5903,9 +6008,42 @@
     <div class="app-layout">
         <!-- SIDEBAR -->
         <aside class="sidebar">
+        <script>
+        (function(){
+        try{
+          var sb=document.currentScript.parentElement;
+          var open=document.documentElement.classList.contains('rail-expanded-init');
+          if(open){
+            sb.classList.add('rail-open');
+            document.body.classList.add('rail-expanded');
+            var rail=sb.querySelector('.sidebar-rail');
+            var inner=sb.querySelector('.sidebar-inner');
+            if(rail) rail.setAttribute('aria-hidden','true');
+            if(inner) inner.setAttribute('aria-hidden','false');
+          }
+        }catch(e){}
+        })();
+        </script>
+        <div class="sidebar-rail" aria-hidden="false">
+            <div class="sidebar-rail-top">
+            <button class="rail-toggle" onclick="railToggle()" aria-label="Expand sidebar" aria-expanded="false" title="Expand sidebar">
+<svg class="rail-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7.22 14.47L9.69 12 7.22 9.53a.75.75 0 111.06-1.06l3 3a.75.75 0 010 1.06l-3 3a.75.75 0 01-1.06-1.06z"/><path fill-rule="evenodd" d="M3.75 2A1.75 1.75 0 002 3.75v16.5c0 .966.784 1.75 1.75 1.75h16.5A1.75 1.75 0 0022 20.25V3.75A1.75 1.75 0 0020.25 2H3.75zM3.5 3.75a.25.25 0 01.25-.25H15v17H3.75a.25.25 0 01-.25-.25V3.75zm13 16.75v-17h3.75a.25.25 0 01.25.25v16.5a.25.25 0 01-.25.25H16.5z"/></svg>
+</button>
+            </div>
+            <nav class="sidebar-rail-nav" aria-label="Main navigation"></nav>
+            <div class="sidebar-rail-bottom">
+            <button type="button" class="logout-btn rail-logout-btn" data-label="Sign Out" aria-label="Sign out" onclick="if(typeof doLogout==='function')doLogout()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button type="button" class="rail-profile-btn" onclick="goPage('settings')" data-label="Profile" aria-label="Profile">
+              <span class="rail-profile-avatar" id="rail-avatar"></span>
+            </button>
+            </div>
+        </div>
+        <div class="sidebar-inner" aria-hidden="true">
         <div class="sidebar-brand">
             <div class="sidebar-brand-top">
-            <button class="rail-toggle" onclick="railToggle()" aria-label="Toggle sidebar" title="Toggle sidebar">
+            <button class="rail-toggle" onclick="railToggle()" aria-label="Expand sidebar" aria-expanded="false" title="Expand sidebar">
 <svg class="rail-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7.22 14.47L9.69 12 7.22 9.53a.75.75 0 111.06-1.06l3 3a.75.75 0 010 1.06l-3 3a.75.75 0 01-1.06-1.06z"/><path fill-rule="evenodd" d="M3.75 2A1.75 1.75 0 002 3.75v16.5c0 .966.784 1.75 1.75 1.75h16.5A1.75 1.75 0 0022 20.25V3.75A1.75 1.75 0 0020.25 2H3.75zM3.5 3.75a.25.25 0 01.25-.25H15v17H3.75a.25.25 0 01-.25-.25V3.75zm13 16.75v-17h3.75a.25.25 0 01.25.25v16.5a.25.25 0 01-.25.25H16.5z"/></svg>
 </button>
             <img src="" alt="" class="sidebar-brand-img" style="display:none;width:30px;height:30px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 2px 6px rgba(0,229,255,0.5));">
@@ -5921,6 +6059,11 @@
             <div class="user-name" id="sb-name">Bisara</div>
             <div class="user-role" id="sb-role">CEO</div>
             </div>
+        </div>
+        <div class="sidebar-search">
+          <svg class="sidebar-search-icon" viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M11.5 11.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <input type="text" id="sidebar-search-input" class="sidebar-search-input" placeholder="Search name, phone, area" oninput="sidebarSearchInput(this.value)" onfocus="sidebarSearchInput(this.value)" autocomplete="off">
+          <div class="sidebar-search-results" id="sidebar-search-results"></div>
         </div>
         <nav class="sidebar-nav">
             <div class="nav-section-label">Main</div>
@@ -5979,12 +6122,31 @@
             </div>
             <button type="button" id="mobile-sign-out-btn" class="logout-btn mobile-sign-out" data-label="Sign Out" aria-label="Sign out">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Sign Out
-            </button>
-            <button type="button" class="rail-profile-btn" onclick="goPage('settings')" data-label="Profile" aria-label="Profile">
-              <span class="rail-profile-avatar" id="rail-avatar"></span>
+            <span class="nav-label">Sign Out</span>
             </button>
         </div>
+        </div>
+        <script>
+        (function(){
+          document.querySelectorAll('.sidebar .nav-item, .sidebar .logout-btn').forEach(function(el){
+            if(!el.getAttribute('data-label')){
+              var c=el.cloneNode(true);
+              c.querySelectorAll('.nav-badge').forEach(function(b){b.remove();});
+              var t=(c.textContent||'').trim();
+              if(t) el.setAttribute('data-label',t);
+            }
+            if(el.querySelector('.nav-label')) return;
+            Array.from(el.childNodes).forEach(function(n){
+              if(n.nodeType===3 && n.nodeValue.trim()){
+                var span=document.createElement('span');
+                span.className='nav-label';
+                span.textContent=n.nodeValue.trim();
+                el.replaceChild(span,n);
+              }
+            });
+          });
+        })();
+        </script>
         </aside>
 
         <!-- MAIN -->
@@ -7186,6 +7348,26 @@
     window.USERS = window.USERS || {};
     var USERS = window.USERS;
 
+    // ── Debounced search handlers (200ms) — defined early so later script errors cannot break search ──
+    function debounce(fn, wait){
+    var timer = null;
+    return function(){
+        var ctx = this, args = arguments;
+        clearTimeout(timer);
+        timer = setTimeout(function(){ fn.apply(ctx, args); }, wait);
+    };
+    }
+    var renderProspectsDebounced = debounce(function(){
+    var out = renderProspects();
+    if(out && typeof out.catch === 'function') out.catch(function(e){ console.error(e); });
+    }, 200);
+    var renderMyCallsDebounced = debounce(function(){ renderMyCalls(); }, 200);
+    var renderPipelineDebounced = debounce(function(){ renderPipeline(); }, 200);
+    var tmRenderTableDebounced = debounce(function(){ tmRenderTable(); }, 200);
+    var acApplyFiltersDebounced = debounce(function(){
+    if(typeof acApplyFilters === 'function') acApplyFilters();
+    }, 200);
+
     function registerUserFromCloudRow(r){
     if(window.USER_REGISTRY && typeof USER_REGISTRY.registerFromRow === 'function'){
         return USER_REGISTRY.registerFromRow(r, USERS);
@@ -7486,32 +7668,33 @@
     }
 
     async function getJobs(){
+    const cached = ls('jobs');
+    if(cached && typeof cached === 'object' && Object.keys(cached).length){
+        return cached;
+    }
     if(!sbReady || !sbClient){
-        return ls('jobs') || {};
+        return cached || {};
     }
     try {
         const res = await sbClient.from('jobs').select('*');
         if(res.error){
         console.warn('jobs fetch:', res.error.message);
-        return ls('jobs') || {};
+        return cached || {};
         }
         const out = {};
         (res.data || []).forEach(function(row){
         const j = normalizeJobFromCloud(row);
         if(j) out[j.id] = j;
         });
+        if(Object.keys(out).length) ls('jobs', out);
         return out;
     } catch(e){
         console.warn('jobs fetch exception', e);
-        return ls('jobs') || {};
+        return cached || {};
     }
     }
 
     async function createJob(prospect, company, phone, notes){
-    if(!sbReady || !sbClient){
-        console.warn('createJob: Supabase not available');
-        return null;
-    }
     const jobId = 'job_' + Date.now();
     const now = new Date().toISOString();
     const row = {
@@ -7527,6 +7710,17 @@
         createdAt: now,
         updatedAt: now,
     };
+    if(window.APP_API && typeof APP_API.writeThrough === 'function'){
+        const wt = await APP_API.writeThrough('jobs', 'upsert', row, function(){
+        if(!sbReady || !sbClient) return Promise.resolve({ error: { message: 'Offline' } });
+        return sbClient.from('jobs').insert([row]);
+        });
+        return wt.ok ? jobId : null;
+    }
+    if(!sbReady || !sbClient){
+        console.warn('createJob: Supabase not available');
+        return null;
+    }
     const ins = await sbClient.from('jobs').insert([row]);
     if(ins.error){
         console.error('createJob:', ins.error.message);
@@ -7535,14 +7729,28 @@
     return jobId;
     }
 
+    async function patchJobLocal(jobId, patch){
+    const jobs = await getJobs();
+    if(!jobs[jobId]) return null;
+    const updated = Object.assign({}, jobs[jobId], patch, { updatedAt: patch.updatedAt || new Date().toISOString() });
+    if(window.APP_API && typeof APP_API.writeThrough === 'function'){
+        const wt = await APP_API.writeThrough('jobs', 'upsert', updated, function(){
+        if(!sbReady || !sbClient) return Promise.resolve({ error: { message: 'Offline' } });
+        return sbClient.from('jobs').update(patch).eq('id', String(jobId));
+        });
+        return wt.ok ? updated : null;
+    }
+    if(!sbReady || !sbClient) return null;
+    const upd = await sbClient.from('jobs').update(patch).eq('id', String(jobId));
+    return !upd.error ? updated : null;
+    }
+
     async function assignJobToCOO(jobId, cooUid){
-    if(!sbReady || !sbClient) return false;
-    const upd = await sbClient.from('jobs').update({
+    return !!(await patchJobLocal(jobId, {
         assignedToCOO: cooUid,
         assignedToRep: null,
         updatedAt: new Date().toISOString(),
-    }).eq('id', String(jobId));
-    return !upd.error;
+    }));
     }
 
     async function assignJobToRep(jobId, repUid){
@@ -7552,34 +7760,28 @@
     if(!rep || rep.tier !== 'rep') return false;
     const repCOO = getRepCOO(repUid);
     if(repCOO !== jobs[jobId].assignedToCOO) return false;
-    if(!sbReady || !sbClient) return false;
-    const upd = await sbClient.from('jobs').update({
+    return !!(await patchJobLocal(jobId, {
         assignedToRep: repUid,
         status: 'inprogress',
         updatedAt: new Date().toISOString(),
-    }).eq('id', String(jobId));
-    return !upd.error;
+    }));
     }
 
     async function updateJobStatus(jobId, status){
-    if(!sbReady || !sbClient) return false;
     if(!['open','inprogress','won','lost'].includes(status)) return false;
-    const upd = await sbClient.from('jobs').update({
+    return !!(await patchJobLocal(jobId, {
         status: status,
         updatedAt: new Date().toISOString(),
-    }).eq('id', String(jobId));
-    return !upd.error;
+    }));
     }
 
     async function reassignJob(jobId, newCOOUid){
-    if(!sbReady || !sbClient) return false;
-    const upd = await sbClient.from('jobs').update({
+    return !!(await patchJobLocal(jobId, {
         assignedToCOO: newCOOUid,
         assignedToRep: null,
         status: 'open',
         updatedAt: new Date().toISOString(),
-    }).eq('id', String(jobId));
-    return !upd.error;
+    }));
     }
 
     async function reassignJobToRep(jobId, newRepUid, byUID){
@@ -7589,13 +7791,11 @@
     if(!rep || rep.tier !== 'rep') return false;
     const repCOO = getRepCOO(newRepUid);
     if(isCOO(byUID) && repCOO !== byUID) return false;
-    if(!sbReady || !sbClient) return false;
-    const upd = await sbClient.from('jobs').update({
+    return !!(await patchJobLocal(jobId, {
         assignedToRep: newRepUid,
         status: 'inprogress',
         updatedAt: new Date().toISOString(),
-    }).eq('id', String(jobId));
-    return !upd.error;
+    }));
     }
 
     async function getJobsForCOO(cooUid){
@@ -7614,6 +7814,13 @@
     }
 
     async function deleteJob(jobId){
+    if(window.APP_API && typeof APP_API.writeThrough === 'function'){
+        const wt = await APP_API.writeThrough('jobs', 'delete', { id: String(jobId) }, function(){
+        if(!sbReady || !sbClient) return Promise.resolve({ error: { message: 'Offline' } });
+        return sbClient.from('jobs').delete().eq('id', String(jobId));
+        });
+        return wt.ok;
+    }
     if(!sbReady || !sbClient) return false;
     const del = await sbClient.from('jobs').delete().eq('id', String(jobId));
     return !del.error;
@@ -7656,10 +7863,18 @@
     }
     })();
 
+    const DATA_LS_KEYS = new Set(['prospects','calls','interested_leads','jobs','closed_deals']);
+
     function ls(key, val){
     if(val===undefined) { try{ return JSON.parse(localStorage.getItem(key)); }catch(e){ return null; } }
-    try { localStorage.setItem(key, JSON.stringify(val)); return true; }
+    try { localStorage.setItem(key, JSON.stringify(val)); }
     catch(e){ console.error('localStorage write failed for', key, e); return false; }
+    if(DATA_LS_KEYS.has(key) && window.LOCAL_STORE){
+        LOCAL_STORE.persistFromMemory(key, val).catch(function(err){
+        console.warn('IndexedDB persist failed for', key, err);
+        });
+    }
+    return true;
     }
 
     function getData(key, def){ return ls(key) || def; }
@@ -7746,6 +7961,23 @@
     async function loadFromCloud(table){
     if(!sbReady || !sbClient) return null;
     if(window._closedDealsTableMissing && table === 'closed_deals') return null;
+    if(window.APP_API && typeof APP_API.fetchTableRows === 'function'){
+        try {
+        const res = await APP_API.fetchTableRows(table, currentUser, USERS, {});
+        if(res.error){
+            console.warn('⚠️ Cloud load warning ['+table+']:', res.error.message || res.error);
+            return null;
+        }
+        const data = Array.isArray(res.data) ? res.data : [];
+        if(data.length && typeof APP_API.applySyncedRows === 'function'){
+            await APP_API.applySyncedRows(table, data, { incremental: !!res.incremental });
+        }
+        return data;
+        } catch(e){
+        console.log('Cloud load error:', e);
+        return null;
+        }
+    }
     try {
         const HDR = window.BASE_HDR;
         if(!window.SB_URL || !HDR) return null;
@@ -7767,6 +7999,47 @@
     } catch(e){ console.log('Cloud load error:', e); return null; }
     }
 
+    function handleTableSynced(table, applied){
+    if(!applied || !applied.changed) return;
+    const active = function(id){ const el = document.getElementById(id); return el && el.classList.contains('active'); };
+    if(table === 'prospects' && active('page-prospects')) renderProspects();
+    if(table === 'calls'){
+        if(active('page-dashboard')) renderDashboard();
+        if(active('page-mycalls')) renderMyCalls();
+        if(active('page-revenue')) renderRevenue();
+        if(active('page-prospects')) renderProspects();
+        if(active('page-allcalls') && typeof acApplyFiltersFromCache === 'function') acApplyFiltersFromCache();
+    }
+    if(table === 'interested_leads'){
+        updatePipelineNavBadge();
+        updateFollowbackNavBadge();
+        updateRepJobsNavBadge();
+        if(active('page-pipeline')) renderPipeline();
+        if(active('page-jobs') && typeof renderJobsPage === 'function') renderJobsPage().catch(function(e){ console.error(e); });
+        if(active('page-prospects')) renderProspects();
+        if(active('page-revenue')) renderRevenue();
+        const inbox = document.getElementById('ceo-leads-inbox-body');
+        if(inbox && (isCEO(currentUser) || isMgmt(currentUser))) ceoInboxRender(inbox);
+    }
+    if(table === 'jobs' && active('page-jobs') && typeof renderJobsPage === 'function'){
+        renderJobsPage().catch(function(e){ console.error(e); });
+    }
+    }
+
+    function startBackgroundSync(opts){
+    if(!window.APP_API || typeof APP_API.syncAllTablesBackground !== 'function') return;
+    APP_API.syncAllTablesBackground(currentUser, USERS, Object.assign({
+        onSynced: function(table, applied){ handleTableSynced(table, applied); }
+    }, opts || {})).catch(function(){});
+    }
+
+    function syncPageInBackground(pageId){
+    if(!window.APP_API || typeof APP_API.syncTablesForPage !== 'function') return;
+    APP_API.syncTablesForPage(pageId, currentUser, USERS, {
+        onSynced: function(table, applied){ handleTableSynced(table, applied); }
+    }).catch(function(){});
+    }
+
     // AUTO-RELOAD ON PAGE FOCUS (debounced — prevents spam on rapid tab switching)
     var _focusSyncTimer = null;
     var _focusSyncRunning = false;
@@ -7782,6 +8055,13 @@
     async function _doFocusSync(){
     if(!currentUser) return;
     if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache();
+    if(window.APP_API && typeof APP_API.syncAllTablesBackground === 'function'){
+        await APP_API.syncAllTablesBackground(currentUser, USERS, {
+        force: true,
+        onSynced: function(table, applied){ handleTableSynced(table, applied); }
+        });
+        return;
+    }
     const cloudProspects = await loadFromCloud('prospects');
     if(cloudProspects && cloudProspects.length > 0){
         ls('prospects', cloudProspects.map(normalizeProspectFromCloud).filter(Boolean));
@@ -8036,6 +8316,14 @@
     });
     })();
 
+    document.addEventListener('click', function(e){
+        const wrap = document.querySelector('.sidebar-search');
+        const resultsEl = document.getElementById('sidebar-search-results');
+        if(wrap && resultsEl && !wrap.contains(e.target)){
+            resultsEl.classList.remove('open');
+        }
+    });
+
     function dashNavCallsToday(){
     _myCallsDateFilter = todayYMD();
     _dashKeepMyCallsDateFilter = true;
@@ -8107,6 +8395,7 @@
         const out = renders[id]();
         if(out && typeof out.catch === 'function') out.catch(function(e){ console.error(e); });
     }
+    syncPageInBackground(id);
     }
 
     (function restoreLastPage(){
@@ -8249,6 +8538,7 @@
     };
     if(!obj.name){ showToast('Business name is required','error'); return; }
     let ps = getProspects();
+    const prevProspects = ps.slice();
     const existing = id ? ps.find(p=>p.id===id) : null;
     if(id){ ps = ps.map(p=>p.id===id?{...p,...obj,createdAt:p.createdAt,createdBy:p.createdBy,favourite:p.favourite}:p); }
     else { ps.push(obj); }
@@ -8273,8 +8563,12 @@
         };
         if(!id) cloudRow.createdby = currentUser;
         sbClient.from('prospects').upsert([cloudRow]).then(({ error }) => {
-        if(error) console.error('❌ Prospect save failed:', error.message, '| code:', error.code);
-        else console.log('✓ Prospect synced to cloud');
+        if(error){
+            console.error('❌ Prospect save failed:', error.message, '| code:', error.code);
+            ls('prospects', prevProspects);
+            renderProspects();
+            showToast('Cloud sync failed — changes reverted', 'error');
+        } else console.log('✓ Prospect synced to cloud');
         });
     }
     
@@ -8291,14 +8585,23 @@
     async function deleteProspect(id){
     if(USERS[currentUser]?.tier !== 'ceo'){ showToast('Only CEO or Co-CEO can delete prospects','error'); return; }
     showConfirm('Delete this prospect? This cannot be undone.', async function(){
-        ls('prospects', getProspects().filter(p=>p.id!==id));
+        const prevProspects = getProspects();
+        ls('prospects', prevProspects.filter(p=>p.id!==id));
         renderProspects();
         if(sbReady && sbClient){
         try {
             const { error } = await sbClient.from('prospects').delete(id);
-            if(error) console.error('Cloud delete error:', error);
-            else console.log('✓ Prospect deleted from cloud:', id);
-        } catch(e){ console.error('Cloud delete exception:', e); }
+            if(error){
+            console.error('Cloud delete error:', error);
+            ls('prospects', prevProspects);
+            renderProspects();
+            showToast('Cloud delete failed — restored locally', 'error');
+            } else console.log('✓ Prospect deleted from cloud:', id);
+        } catch(e){
+            console.error('Cloud delete exception:', e);
+            ls('prospects', prevProspects);
+            renderProspects();
+        }
         }
         showToast('Prospect deleted');
     });
@@ -8391,6 +8694,46 @@
       if(_expandedProspects.has(id)) _expandedProspects.delete(id);
       else _expandedProspects.add(id);
       renderProspects();
+    }
+
+    function sidebarSearchInput(val){
+      const resultsEl = document.getElementById('sidebar-search-results');
+      if(!resultsEl) return;
+      const q = (val||'').trim();
+      if(!q){ resultsEl.classList.remove('open'); resultsEl.innerHTML=''; return; }
+      const ql = q.toLowerCase();
+      const qd = q.replace(/\D/g,'');
+      const all = getProspects();
+      let matches = all.filter(p=>{
+        const nameHit = (p.name||'').toLowerCase().includes(ql);
+        const areaHit = (p.area||'').toLowerCase().includes(ql);
+        const phoneHit = qd.length>=3 && (p.phone||'').replace(/\D/g,'').includes(qd);
+        return nameHit||areaHit||phoneHit;
+      }).slice(0,8);
+      if(matches.length===0){
+        resultsEl.innerHTML = '<div class="sidebar-search-empty">No matches found</div>';
+      } else {
+        resultsEl.innerHTML = matches.map(p=>{
+          const nameEsc = esc(p.name||'Unknown');
+          const metaParts = [];
+          if(p.phone) metaParts.push(esc(p.phone));
+          if(p.area) metaParts.push(esc(p.area));
+          const meta = metaParts.join(' · ');
+          return '<div class="sidebar-search-result" onclick="sidebarSearchSelect(\'' + escAttr(p.name||'') + '\')">' +
+            '<div class="ssr-name">' + nameEsc + '</div>' +
+            (meta ? '<div class="ssr-meta">' + meta + '</div>' : '') +
+            '</div>';
+        }).join('');
+      }
+      resultsEl.classList.add('open');
+    }
+
+    function sidebarSearchSelect(bizName){
+      const inputEl = document.getElementById('sidebar-search-input');
+      const resultsEl = document.getElementById('sidebar-search-results');
+      if(inputEl) inputEl.value = '';
+      if(resultsEl){ resultsEl.classList.remove('open'); resultsEl.innerHTML=''; }
+      openClientProfile(bizName);
     }
 
     async function renderProspects(){
@@ -8788,16 +9131,8 @@
     return null;
     }
     async function loadDashboard(){
-    try{
-        var cloudCalls = await loadCallsFromCloud();
-        if(cloudCalls && cloudCalls.length){
-            var calls2 = cloudCalls.map(normalizeCloudCallRow).filter(Boolean);
-            ls('calls', mergeByIdPreserveLocal(calls2, getCalls()));
-        }
-    }catch(e){
-        console.warn('loadDashboard cloud pull failed:', e);
-    }
     if(typeof renderDashboard === 'function') renderDashboard();
+    syncPageInBackground('dashboard');
     }
     function getCalls(){ return getData('calls',[]); }
     function saveCall(){
@@ -8851,6 +9186,7 @@
     };
     
     let calls = getCalls();
+    const prevCalls = calls.slice();
     if(id){ calls = calls.map(c=>c.id===id?{...c,...obj,createdAt:c.createdAt}:c); }
     else { calls.push(obj); }
     ls('calls', calls);
@@ -8870,8 +9206,13 @@
         rep: obj.rep,
         createdat: createdAtIso
         }]).then(({ error }) => {
-        if(error) console.error('❌ Call save failed:', error.message, '| code:', error.code);
-        else console.log('✓ Call synced to cloud');
+        if(error){
+            console.error('❌ Call save failed:', error.message, '| code:', error.code);
+            ls('calls', prevCalls);
+            renderMyCalls();
+            renderDashboard();
+            showToast('Cloud sync failed — call reverted', 'error');
+        } else console.log('✓ Call synced to cloud');
         });
     }
     
@@ -12325,14 +12666,16 @@
     restoreExtraReps();
 
     // ── Close modals on overlay click ──
-    document.getElementById('tm-add-modal').addEventListener('click', function(e){
+    var _tmAddModalEl = document.getElementById('tm-add-modal');
+    if(_tmAddModalEl) _tmAddModalEl.addEventListener('click', function(e){
     if(e.target===this) tmCloseModal('tm-add-modal');
     });
-    document.getElementById('tm-edit-modal').addEventListener('click', function(e){
+    var _tmEditModalEl = document.getElementById('tm-edit-modal');
+    if(_tmEditModalEl) _tmEditModalEl.addEventListener('click', function(e){
     if(e.target===this) tmCloseModal('tm-edit-modal');
     });
 
-    // ── launchApp — merged: cloud sync + avatar + badge polling ──
+    // ── launchApp — local-first hydrate + background cloud sync ──
     async function launchApp(){
     await ensureCurrentUserLoaded();
     const u = USERS[currentUser];
@@ -12369,143 +12712,43 @@
     if(cooSection) cooSection.style.display = isCOO(currentUser) ? '' : 'none';
     // Apply saved profile picture
     refreshSidebarAvatar();
-    // Update pipeline badge on load
-    setTimeout(function(){ updatePipelineNavBadge(); updateFollowbackNavBadge(); updateRepJobsNavBadge(); }, 300);
-    // LOAD DATA FROM SUPABASE CLOUD — runs immediately if ready, else waits up to 2s
-    async function runCloudLoad(){
-        if(!sbReady || !sbClient) return;
-        if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache();
-        var loadProspectsFn = (window.SALES_OS && SALES_OS.loadProspects) ? SALES_OS.loadProspects(currentUser, USERS) : loadFromCloud('prospects');
-        var loadCallsFn = (window.SALES_OS && SALES_OS.loadCalls) ? SALES_OS.loadCalls(currentUser, USERS) : loadFromCloud('calls');
-        var loadLeadsFn = (window.SALES_OS && SALES_OS.loadLeads) ? SALES_OS.loadLeads(currentUser, USERS) : loadFromCloud('interested_leads');
-
-        loadProspectsFn.then(function(res){
-        var data = Array.isArray(res) ? res : (res && res.data);
-        var error = res && res.error;
-        if(!error && data) {
-            const prospects = data.map(normalizeProspectFromCloud).filter(Boolean);
-            ls('prospects', prospects);
-            console.log('✓ Loaded', prospects.length, 'prospects from cloud (role-filtered)');
-        }
-        });
-
-        loadCallsFn.then(function(res){
-        var data = Array.isArray(res) ? res : (res && res.data);
-        var error = res && res.error;
-        if(error){ console.error('calls load error:', error.message || error); return; }
-        if(data) {
-            const calls = (data || []).map(normalizeCloudCallRow).filter(Boolean);
-            ls('calls', mergeByIdPreserveLocal(calls, getCalls()));
-            console.log('✓ Loaded', calls.length, 'calls from cloud (role-filtered)');
-            if(document.getElementById('page-dashboard')?.classList.contains('active')) renderDashboard();
-        }
-        });
-
-        loadLeadsFn.then(async function(res){
-        var data = Array.isArray(res) ? res : (res && res.data);
-        var error = res && res.error;
-        if(error){ console.error('❌ interested_leads load error:', error.message, '| code:', error.code); return; }
-        if(data){
-            const leads = data.map(normalizeLeadFromCloud).filter(Boolean);
-            ls('interested_leads', mergeByIdPreserveLocal(leads, getLeads()));
-            updatePipelineNavBadge();
-        updateFollowbackNavBadge();
-        updateRepJobsNavBadge();
-            console.log('✓ Loaded', leads.length, 'interested leads from cloud');
-            // Re-render any active page that shows leads
-            const pp = document.getElementById('page-pipeline');
-            if(pp && pp.classList.contains('active')) renderPipeline();
-            const jp = document.getElementById('page-jobs');
-            if(jp && jp.classList.contains('active') && typeof renderJobsPage === 'function'){
-            await renderJobsPage();
-            }
-        }
-        }).catch((e)=>{ console.error('❌ interested_leads fetch exception:', e); });
-        refreshTeamMembers();
-        // Load jobs from cloud (getJobs() reads Supabase when online)
-        sbClient.from('jobs').select('*').then(async function(res){
-        const data = res.data; const error = res.error;
-        if(!error && data && data.length > 0){
-            console.log('✓ Loaded', data.length, 'jobs from cloud');
-            const jp = document.getElementById('page-jobs');
-            if(jp && jp.classList.contains('active') && typeof renderJobsPage === 'function'){
-            await renderJobsPage();
-            }
-        }
-        }).catch(()=>{ /* jobs table may not exist yet */ });
-        // closed_deals table not yet created in Supabase — skip fetch entirely to avoid 404
-        window._closedDealsTableMissing = true;
-        // Re-render dashboard after cloud data has loaded (delay covers async fetches above)
-        setTimeout(()=>{ if(document.getElementById('page-dashboard')?.classList.contains('active')) renderDashboard(); }, 1500);
+    // Hydrate memory cache from IndexedDB before first paint
+    if(window.APP_API && typeof APP_API.hydrateFromIDB === 'function'){
+        try { await APP_API.hydrateFromIDB(); } catch(e){ console.warn('IDB hydrate failed', e); }
     }
-    // Run immediately if Supabase ready, else retry every 100ms for up to 2s
+    // Render immediately from local cache
+    goPage('dashboard');
+    updatePipelineNavBadge();
+    updateFollowbackNavBadge();
+    updateRepJobsNavBadge();
+    // Background revalidate — never blocks UI
     if(sbReady && sbClient){
-        runCloudLoad();
+        startBackgroundSync();
+        refreshTeamMembers();
     } else {
         let _sbRetries = 0;
         const _sbWait = setInterval(()=>{
         _sbRetries++;
-        if(sbReady && sbClient){ clearInterval(_sbWait); runCloudLoad(); }
-        else if(_sbRetries >= 50){ clearInterval(_sbWait); console.warn('⚠️ Supabase not ready after 5s — skipping cloud load'); }
+        if(sbReady && sbClient){
+            clearInterval(_sbWait);
+            startBackgroundSync({ force: true });
+            refreshTeamMembers();
+        } else if(_sbRetries >= 50){
+            clearInterval(_sbWait);
+            console.warn('⚠️ Supabase not ready after 5s — serving from local cache only');
+        }
         }, 100);
     }
-    goPage('dashboard');
-    // Repair: backfill any Interested calls that never made it into the pipeline
+    // closed_deals table may not exist yet in Supabase
+    window._closedDealsTableMissing = true;
+    // Repair / cleanup deferred so first paint is not blocked
     setTimeout(pipelineRepairMissing, 600);
-    // Clean: purge any calls with no business name from localStorage + Supabase
     setTimeout(purgeInvalidCalls, 800);
-    // ── DASHBOARD LIVE POLL (every 30s) — keeps CEO dashboard fresh without tab-switching ──
+    // Polling replaced by stale-while-revalidate on navigation + focus sync
     if(window._dashPollTimer) clearInterval(window._dashPollTimer);
-    window._dashPollTimer = setInterval(function(){
-        if(!currentUser || !sbReady || !sbClient) return;
-        const dashPage = document.getElementById('page-dashboard');
-        if(!dashPage || !dashPage.classList.contains('active')) return;
-        if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache('calls');
-        var pollCalls = (window.SALES_OS && SALES_OS.loadCalls) ? SALES_OS.loadCalls(currentUser, USERS) : loadFromCloud('calls');
-        pollCalls.then(function(res){
-        const data = Array.isArray(res) ? res : (res && res.data);
-        const error = res && res.error;
-        if(error || !data) return;
-        const calls = data.map(normalizeCloudCallRow).filter(Boolean);
-        ls('calls', mergeByIdPreserveLocal(calls, getCalls()));
-        renderDashboard();
-        });
-    }, 30000);
-
-    // ── LEADS LIVE POLL (every 30s) — keeps CEO inbox + pipeline fresh without tab-switching ──
     if(window._leadsPollTimer) clearInterval(window._leadsPollTimer);
-    window._leadsPollTimer = setInterval(function(){
-        if(!currentUser || !sbReady || !sbClient) return;
-        if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache('interested_leads');
-        var pollLeads = (window.SALES_OS && SALES_OS.loadLeads) ? SALES_OS.loadLeads(currentUser, USERS) : loadFromCloud('interested_leads');
-        pollLeads.then(function(res){
-        const data = Array.isArray(res) ? res : (res && res.data);
-        const error = res && res.error;
-        if(error || !data) return;
-        const leads = data.map(normalizeLeadFromCloud).filter(Boolean);
-        const prev = (ls('interested_leads') || []).length;
-        ls('interested_leads', mergeByIdPreserveLocal(leads, getLeads()));
-        updatePipelineNavBadge();
-        updateFollowbackNavBadge();
-        updateRepJobsNavBadge();
-        // Re-render whichever page is currently visible
-        const pipelinePage = document.getElementById('page-pipeline');
-        if(pipelinePage && pipelinePage.classList.contains('active')){
-            renderPipeline();
-        }
-        const jobsPage = document.getElementById('page-jobs');
-        if(jobsPage && jobsPage.classList.contains('active')){
-            if(typeof renderJobsPage === 'function') renderJobsPage().catch(function(e){ console.error(e); });
-        } else {
-            // Keep the badge + inbox DOM current even when Jobs tab is not open
-            const inbox = document.getElementById('ceo-leads-inbox-body');
-            if(inbox && (isCEO(currentUser) || isMgmt(currentUser))) ceoInboxRender(inbox);
-        }
-        if(leads.length > prev){
-            showToast('New interested lead synced from cloud ✨', 'success');
-        }
-        });
-    }, 30000);
+    window._dashPollTimer = null;
+    window._leadsPollTimer = null;
     } // end launchApp
 
     // ════════════════════════════════════════
@@ -12762,6 +13005,13 @@
     // ════════════════════════════════════════
 
     // Data helpers
+    window.DATA_NORMALIZERS = {
+        prospects: normalizeProspectFromCloud,
+        calls: normalizeCloudCallRow,
+        interested_leads: normalizeLeadFromCloud,
+        jobs: normalizeJobFromCloud
+    };
+
     function getLeads(){ return getData('interested_leads',[]); }
 
     function normalizeLeadFromCloud(r){
@@ -12813,19 +13063,24 @@
     }
 
     function saveLeads(leads){
+    const prevLeads = getLeads();
     ls('interested_leads', leads);
+    if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache('interested_leads');
+    updateFollowbackNavBadge();
+    updateRepJobsNavBadge();
     if(sbReady && sbClient){
         const formatted = leads.map(formatLeadForCloud);
         sbClient.from('interested_leads').upsert(formatted)
         .then(({ error }) => {
-            if(error) console.error('❌ saveLeads cloud sync FAILED:', error.message, '| code:', error.code);
-            else console.log('✓ Leads synced to cloud:', formatted.length, 'records');
+            if(error){
+            console.error('❌ saveLeads cloud sync FAILED:', error.message, '| code:', error.code);
+            ls('interested_leads', prevLeads);
+            if(document.getElementById('page-pipeline')?.classList.contains('active')) renderPipeline();
+            showToast('Cloud sync failed — leads reverted', 'error');
+            } else console.log('✓ Leads synced to cloud:', formatted.length, 'records');
         })
-        .catch(e => console.error('❌ saveLeads cloud exception:', e));
+        .catch(function(e){ console.error('❌ saveLeads cloud exception:', e); });
     }
-    if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache('interested_leads');
-    updateFollowbackNavBadge();
-    updateRepJobsNavBadge();
     }
 
     // Called from saveCall() when outcome === 'Interested'
@@ -13813,45 +14068,41 @@
     let acAutoTimer = null;
     let acExpandedRow = null;
 
-    // ── INIT — loads REAL data from Supabase ──
+    // ── INIT — cache-first, background revalidate ──
+    function acApplyFiltersFromCache(){
+    acAllData = getCalls().map(mapCloudRowToAcRow).filter(Boolean);
+    acAllData.sort(function(a, b){ return b.ts - a.ts; });
+    acPopulateAgentFilter();
+    acApplyFilters();
+    acLastUpdated = Date.now();
+    }
+
+    function acPopulateAgentFilter(){
+    const sel = document.getElementById('ac-agent-filter');
+    if(!sel) return;
+    const usersAgentNames = typeof USERS !== 'undefined'
+        ? Object.values(USERS).map(function(u){ return u.name; }).filter(Boolean)
+        : [];
+    const dataAgentNames = acAllData.map(function(c){ return c.rep; }).filter(Boolean);
+    const allAgents = Array.from(new Set(usersAgentNames.concat(dataAgentNames))).sort();
+    sel.innerHTML = '<option value="">All Agents</option>' +
+        allAgents.map(function(a){ return '<option value="'+esc(a)+'">'+esc(a)+'</option>'; }).join('');
+    }
+
     function initAllCallsV2() {
-    // Show loading state
-    const bar = document.getElementById('ac-stats-bar');
-    if (bar) bar.innerHTML = '<div style="color:var(--text-2);font-size:13px;padding:12px 0;">Loading calls from cloud…</div>';
-    const tbody = document.getElementById('ac-tbody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-2);padding:24px;">Loading…</td></tr>';
-
-    window.supabase.from('calls').select('*')
-        .then(({ data, error }) => {
-        if (error) {
-            console.error('❌ All Calls load error:', error.message);
-            acAllData = [];
-            if (bar) bar.innerHTML = '<div style="color:var(--red);font-size:13px;padding:12px 0;">Failed to load calls. Check console.</div>';
-            return;
-        }
-
-        acAllData = (data || []).map(mapCloudRowToAcRow).filter(Boolean);
-
-        // Sort newest first
-        acAllData.sort((a, b) => b.ts - a.ts);
-
-        // Populate agent dropdown from USERS + real data
-        const sel = document.getElementById('ac-agent-filter');
-        if (sel) {
-            const usersAgentNames = typeof USERS !== 'undefined'
-            ? Object.values(USERS).map(u => u.name).filter(Boolean)
-            : [];
-            const dataAgentNames = acAllData.map(c => c.rep).filter(Boolean);
-            const allAgents = [...new Set([...usersAgentNames, ...dataAgentNames])].sort();
-            sel.innerHTML = '<option value="">All Agents</option>' +
-            allAgents.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
-        }
-
-        acLastUpdated = Date.now();
-        acApplyFilters();
-        acStartAutoRefresh();
+    const cached = getCalls();
+    if(cached && cached.length){
+        acApplyFiltersFromCache();
         acStartSecondsTimer();
-        });
+    } else {
+        const bar = document.getElementById('ac-stats-bar');
+        if (bar) bar.innerHTML = '<div style="color:var(--text-2);font-size:13px;padding:12px 0;">Loading calls…</div>';
+        const tbody = document.getElementById('ac-tbody');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-2);padding:24px;">Loading…</td></tr>';
+    }
+    syncPageInBackground('allcalls');
+    acStartAutoRefresh();
+    acStartSecondsTimer();
     }
 
     // ── DATE RANGE ──
@@ -13929,24 +14180,6 @@
     acRenderCards();
     acRenderChart();
     }
-
-    // ── Debounced search handlers (200ms) — avoids full re-render on every keystroke ──
-    function debounce(fn, wait){
-    var timer = null;
-    return function(){
-        var ctx = this, args = arguments;
-        clearTimeout(timer);
-        timer = setTimeout(function(){ fn.apply(ctx, args); }, wait);
-    };
-    }
-    var renderProspectsDebounced = debounce(function(){
-    var out = renderProspects();
-    if(out && typeof out.catch === 'function') out.catch(function(e){ console.error(e); });
-    }, 200);
-    var renderMyCallsDebounced = debounce(renderMyCalls, 200);
-    var renderPipelineDebounced = debounce(renderPipeline, 200);
-    var acApplyFiltersDebounced = debounce(acApplyFilters, 200);
-    var tmRenderTableDebounced = debounce(tmRenderTable, 200);
 
     // ── STATS ──
     function acRenderStats() {
@@ -14371,22 +14604,12 @@
     a.click();
     }
 
-    // ── AUTO REFRESH (60s) — pulls real data from Supabase ──
+    // ── AUTO REFRESH — stale-while-revalidate (no full-table pull) ──
     function acStartAutoRefresh() {
     if (acAutoTimer) clearInterval(acAutoTimer);
-    acAutoTimer = setInterval(() => {
-        window.supabase.from('calls').select('*')
-        .then(({ data, error }) => {
-            if (error || !data) return;
-            const prevCount = acAllData.length;
-            acAllData = (data || []).map(mapCloudRowToAcRow).filter(Boolean);
-            acAllData.sort((a, b) => b.ts - a.ts);
-            acLastUpdated = Date.now();
-            acApplyFilters();
-            if (acAllData.length > prevCount) {
-            acShowToast('New call synced from cloud');
-            }
-        });
+    acAutoTimer = setInterval(function() {
+        if (!document.getElementById('page-allcalls')?.classList.contains('active')) return;
+        syncPageInBackground('allcalls');
     }, 60000);
     }
 
@@ -14445,20 +14668,80 @@
     </button>
 <script>
 (function(){
-  window.railToggle=function(){
-    var sb=document.querySelector('.sidebar'); if(!sb) return;
-    var open=sb.classList.toggle('rail-open');
-    document.body.classList.toggle('rail-expanded', open);
-    try{ localStorage.setItem('sos_rail_open', open?'1':'0'); }catch(e){}
-  };
-  function initRail(){
-    var sb=document.querySelector('.sidebar'); if(!sb) return;
-    try{
-      if(localStorage.getItem('sos_rail_open')==='1'){
-        sb.classList.add('rail-open');
-        document.body.classList.add('rail-expanded');
+  var RAIL_KEY='sidebarRailOpen';
+  function isDesktopRail(){
+    return window.matchMedia('(min-width:769px)').matches;
+  }
+  function syncRailSearchA11y(open){
+    var wrap=document.querySelector('.sidebar-search');
+    var input=document.getElementById('sidebar-search-input');
+    if(!wrap) return;
+    if(!isDesktopRail()){
+      wrap.removeAttribute('aria-hidden');
+      if(input) input.tabIndex=0;
+      return;
+    }
+    wrap.setAttribute('aria-hidden', open ? 'false' : 'true');
+    if(input) input.tabIndex=open ? 0 : -1;
+  }
+  function syncRailToggleA11y(open){
+    document.querySelectorAll('.rail-toggle').forEach(function(btn){
+      var label=open ? 'Collapse sidebar' : 'Expand sidebar';
+      btn.setAttribute('aria-label', label);
+      btn.setAttribute('title', label);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+  function syncRailLayers(open){
+    var rail=document.querySelector('.sidebar-rail');
+    var inner=document.querySelector('.sidebar-inner');
+    if(!isDesktopRail()){
+      if(rail) rail.setAttribute('aria-hidden','true');
+      if(inner) inner.removeAttribute('aria-hidden');
+      return;
+    }
+    if(rail) rail.setAttribute('aria-hidden', open ? 'true' : 'false');
+    if(inner) inner.setAttribute('aria-hidden', open ? 'false' : 'true');
+  }
+  function buildSidebarRail(){
+    var railNav=document.querySelector('.sidebar-rail-nav');
+    var innerNav=document.querySelector('.sidebar-inner .sidebar-nav');
+    if(!railNav||!innerNav||railNav.dataset.built==='1') return;
+    innerNav.querySelectorAll('.nav-item').forEach(function(item){
+      var btn=item.cloneNode(true);
+      btn.removeAttribute('id');
+      btn.querySelectorAll('.nav-label,.nav-badge').forEach(function(el){ el.remove(); });
+      Array.from(btn.childNodes).forEach(function(n){
+        if(n.nodeType===3 && n.nodeValue.trim()) btn.removeChild(n);
+      });
+      if(!btn.getAttribute('data-label')){
+        var c=btn.cloneNode(true);
+        var t=(c.textContent||'').trim();
+        if(t) btn.setAttribute('data-label',t);
       }
-    }catch(e){}
+      railNav.appendChild(btn);
+    });
+    railNav.dataset.built='1';
+  }
+  function applyRailState(open, persist){
+    var sb=document.querySelector('.sidebar');
+    if(!sb) return;
+    sb.classList.toggle('rail-open', open);
+    document.body.classList.toggle('rail-expanded', open);
+    document.documentElement.classList.toggle('rail-expanded-init', open);
+    syncRailSearchA11y(open);
+    syncRailToggleA11y(open);
+    syncRailLayers(open);
+    if(persist){
+      try{ localStorage.setItem(RAIL_KEY, open ? 'true' : 'false'); }catch(e){}
+    }
+  }
+  window.railToggle=function(){
+    var sb=document.querySelector('.sidebar');
+    if(!sb || !isDesktopRail()) return;
+    applyRailState(!sb.classList.contains('rail-open'), true);
+  };
+  function wrapNavLabels(){
     document.querySelectorAll('.sidebar .nav-item, .sidebar .logout-btn').forEach(function(el){
       if(!el.getAttribute('data-label')){
         var c=el.cloneNode(true);
@@ -14477,8 +14760,41 @@
       });
     });
   }
-  if(document.readyState!=='loading') initRail();
-  else document.addEventListener('DOMContentLoaded', initRail);
+  function initRail(){
+    var sb=document.querySelector('.sidebar');
+    if(!sb) return;
+    wrapNavLabels();
+    buildSidebarRail();
+    wrapNavLabels();
+    var open=false;
+    try{
+      if(localStorage.getItem(RAIL_KEY)===null){
+        var leg=localStorage.getItem('sos_rail_open');
+        if(leg==='1') localStorage.setItem(RAIL_KEY,'true');
+        else if(leg==='0') localStorage.setItem(RAIL_KEY,'false');
+      }
+      open=localStorage.getItem(RAIL_KEY)==='true';
+    }catch(e){}
+    if(isDesktopRail()){
+      applyRailState(open, false);
+    } else {
+      syncRailSearchA11y(true);
+      syncRailToggleA11y(sb.classList.contains('rail-open'));
+    }
+  }
+  function deferRailInit(){
+    if(typeof requestIdleCallback === 'function') requestIdleCallback(initRail);
+    else setTimeout(initRail, 0);
+  }
+  function syncSearchA11yOnLoad(){
+    var open=true;
+    if(isDesktopRail()){
+      try{ open=localStorage.getItem(RAIL_KEY)==='true'; }catch(e){ open=false; }
+    }
+    syncRailSearchA11y(open);
+  }
+  if(document.readyState!=='loading'){ deferRailInit(); syncSearchA11yOnLoad(); }
+  else document.addEventListener('DOMContentLoaded', function(){ deferRailInit(); syncSearchA11yOnLoad(); });
 })();
 </script>
     </body>
