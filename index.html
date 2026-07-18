@@ -8681,11 +8681,13 @@
             <span class="prospect-pkg">${esc(p.pkg)}</span>
             <span class="prospect-rep">${repName}</span>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;">
+        <div style="display:flex;gap:8px;align-items:center;" onclick="event.stopPropagation()">
             ${_act.count > 0
       ? `<span class="badge ${(typeof outcomeBadge==='function' ? (outcomeBadge(_act.last).match(/badge-[a-z]+/)||['badge-gray'])[0] : 'badge-gray')}" style="font-size:11px;">${esc(_act.last)} · ${_act.count} call${_act.count>1?'s':''}</span>`
       : `<span class="badge badge-gray" style="font-size:11px;opacity:0.7;">New · no calls</span>`}
             <span class="info-row"><strong>${esc(p.phone)}</strong></span>
+            ${p.phone ? `<button type="button" class="btn btn-outline btn-sm prospect-call-btn" data-phone="${escAttr(p.phone||'')}" title="Call">📞</button>
+            <button type="button" class="btn btn-outline btn-sm prospect-wa-btn" data-phone="${escAttr(p.phone||'')}" title="WhatsApp" style="border-color:rgba(37,211,102,0.4);color:#25D366;">WhatsApp</button>` : ''}
             <button class="btn btn-outline btn-sm" style="margin-left:auto;" onclick='openProspectHistory("${esc(p.name).replace(/"/g,"&quot;")}")'>History</button>
             <button class="btn btn-cyan btn-sm" onclick='openCallModalForProspect("${p.name}")'>Log Call</button>
         </div>
@@ -9585,6 +9587,22 @@
     if(window._clientProfileClicksBound) return;
     window._clientProfileClicksBound = true;
     document.addEventListener('click', function(e){
+        const callBtn = e.target.closest('.prospect-call-btn');
+        if(callBtn && callBtn.dataset.phone != null){
+        e.stopPropagation();
+        const href = cpPhoneTelHref(callBtn.dataset.phone);
+        if(href === '#'){ showToast('No phone number on file', 'error'); return; }
+        window.location.href = href;
+        return;
+        }
+        const waBtn = e.target.closest('.prospect-wa-btn');
+        if(waBtn && waBtn.dataset.phone != null){
+        e.stopPropagation();
+        const href = cpPhoneWaHref(waBtn.dataset.phone);
+        if(!href){ showToast('No phone number on file', 'error'); return; }
+        window.open(href, '_blank');
+        return;
+        }
         const repProspectRow = e.target.closest('.rep-balance-prospect-row');
         if(repProspectRow && repProspectRow.dataset.biz != null){
         e.stopPropagation();
