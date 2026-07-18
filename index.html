@@ -8667,9 +8667,9 @@
        <button type="button" class="btn btn-outline btn-sm prospect-call-btn" data-phone="${escAttr(e.number)}" title="Call" style="display:inline-flex;align-items:center;justify-content:center;padding:4px 6px;">
          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.46.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z" fill="currentColor"/></svg>
        </button>
-       <button type="button" class="btn btn-outline btn-sm prospect-wa-btn" data-phone="${escAttr(e.number)}" title="WhatsApp" style="display:inline-flex;align-items:center;justify-content:center;padding:4px 6px;border-color:${e.isWhatsApp ? '#25D366' : 'rgba(37,211,102,0.4)'};color:#25D366;${e.isWhatsApp ? 'box-shadow:0 0 0 1px #25D366;' : ''}">
+       ${e.showWhatsAppBtn ? `<button type="button" class="btn btn-outline btn-sm prospect-wa-btn" data-phone="${escAttr(e.number)}" title="WhatsApp" style="display:inline-flex;align-items:center;justify-content:center;padding:4px 6px;border-color:${e.isWhatsApp ? '#25D366' : 'rgba(37,211,102,0.4)'};color:#25D366;${e.isWhatsApp ? 'box-shadow:0 0 0 1px #25D366;' : ''}">
          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12.04 2c-5.5 0-9.96 4.46-9.96 9.96 0 1.76.46 3.48 1.34 4.99L2 22l5.2-1.36a9.94 9.94 0 004.84 1.24h.01c5.5 0 9.96-4.46 9.96-9.96S17.54 2 12.04 2zm5.85 14.13c-.25.7-1.45 1.33-2 1.42-.51.08-1.15.11-1.86-.12-.43-.13-.98-.32-1.68-.62-2.96-1.28-4.89-4.26-5.04-4.46-.15-.2-1.2-1.6-1.2-3.05 0-1.45.76-2.16 1.03-2.45.27-.29.6-.37.8-.37.2 0 .4 0 .57.01.18.01.43-.07.67.51.25.6.85 2.08.92 2.23.07.15.12.33.02.53-.1.2-.15.32-.3.5-.15.18-.31.4-.44.53-.15.15-.3.31-.13.6.17.3.76 1.25 1.63 2.03 1.12 1 2.06 1.31 2.36 1.46.3.15.47.13.65-.08.18-.2.75-.87.95-1.17.2-.3.4-.25.67-.15.28.1 1.75.83 2.05.98.3.15.5.23.57.35.08.13.08.73-.17 1.43z"/></svg>
-       </button>
+       </button>` : ''}
      </span>
    `).join('<span style="opacity:0.3;margin:0 2px;">·</span>');
         return `<div class="prospect-card" data-prospect-id="${prospectId}">
@@ -9451,8 +9451,16 @@
                 const labelMatch = entry.match(/\(([^)]+)\)/);
                 const label = labelMatch ? labelMatch[1].trim() : '';
                 const number = entry.replace(/\([^)]*\)/g, '').trim();
-                const isWhatsApp = /whatsapp/i.test(label);
-                return { number, label, isWhatsApp };
+                const digits = number.replace(/\D/g, '');
+                // Normalize to local 0-prefixed form for prefix checking
+                let local = digits;
+                if(local.startsWith('94')) local = '0' + local.slice(2);
+                else if(!local.startsWith('0') && local.length === 9) local = '0' + local;
+                const isMobile = /^07[0-8]/.test(local);
+                const labelSaysWhatsApp = /whatsapp/i.test(label);
+                const isWhatsApp = labelSaysWhatsApp || (isMobile && !/landline|land line|shop|office|fax/i.test(label));
+                const showWhatsAppBtn = isMobile || labelSaysWhatsApp;
+                return { number, label, isWhatsApp, showWhatsAppBtn };
             })
             .filter(e => e.number);
     }
