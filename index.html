@@ -6835,6 +6835,8 @@
         </div>
         <div id="cp-body" class="cp-body"></div>
         <div class="modal-footer">
+          <button class="btn btn-outline" id="cp-call-btn" onclick="cpOpenCall()">Call</button>
+          <button class="btn btn-outline" id="cp-whatsapp-btn" onclick="cpOpenWhatsApp()" style="border-color:rgba(37,211,102,0.4);color:#25D366;">WhatsApp</button>
           <button class="btn btn-outline" onclick="closeModal('client-profile-modal')">Close</button>
         </div>
       </div>
@@ -8545,7 +8547,7 @@
           if(p.phone) metaParts.push(esc(p.phone));
           if(p.area) metaParts.push(esc(p.area));
           const meta = metaParts.join(' · ');
-          return '<div class="sidebar-search-result" onclick="sidebarSearchSelect(\'' + escAttr(p.name||'') + '\')">' +
+          return '<div class="sidebar-search-result" data-biz="' + escAttr(p.name||'') + '">' +
             '<div class="ssr-name">' + nameEsc + '</div>' +
             (meta ? '<div class="ssr-meta">' + meta + '</div>' : '') +
             '</div>';
@@ -9216,6 +9218,7 @@
     }
 
     var _cpCurrentBiz = '';
+    let _cpCurrentPhone = '';
 
     function findProspectByBizName(bizName){
     const norm = normalizeBizName(bizName);
@@ -9402,6 +9405,28 @@
         return digits ? 'tel:' + digits : '#';
     }
 
+    function cpPhoneWaHref(phone){
+        let digits = String(phone || '').replace(/\D/g, '');
+        if(!digits) return '';
+        if(digits.startsWith('0')) digits = '94' + digits.slice(1);
+        else if(!digits.startsWith('94')) digits = '94' + digits;
+        return 'https://wa.me/' + digits;
+    }
+
+    function cpOpenWhatsApp(){
+        const href = cpPhoneWaHref(_cpCurrentPhone);
+        if(!href){ showToast('No phone number on file', 'error'); return; }
+        window.open(href, '_blank');
+    }
+
+    function cpOpenCall(){
+        if(!_cpCurrentPhone){ showToast('No phone number on file', 'error'); return; }
+        window.location.href = cpPhoneTelHref(_cpCurrentPhone);
+    }
+
+    window.cpOpenWhatsApp = cpOpenWhatsApp;
+    window.cpOpenCall = cpOpenCall;
+
     function cpPainNeedsToggle(text){
         const s = String(text || '');
         return s.length > 160 || (s.match(/\n/g) || []).length >= 2;
@@ -9415,6 +9440,7 @@
     }
     _cpCurrentBiz = bizName;
     const prospect = getProspects().find(function(p){ return normalizeBizName(p.name) === norm; });
+    _cpCurrentPhone = prospect ? (prospect.phone || '') : '';
     const calls = getCalls()
         .filter(function(c){ return normalizeBizName(c.biz) === norm && callVisibleToUser(c); })
         .sort(function(a,b){
@@ -9441,6 +9467,10 @@
         '<span class="cp-meta-chip">' + CP_IC.lead + esc(leads.length) + ' lead' + (leads.length !== 1 ? 's' : '') + '</span>' +
         '<span class="cp-meta-chip">' + CP_IC.rep + esc(assignedName) + '</span>';
     addedEl.textContent = 'Added ' + addedSub;
+    const callBtn = document.getElementById('cp-call-btn');
+    const waBtn = document.getElementById('cp-whatsapp-btn');
+    if(callBtn) callBtn.style.display = _cpCurrentPhone ? '' : 'none';
+    if(waBtn) waBtn.style.display = _cpCurrentPhone ? '' : 'none';
     if(favBtn){
         const isFav = isClientFavourite(bizName);
         favBtn.textContent = isFav ? '★' : '☆';
@@ -9565,6 +9595,16 @@
         if(nameBtn && nameBtn.dataset.biz != null){
         e.stopPropagation();
         openClientProfile(nameBtn.dataset.biz);
+        return;
+        }
+        const sidebarSearchResult = e.target.closest('.sidebar-search-result');
+        if(sidebarSearchResult && sidebarSearchResult.dataset.biz != null){
+        e.stopPropagation();
+        const inputEl = document.getElementById('sidebar-search-input');
+        const resultsEl = document.getElementById('sidebar-search-results');
+        if(inputEl) inputEl.value = '';
+        if(resultsEl){ resultsEl.classList.remove('open'); resultsEl.innerHTML=''; }
+        openClientProfile(sidebarSearchResult.dataset.biz);
         return;
         }
         const dashRecentRow = e.target.closest('.dash-recent-call-row');
