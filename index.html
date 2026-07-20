@@ -7194,7 +7194,7 @@
     var out = renderProspects();
     if(out && typeof out.catch === 'function') out.catch(function(e){ console.error(e); });
     }, 200);
-    var renderMyCallsDebounced = debounce(function(){ renderMyCalls(); }, 200);
+    var renderMyCallsDebounced = debounce(function(){ _myCallsRenderLimit = 50; renderMyCalls(); }, 200);
     var renderPipelineDebounced = debounce(function(){ renderPipeline(); }, 200);
     var tmRenderTableDebounced = debounce(function(){ tmRenderTable(); }, 200);
     var acApplyFiltersDebounced = debounce(function(){
@@ -8101,6 +8101,7 @@
     });
     _prospectStatusFilter = '';
     _prospectFavOnly = false;
+    _prospectRenderLimit = 30;
     updateProspectFiltersBadge();
     }
 
@@ -8184,7 +8185,10 @@
     }
 
     function goPage(id){
-    if(id === 'mycalls' && !_dashKeepMyCallsDateFilter) _myCallsDateFilter = '';
+    if(id === 'mycalls'){
+        if(!_dashKeepMyCallsDateFilter) _myCallsDateFilter = '';
+        _myCallsRenderLimit = 50;
+    }
     _dashKeepMyCallsDateFilter = false;
     try { localStorage.setItem('sos_last_page', id); } catch(_e){}
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -8659,11 +8663,50 @@
     }
     updateProspectFiltersBadge();
 
+    _lastFilteredProspects = ps;
+    _lastProspectActivityMap = activityMap;
+    _lastProspectFavBizSet = favBizSet;
+    if(_prospectLoadMoreObs){ _prospectLoadMoreObs.disconnect(); _prospectLoadMoreObs = null; }
+
     if(!ps.length){
         grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1;"><svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="19" stroke="#E5E7EB" stroke-width="2"/><path d="M14 20h12M20 14v12" stroke="#E5E7EB" stroke-width="2" stroke-linecap="round"/></svg>No prospects yet.</div>`;
         return;
     }
-    grid.innerHTML = ps.map(p=>{
+    const visiblePs = ps.slice(0, _prospectRenderLimit);
+    grid.innerHTML = visiblePs.map(p => _prospectCardHtml(p, activityMap, favBizSet)).join('');
+    _bindProspectPhoneBtns(grid);
+    _attachProspectLoadMoreSentinel(grid);
+    }
+
+    function _attachProspectLoadMoreSentinel(grid){
+        if(!grid || _lastFilteredProspects.length <= _prospectRenderLimit) return;
+        const sentinel = document.createElement('div');
+        sentinel.id = 'prospect-load-more-sentinel';
+        grid.appendChild(sentinel);
+        _prospectLoadMoreObs = new IntersectionObserver(_onProspectLoadMore, { root: null, rootMargin: '200px', threshold: 0 });
+        _prospectLoadMoreObs.observe(sentinel);
+    }
+
+    function _onProspectLoadMore(entries){
+        if(!entries.some(function(e){ return e.isIntersecting; })) return;
+        const grid = document.getElementById('prospect-grid');
+        if(!grid) return;
+        const prevLimit = _prospectRenderLimit;
+        _prospectRenderLimit += 30;
+        const nextBatch = _lastFilteredProspects.slice(prevLimit, _prospectRenderLimit);
+        const sEl = document.getElementById('prospect-load-more-sentinel');
+        if(sEl) sEl.remove();
+        if(_prospectLoadMoreObs){ _prospectLoadMoreObs.disconnect(); _prospectLoadMoreObs = null; }
+        if(!nextBatch.length) return;
+        const wrap = document.createElement('div');
+        wrap.innerHTML = nextBatch.map(p => _prospectCardHtml(p, _lastProspectActivityMap, _lastProspectFavBizSet)).join('');
+        const newNodes = Array.prototype.slice.call(wrap.children);
+        newNodes.forEach(function(node){ grid.appendChild(node); });
+        newNodes.forEach(function(node){ _bindProspectPhoneBtns(node); });
+        _attachProspectLoadMoreSentinel(grid);
+    }
+
+    function _prospectCardHtml(p, activityMap, favBizSet){
         const repCOOUid = p.assignedTo ? getRepCOO(p.assignedTo) : null;
         const repCOOName = repCOOUid && USERS[repCOOUid] ? ` (${USERS[repCOOUid].name})` : '';
         const repName = p.assignedTo ? userLabel(p.assignedTo) + repCOOName : '—';
@@ -8716,23 +8759,26 @@
             <button class="btn btn-cyan btn-sm" onclick='openCallModalForProspect("${escAttr(p.name)}")'>Log Call</button>
         </div>
         </div>`;
-    }).join('');
-    grid.querySelectorAll('.prospect-call-btn').forEach(btn => {
-        btn.addEventListener('click', function(e){
-            e.stopPropagation();
-            const href = cpPhoneTelHref(this.dataset.phone);
-            if(href === '#'){ showToast('No phone number on file', 'error'); return; }
-            window.location.href = href;
+    }
+
+    function _bindProspectPhoneBtns(root){
+        if(!root) return;
+        root.querySelectorAll('.prospect-call-btn').forEach(btn => {
+            btn.addEventListener('click', function(e){
+                e.stopPropagation();
+                const href = cpPhoneTelHref(this.dataset.phone);
+                if(href === '#'){ showToast('No phone number on file', 'error'); return; }
+                window.location.href = href;
+            });
         });
-    });
-    grid.querySelectorAll('.prospect-wa-btn').forEach(btn => {
-        btn.addEventListener('click', function(e){
-            e.stopPropagation();
-            const href = cpPhoneWaHref(this.dataset.phone);
-            if(!href){ showToast('No phone number on file', 'error'); return; }
-            window.open(href, '_blank');
+        root.querySelectorAll('.prospect-wa-btn').forEach(btn => {
+            btn.addEventListener('click', function(e){
+                e.stopPropagation();
+                const href = cpPhoneWaHref(this.dataset.phone);
+                if(!href){ showToast('No phone number on file', 'error'); return; }
+                window.open(href, '_blank');
+            });
         });
-    });
     }
 
     function canonicalCallOutcome(outcome){
@@ -9205,6 +9251,7 @@
     if(btn) btn.classList.add('active');
     const filterSel = document.getElementById('calls-filter');
     if(filterSel) filterSel.disabled = (tab === 'no-answer');
+    _myCallsRenderLimit = 50;
     renderMyCalls();
     }
 
@@ -9744,9 +9791,58 @@
 
     let _myCallsStatus = '';
     let _myCallsFavOnly = false;
-    function myCallsSetStatus(v){ _myCallsDateFilter = ''; _myCallsStatus = v; renderMyCalls(); }
-    function myCallsSetFavourites(){ _myCallsFavOnly = !_myCallsFavOnly; renderMyCalls(); }
+    let _myCallsRenderLimit = 50;
+    let _myCallsLoadMoreObs = null;
+    let _lastFilteredMyCalls = [];
+    let _lastMyCallsFavBizSet = null;
+    function myCallsSetStatus(v){ _myCallsDateFilter = ''; _myCallsStatus = v; _myCallsRenderLimit = 50; renderMyCalls(); }
+    function myCallsSetFavourites(){ _myCallsFavOnly = !_myCallsFavOnly; _myCallsRenderLimit = 50; renderMyCalls(); }
     function myCallsOnSearchInput(){ _myCallsDateFilter = ''; renderMyCallsDebounced(); }
+
+    function _myCallRowHtml(c, favBizSet){
+        const bizFav = favBizSet.has(normalizeBizName(c.biz));
+        return `
+        <tr>
+        <td><strong style="display:flex;align-items:center;gap:6px;"><button type="button" class="fav-star-btn" data-biz="${escAttr(c.biz)}" style="background:none;border:none;font-size:15px;cursor:pointer;padding:0;line-height:1;color:${bizFav?'var(--amber)':'var(--text-2)'};">${bizFav?'★':'☆'}</button><button type="button" class="biz-timeline-link biz-name-link" data-biz="${escAttr(c.biz)}" style="background:none;border:none;padding:0;font:inherit;font-weight:700;">${esc(c.biz)}</button></strong></td>
+        <td>${outcomeBadge(c.outcome)}</td>
+        <td>${fmt(c.date)}</td>
+        <td>${c.followup?fmt(c.followup):'—'}</td>
+        <td style="max-width:200px;color:var(--text-2);">${esc(c.notes||'—')}</td>
+        <td>
+            <div style="display:flex;gap:6px;">
+            <button class="btn btn-outline btn-sm" onclick='openModal("call-modal",${JSON.stringify(c)})'>Edit</button>
+            <button class="btn btn-sm" style="background:var(--red-light);color:var(--red);border:none;" onclick="deleteCall('${c.id}')">×</button>
+            </div>
+        </td>
+        </tr>`;
+    }
+
+    function _attachMyCallsLoadMoreSentinel(tbody){
+        if(!tbody || _lastFilteredMyCalls.length <= _myCallsRenderLimit) return;
+        const sentinel = document.createElement('tr');
+        sentinel.id = 'mycalls-load-more-sentinel';
+        sentinel.innerHTML = '<td colspan="6" style="padding:0;border:none;height:1px;line-height:0;"></td>';
+        tbody.appendChild(sentinel);
+        _myCallsLoadMoreObs = new IntersectionObserver(_onMyCallsLoadMore, { root: null, rootMargin: '200px', threshold: 0 });
+        _myCallsLoadMoreObs.observe(sentinel);
+    }
+
+    function _onMyCallsLoadMore(entries){
+        if(!entries.some(function(e){ return e.isIntersecting; })) return;
+        const tbody = document.getElementById('calls-tbody');
+        if(!tbody) return;
+        const prevLimit = _myCallsRenderLimit;
+        _myCallsRenderLimit += 50;
+        const nextBatch = _lastFilteredMyCalls.slice(prevLimit, _myCallsRenderLimit);
+        const sEl = document.getElementById('mycalls-load-more-sentinel');
+        if(sEl) sEl.remove();
+        if(_myCallsLoadMoreObs){ _myCallsLoadMoreObs.disconnect(); _myCallsLoadMoreObs = null; }
+        if(!nextBatch.length) return;
+        const wrap = document.createElement('tbody');
+        wrap.innerHTML = nextBatch.map(function(c){ return _myCallRowHtml(c, _lastMyCallsFavBizSet); }).join('');
+        while(wrap.firstChild) tbody.appendChild(wrap.firstChild);
+        _attachMyCallsLoadMoreSentinel(tbody);
+    }
 
     function renderMyCalls(){
     const tbody = document.getElementById('calls-tbody');
@@ -9787,27 +9883,17 @@
     if(_myCallsFavOnly) calls = calls.filter(c => favBizSet.has(normalizeBizName(c.biz)));
 
     calls.sort((a,b)=>b.date.localeCompare(a.date));
+    _lastFilteredMyCalls = calls;
+    _lastMyCallsFavBizSet = favBizSet;
+    if(_myCallsLoadMoreObs){ _myCallsLoadMoreObs.disconnect(); _myCallsLoadMoreObs = null; }
+
     if(!calls.length){
         tbody.innerHTML=`<tr><td colspan="6" class="empty-state">No calls logged yet.</td></tr>`;
         return;
     }
-    tbody.innerHTML = calls.map(c=>{
-        const bizFav = favBizSet.has(normalizeBizName(c.biz));
-        return `
-        <tr>
-        <td><strong style="display:flex;align-items:center;gap:6px;"><button type="button" class="fav-star-btn" data-biz="${escAttr(c.biz)}" style="background:none;border:none;font-size:15px;cursor:pointer;padding:0;line-height:1;color:${bizFav?'var(--amber)':'var(--text-2)'};">${bizFav?'★':'☆'}</button><button type="button" class="biz-timeline-link biz-name-link" data-biz="${escAttr(c.biz)}" style="background:none;border:none;padding:0;font:inherit;font-weight:700;">${esc(c.biz)}</button></strong></td>
-        <td>${outcomeBadge(c.outcome)}</td>
-        <td>${fmt(c.date)}</td>
-        <td>${c.followup?fmt(c.followup):'—'}</td>
-        <td style="max-width:200px;color:var(--text-2);">${esc(c.notes||'—')}</td>
-        <td>
-            <div style="display:flex;gap:6px;">
-            <button class="btn btn-outline btn-sm" onclick='openModal("call-modal",${JSON.stringify(c)})'>Edit</button>
-            <button class="btn btn-sm" style="background:var(--red-light);color:var(--red);border:none;" onclick="deleteCall('${c.id}')">×</button>
-            </div>
-        </td>
-        </tr>`;
-    }).join('');
+    const visibleCalls = calls.slice(0, _myCallsRenderLimit);
+    tbody.innerHTML = visibleCalls.map(function(c){ return _myCallRowHtml(c, favBizSet); }).join('');
+    _attachMyCallsLoadMoreSentinel(tbody);
     }
 
     // ════════════════════════════════════════
