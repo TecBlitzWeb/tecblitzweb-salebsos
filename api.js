@@ -340,11 +340,7 @@
   function buildIncrementalQuery(table, roleFilter, since){
     var q = "?select=*" + (roleFilter || "");
     if(!since) return q;
-    var enc = encodeURIComponent(since);
-    if(table === "calls"){
-      return q + "&or=(updated_at.gt." + enc + ",createdat.gt." + enc + ",created_at.gt." + enc + ")";
-    }
-    return q + "&or=(updated_at.gt." + enc + ",updatedAt.gt." + enc + ")";
+    return q + "&updated_at=gt." + encodeURIComponent(since);
   }
 
   async function fetchTableRows(table, currentUid, USERS, opts){
