@@ -8418,7 +8418,7 @@
         renderProspects();
         if(sbReady && sbClient){
         try {
-            const { error } = await sbClient.from('prospects').delete(id);
+            const { error } = await sbClient.from('prospects').delete().eq('id', String(id));
             if(error){
             console.error('Cloud delete error:', error);
             ls('prospects', prevProspects);
@@ -8700,7 +8700,7 @@
       : `<span class="badge badge-gray" style="font-size:11px;opacity:0.7;">New · no calls</span>`}
             <span class="info-row" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">${phoneEntriesHtml}</span>
             <button class="btn btn-outline btn-sm" style="margin-left:auto;" onclick='openProspectHistory("${esc(p.name).replace(/"/g,"&quot;")}")'>History</button>
-            <button class="btn btn-cyan btn-sm" onclick='openCallModalForProspect("${p.name}")'>Log Call</button>
+            <button class="btn btn-cyan btn-sm" onclick='openCallModalForProspect("${escAttr(p.name)}")'>Log Call</button>
         </div>
         </div>`;
     }).join('');
@@ -8833,8 +8833,11 @@
     }
 
     function openCallModalForProspect(biz){
+    var ta = document.createElement('textarea');
+    ta.innerHTML = biz;
+    var decoded = ta.value;
     openModal('call-modal');
-    document.getElementById('c-biz').value=biz;
+    document.getElementById('c-biz').value = decoded;
     }
 
     // ════════════════════════════════════════
@@ -8910,6 +8913,7 @@
         duration: parseInt(c.duration, 10) || 0,
         followup: c.followup || null,
         notes: c.notes || '',
+        leadDiscarded: c.lead_discarded === true,
         createdAt: c.createdat || c.createdAt || new Date().toISOString()
     };
     }
@@ -9109,8 +9113,8 @@
     }
     showToast(id?'Call updated':'Call logged','success');
     }
-    function deleteCall(id){
-    showConfirm('Delete this call log?', function(){
+    async function deleteCall(id){
+    showConfirm('Delete this call log?', async function(){
         const calls = getCalls();
         const target = calls.find(c => c.id === id);
         if(!target){ showToast('Call not found','error'); return; }
@@ -9118,12 +9122,34 @@
         showToast('You can only delete your own call logs','error');
         return;
         }
+        const prevCalls = calls;
         ls('calls', calls.filter(c=>c.id!==id));
         if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache('calls');
         renderMyCalls();
         renderDashboard();
         const prospectsPage = document.getElementById('page-prospects');
         if(prospectsPage && prospectsPage.classList.contains('active')) renderProspects();
+
+        if(sbReady && sbClient){
+        try {
+            const { error } = await sbClient.from('calls').delete().eq('id', String(id));
+            if(error){
+            console.error('Cloud delete error:', error);
+            ls('calls', prevCalls);
+            renderMyCalls();
+            renderDashboard();
+            showToast('Cloud delete failed — restored locally', 'error');
+            return;
+            }
+        } catch(e){
+            console.error('Cloud delete exception:', e);
+            ls('calls', prevCalls);
+            renderMyCalls();
+            renderDashboard();
+            showToast('Cloud delete failed — restored locally', 'error');
+            return;
+        }
+        }
         showToast('Call deleted');
     });
     }
@@ -12962,6 +12988,7 @@
         rep:             canonicalRepKey(r.rep || r.assignedto || r.assigned_to || ''),
         callDate:        r.callDate        || r.call_date      || '',
         callNotes:       r.callNotes       || r.call_notes     || '',
+        sourceCallId:    r.sourceCallId    || r.source_call_id || null,
         phone:           r.phone           || '',
         pkg:             r.pkg             || '',
         bizType:         r.bizType         || r.biz_type       || '',
@@ -12986,6 +13013,7 @@
         rep: canonicalRepKey(l.rep) || l.rep || '',
         callDate: l.callDate,
         callNotes: l.callNotes || '',
+        sourceCallId: l.sourceCallId || null,
         phone: l.phone || '',
         pkg: l.pkg || '',
         bizType: l.bizType || '',
@@ -13051,6 +13079,7 @@
         rep: repKey,
         callDate: callObj.date,
         callNotes: callObj.notes || '',
+        sourceCallId: callObj.id || null,
         phone: matchedProspect?.phone || '',
         pkg: matchedProspect?.pkg || '',
         bizType: matchedProspect?.type || '',
@@ -13075,7 +13104,7 @@
     // Repair: find Interested calls that never made it into the pipeline and add them
     function pipelineRepairMissing(){
     const calls = getCalls();
-    const interestedCalls = calls.filter(c => c.outcome === 'Interested' && c.biz && c.biz.trim());
+    const interestedCalls = calls.filter(c => c.outcome === 'Interested' && c.biz && c.biz.trim() && !c.leadDiscarded);
     if(!interestedCalls.length) return;
     const leads = getLeads();
     let added = 0;
@@ -13113,7 +13142,7 @@
         for(const c of invalid){
         if(!c.id) continue;
         try {
-            const { error } = await sbClient.from('calls').delete(c.id);
+            const { error } = await sbClient.from('calls').delete().eq('id', String(c.id));
             if(error) console.error('❌ Cloud delete failed for call', c.id, error.message);
             else console.log('✓ Deleted invalid call from cloud:', c.id);
         } catch(e){ console.error('Cloud delete exception:', e); }
@@ -13592,10 +13621,64 @@
     }
 
     function pipelineDiscard(leadId){
-    showConfirm('Remove this lead from the pipeline?', function(){
-        const leads = getLeads().filter(l => l.id !== leadId);
-        saveLeads(leads);
+    showConfirm('Remove this lead from the pipeline?', async function(){
+        const prevLeads = getLeads();
+        const lead = prevLeads.find(l => l.id === leadId);
+        const leads = prevLeads.filter(l => l.id !== leadId);
+        ls('interested_leads', leads);
+        if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache('interested_leads');
         renderPipeline();
+
+        if(lead){
+        const calls = getCalls();
+        let matchedIdxs = [];
+        if(lead.sourceCallId){
+            const idx = calls.findIndex(c => String(c.id) === String(lead.sourceCallId));
+            if(idx !== -1) matchedIdxs.push(idx);
+        }
+        if(matchedIdxs.length === 0){
+            calls.forEach(function(c, i){
+            if(c.outcome === 'Interested' &&
+                normalizeBizName(c.biz) === normalizeBizName(lead.biz) &&
+                canonicalRepKey(c.rep) === canonicalRepKey(lead.rep) &&
+                c.date === lead.callDate){
+                matchedIdxs.push(i);
+            }
+            });
+        }
+        if(matchedIdxs.length === 0){
+            console.warn('pipelineDiscard: no source call found to flag for', lead.biz, '- may be recreated by pipeline repair');
+        } else {
+            matchedIdxs.forEach(function(i){ calls[i] = {...calls[i], leadDiscarded: true}; });
+            ls('calls', calls);
+            if(sbReady && sbClient){
+            for(const i of matchedIdxs){
+                try {
+                await sbClient.from('calls').update({ lead_discarded: true }).eq('id', String(calls[i].id));
+                } catch(e){ console.error('Failed to flag call as lead-discarded:', e); }
+            }
+            }
+        }
+        }
+
+        if(sbReady && sbClient){
+        try {
+            const { error } = await sbClient.from('interested_leads').delete().eq('id', String(leadId));
+            if(error){
+            console.error('Cloud delete error (lead):', error);
+            ls('interested_leads', prevLeads);
+            renderPipeline();
+            showToast('Cloud delete failed — restored locally', 'error');
+            return;
+            }
+        } catch(e){
+            console.error('Cloud delete exception (lead):', e);
+            ls('interested_leads', prevLeads);
+            renderPipeline();
+            showToast('Cloud delete failed — restored locally', 'error');
+            return;
+        }
+        }
         showToast('Lead removed','success');
     }, { icon:'del', confirmLabel:'Remove', confirmClass:'btn-red' });
     }
