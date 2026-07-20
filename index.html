@@ -7876,6 +7876,7 @@
     // AUTO-RELOAD ON PAGE FOCUS (debounced — prevents spam on rapid tab switching)
     var _focusSyncTimer = null;
     var _focusSyncRunning = false;
+    let _lastFocusSyncAt = 0;
     window.addEventListener('focus', function(){
     if(!currentUser) return;
     clearTimeout(_focusSyncTimer);
@@ -7887,12 +7888,13 @@
     });
     async function _doFocusSync(){
     if(!currentUser) return;
+    if(Date.now() - _lastFocusSyncAt < 60000) return;
     if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function') APP_API.invalidateRoleTableCache();
     if(window.APP_API && typeof APP_API.syncAllTablesBackground === 'function'){
         await APP_API.syncAllTablesBackground(currentUser, USERS, {
-        force: true,
         onSynced: function(table, applied){ handleTableSynced(table, applied); }
         });
+        _lastFocusSyncAt = Date.now();
         return;
     }
     const cloudProspects = await loadFromCloud('prospects');
@@ -7957,6 +7959,7 @@
         }
     } catch(e){}
     // closed_deals skipped — table not yet created in Supabase
+    _lastFocusSyncAt = Date.now();
     }
 
     // ════════════════════════════════════════
