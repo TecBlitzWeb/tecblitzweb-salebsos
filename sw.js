@@ -1,4 +1,4 @@
-const CACHE = 'tecblitzweb-sos-v1';
+const CACHE = 'tecblitzweb-sos-v2';
 const ASSETS = [
   '/',
   '/index.html',
