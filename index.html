@@ -1861,6 +1861,11 @@
         }
     }
 
+    @media (max-width: 640px) {
+        .modal-overlay.open { align-items: flex-start; }
+        .modal { max-height: 100dvh; }
+    }
+
     /* ── Extra small — ≤400px (iPhone 12 Pro 390px, SE) ── */
     @media(max-width:400px){
         :root{--bottom-nav-h:58px;}
@@ -6774,7 +6779,7 @@
         <div class="field"><label>Call Time *</label><input type="time" id="c-time" required></div>
         </div>
         <div class="form-row">
-        <div class="field"><label>Duration (minutes) *</label><input type="number" id="c-duration" placeholder="e.g. 15" min="1" max="999" required></div>
+        <div class="field"><label>Duration (minutes)</label><input type="number" id="c-duration" placeholder="e.g. 15" min="1" max="999"></div>
         <div class="field"><label>Follow-up Date</label><input type="date" id="c-followup"></div>
         </div>
         <div class="form-row single">
@@ -9005,15 +9010,19 @@
     const stampTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
     let date = document.getElementById('c-date').value;
     let time = document.getElementById('c-time').value;
-    const duration = document.getElementById('c-duration').value;
+    const durationRaw = document.getElementById('c-duration').value;
     const followup = document.getElementById('c-followup').value||null;
     const notes = document.getElementById('c-notes').value.trim();
     
     // Validation
     if(!biz){ showToast('Business name is required','error'); return; }
     if(!outcome){ showToast('Outcome is required','error'); return; }
-    if(!duration){ showToast('Duration is required','error'); return; }
-    if(duration < 1 || duration > 999){ showToast('Duration must be 1-999 minutes','error'); return; }
+    let duration = 0;
+    if(durationRaw && String(durationRaw).trim() !== ''){
+        const parsed = parseInt(durationRaw, 10);
+        duration = Number.isNaN(parsed) ? 0 : parsed;
+    }
+    if(duration < 0 || duration > 999){ showToast('Duration must be 0-999 minutes','error'); return; }
     if(notes.length > 2000){ showToast('Notes cannot exceed 2000 characters','error'); return; }
     if(!id){
         date = stampDate;
@@ -9040,7 +9049,7 @@
         outcome: outcome,
         date: date,
         time: time,
-        duration: parseInt(duration, 10),
+        duration: duration,
         followup: followup,
         notes: notes,
         createdAt: createdAtIso
