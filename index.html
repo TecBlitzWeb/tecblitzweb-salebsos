@@ -8049,6 +8049,11 @@
     setCurrentUserKey(null);
     sessionStorage.removeItem('sos_user');
     sessionStorage.removeItem('sos_user_data');
+    try{ indexedDB.deleteDatabase('salesOS'); }catch(_e){}
+    if(window.APP_API && typeof APP_API.invalidateRoleTableCache === 'function'){
+        APP_API.invalidateRoleTableCache();
+    }
+    setTimeout(function(){ location.reload(); }, 60);
     const emailInput = document.getElementById('emailInput');
     const passwordInput = document.getElementById('passwordInput');
     if(emailInput) emailInput.value = '';
@@ -8348,7 +8353,18 @@
         document.getElementById('p-type').value=data.type;
         document.getElementById('p-area').value=data.area;
         document.getElementById('p-phone').value=data.phone;
-        document.getElementById('p-assign').value=data.assignedTo;
+        (function(){
+            var sel = document.getElementById('p-assign');
+            var want = data.assignedTo || '';
+            sel.value = want;
+            if(want && sel.value !== want){
+                var o = document.createElement('option');
+                o.value = want; o.textContent = want + ' (legacy)';
+                sel.appendChild(o);
+                sel.value = want;
+                console.warn('p-assign: no option for', want, '— added legacy option');
+            }
+        })();
         document.getElementById('p-pkg').value=data.pkg;
         document.getElementById('p-pain').value=data.pain;
         document.getElementById('p-script').value=data.script;
@@ -8399,7 +8415,7 @@
         pkg: obj.pkg,
         pain: obj.pain,
         script: obj.script,
-        favourite: existing ? !!existing.favourite : false,
+        favourite: existing ? !!existing.favourite : (id ? undefined : false),
         createdAt: obj.createdAt,
         updatedAt: new Date().toISOString()
         };
@@ -8909,11 +8925,23 @@
     if(rep == null || rep === '') return '';
     var s = String(rep).trim();
     if(typeof USERS !== 'undefined' && USERS[s]) return s;
-    var lower = s.toLowerCase();
-    for(var k in USERS){
-        if(!USERS[k]) continue;
-        if(String(k).toLowerCase() === lower) return k;
-        if(USERS[k].name && String(USERS[k].name).toLowerCase() === lower) return k;
+    function matchUsers(v){
+        var lower = String(v).toLowerCase();
+        for(var k in USERS){
+            if(!USERS[k]) continue;
+            if(String(k).toLowerCase() === lower) return k;
+            if(USERS[k].name && String(USERS[k].name).toLowerCase() === lower) return k;
+        }
+        return null;
+    }
+    var hit = matchUsers(s);
+    if(hit) return hit;
+    var stripped = s.replace(/\d+$/, '').trim();
+    if(stripped && stripped !== s){
+        if(typeof USERS !== 'undefined' && USERS[stripped]) return stripped;
+        hit = matchUsers(stripped);
+        if(hit) return hit;
+        return stripped;
     }
     return s;
     }

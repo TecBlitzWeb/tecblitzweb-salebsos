@@ -241,22 +241,27 @@
     if(isDirectorCEO(currentUid, USERS)) return true;
     var key = getAssignedKey(record, assignField);
     var assignId = getRepIdForKey(key, USERS) || ( /^\d+$/.test(key) ? parseInt(key, 10) : null );
-    if(!key && assignField === 'assignedTo') return true;
-    if(isScopedManager(currentUid, USERS)){
-      var owned = getOwnedRepIds(currentUid, USERS);
-      if(!owned.length) return true; // No owned reps → see ALL (same as CEO)
-      if(assignId != null) return owned.indexOf(assignId) !== -1;
-      var mine = repTokensForUser(currentUid, USERS);
-      for(var j = 0; j < mine.length; j++){
-        if(assignKeysEqual(key, mine[j])) return true;
-      }
-      return false;
-    }
     var selfId = getRepIdForKey(currentUid, USERS);
-    if(assignId != null && selfId != null) return assignId === selfId;
     var mine = repTokensForUser(currentUid, USERS);
+
+    // Always allow my own rows, by id or by name/key token.
+    if(assignId != null && selfId != null && assignId === selfId) return true;
     for(var i = 0; i < mine.length; i++){
       if(assignKeysEqual(key, mine[i])) return true;
+    }
+
+    // Unassigned rows: management only. Never fan out to reps.
+    if(!key) return isScopedManager(currentUid, USERS);
+
+    if(isScopedManager(currentUid, USERS)){
+      var owned = getOwnedRepIds(currentUid, USERS);
+      if(!owned.length) return false; // fail CLOSED, not open
+      if(assignId != null) return owned.indexOf(assignId) !== -1;
+      for(var j = 0; j < owned.length; j++){
+        var ou = getUser(owned[j], USERS) || (USERS || {})[owned[j]];
+        if(ou && ou.name && assignKeysEqual(key, ou.name)) return true;
+      }
+      return false;
     }
     return false;
   }

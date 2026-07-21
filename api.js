@@ -582,7 +582,7 @@
     if(!cfg.SUPABASE_URL) return { data: [], error: { message: "Missing SUPABASE_URL" } };
     var pending = fetchTableRows(table, currentUid, USERS, opts).then(async function(res){
       if(!res.error){
-        _roleTableCache[cacheKey] = { data: res.data, error: null };
+        if(res.data && res.data.length) _roleTableCache[cacheKey] = { data: res.data, error: null };
         if(res.data && res.data.length){
           await applySyncedRows(table, res.data, { incremental: res.incremental });
         }
