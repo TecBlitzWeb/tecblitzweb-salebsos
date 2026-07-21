@@ -236,6 +236,7 @@
     var u = getUser(currentUid, USERS);
     if(!u) return "";
     if(isDirectorCEO(currentUid, USERS) || u.role === "CEO") return "";
+    if(isCoCEO(currentUid, USERS)) return ""; // Co-CEO: unfiltered read
     if(isCoCEO(currentUid, USERS) || isCOORole(currentUid, USERS)){
       // assignedto/rep columns store NAMES, but owned_reps are bigint IDs — a server-side
       // IN(ids) filter can never match. Fetch all rows and let canSeeAssignedRecord()

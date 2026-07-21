@@ -202,7 +202,7 @@
   }
 
   function getVisibleRepUIDs(currentUid, USERS){
-    if(isDirectorCEO(currentUid, USERS)) return getSalesRepUids(USERS);
+    if(isDirectorCEO(currentUid, USERS) || isCoCEO(currentUid, USERS)) return getSalesRepUids(USERS);
     if(isScopedManager(currentUid, USERS)) return getOwnedRepUIDs(currentUid, USERS);
     return [canon(currentUid)];
   }
@@ -239,6 +239,7 @@
   function canSeeAssignedRecord(record, currentUid, USERS, assignField){
     if(!currentUid || !record) return false;
     if(isDirectorCEO(currentUid, USERS)) return true;
+    if(isCoCEO(currentUid, USERS)) return true; // Co-CEO: full read scope
     var key = getAssignedKey(record, assignField);
     var assignId = getRepIdForKey(key, USERS) || ( /^\d+$/.test(key) ? parseInt(key, 10) : null );
     var selfId = getRepIdForKey(currentUid, USERS);
