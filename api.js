@@ -760,7 +760,9 @@
             return safeFetch(base, { method: "POST", headers: headers, body: JSON.stringify(body) });
           },
           insert: function(rows){
-            return this.upsert(rows);
+            var body = Array.isArray(rows) ? rows : [rows];
+            var headers = Object.assign({}, getBaseHeaders(), { "Prefer": "return=representation" });
+            return safeFetch(base, { method: "POST", headers: headers, body: JSON.stringify(body) });
           },
           update: function(patch){
             var body = patch || {};
@@ -793,6 +795,13 @@
             };
           }
         };
+      },
+      rpc: function(fn, args){
+        var cfg = getConfig();
+        return safeFetch(
+          (cfg.SUPABASE_URL || "") + "/rest/v1/rpc/" + encodeURIComponent(fn),
+          { method: "POST", headers: getBaseHeaders(), body: JSON.stringify(args || {}) }
+        );
       }
     };
   }

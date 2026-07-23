@@ -79,6 +79,7 @@
     window.supabase = {
       createClient: function(){ return client; },
       from: function(table){ return client.from(table); },
+      rpc: function(fn, args){ return client.rpc(fn, args); },
       auth: authClient ? authClient.auth : null
     };
   }
@@ -106,6 +107,7 @@
     window.supabase = {
       createClient: function(){ return client; },
       from: function(table){ return client.from(table); },
+      rpc: function(fn, args){ return client.rpc(fn, args); },
       auth: null
     };
   });

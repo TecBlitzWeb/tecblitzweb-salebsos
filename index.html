@@ -13339,15 +13339,17 @@
     async function fetchAnnouncements(){
     if(!sbReady || !sbClient) return _announcements;
     try {
-        const res = await sbClient.from('announcements').select('*').order('created_at', { ascending: false });
+        const res = await sbClient.from('announcements').select('*', { filter: '&order=created_at.desc' });
         if(res.error){ console.warn('announcements fetch:', res.error.message); return _announcements; }
         _announcements = res.data || [];
         try {
-        const namesRes = await sbClient.rpc('announcement_author_names');
-        if(namesRes && !namesRes.error && Array.isArray(namesRes.data)){
-            const map = {};
-            namesRes.data.forEach(function(r){ if(r && r.auth_user_id) map[r.auth_user_id] = r.name || ''; });
-            _announceAuthorNames = map;
+        if(typeof sbClient.rpc === 'function'){
+            const namesRes = await sbClient.rpc('announcement_author_names');
+            if(namesRes && !namesRes.error && Array.isArray(namesRes.data)){
+                const map = {};
+                namesRes.data.forEach(function(r){ if(r && r.auth_user_id) map[r.auth_user_id] = r.name || ''; });
+                _announceAuthorNames = map;
+            }
         }
         } catch(e){ console.warn('announcement authors', e); }
         return _announcements;
