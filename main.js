@@ -361,7 +361,7 @@
       : [];
     users[key] = applyUserTier({
       name: displayName,
-      role: row.role || "Sales",
+      role: String(row.role || "").trim() || "Sales",
       email: row.email || "",
       owned_reps: owned,
       supabaseId: rowId != null && isFinite(rowId) ? rowId : null,

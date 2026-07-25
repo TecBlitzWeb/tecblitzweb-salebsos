@@ -6530,6 +6530,13 @@
             <p style="font-size:12px;color:var(--text-2);margin-top:10px;">This will clear the selected rep's PIN. They will be prompted to set a new one on next login.</p>
             </div>
 
+            <!-- DIRECTOR CEO ONLY: Reset local offline cache (IndexedDB escape hatch) -->
+            <div class="card director-ceo-only" id="ceo-reset-cache-card" style="margin-bottom:20px;display:none;">
+            <div class="section-head" style="margin-bottom:12px;"><h3>Reset Local Cache <span class="badge badge-purple" style="font-size:10px;">CEO Only</span></h3></div>
+            <p style="font-size:12px;color:var(--text-2);margin-bottom:14px;">Deletes this device's offline database (IndexedDB) and reloads the app so all data re-syncs fresh from the server. Use only if data appears stuck or out of date.</p>
+            <button class="btn btn-red btn-sm" id="ceo-reset-cache-btn" onclick="if(window.APP_API&&APP_API.resetLocalCache){APP_API.resetLocalCache();}">Reset Local Cache &amp; Reload</button>
+            </div>
+
             <!-- ══ TEAM MANAGEMENT — CEO ONLY ══ -->
             <div class="team-mgmt-section ceo-only" style="margin-bottom:20px;">
             <div class="tm-inner">
@@ -7229,7 +7236,7 @@
     if(!key) return '';
     var displayName = (r.name && String(r.name).trim()) ? String(r.name).trim() : key;
     var rowId = (r.id != null && window.APP_API) ? APP_API.toBigintId(r.id) : (r.id != null ? parseInt(r.id, 10) : null);
-    var role = r.role || 'Sales';
+    var role = String(r.role || '').trim() || 'Sales';
     USERS[key] = {
         name: displayName,
         role: role,
@@ -12187,7 +12194,7 @@
         const override = getTMRepData(uid) || {};
         all[uid] = {
         name: override.name && override.name.trim() ? override.name : builtin.name,
-        role: override.role && override.role.trim() ? override.role : builtin.role,
+        role: override.role && override.role.trim() ? override.role.trim() : builtin.role,
         tier: override.tier || builtin.tier,
         email: override.email || '',
         phone: override.phone || '',
@@ -12202,7 +12209,7 @@
         const override = getTMRepData(uid) || {};
         all[uid] = {
         name: override.name && override.name.trim() ? override.name : data.name,
-        role: override.role && override.role.trim() ? override.role : data.role,
+        role: override.role && override.role.trim() ? override.role.trim() : data.role,
         tier: override.tier || data.tier,
         email: override.email !== undefined ? override.email : (data.email || ''),
         phone: override.phone !== undefined ? override.phone : (data.phone || ''),
