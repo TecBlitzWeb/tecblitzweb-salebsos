@@ -36,9 +36,12 @@
       if(ref && typeof localStorage !== "undefined"){
         var raw = localStorage.getItem("sb-" + ref + "-auth-token");
         if(raw){
+          if(raw.indexOf("base64-") === 0){
+            try{ raw = atob(raw.slice(7)); }catch(_b){}
+          }
           var j = JSON.parse(raw);
           var t = j && (j.access_token || (j.currentSession && j.currentSession.access_token));
-          if(t) return t;
+          if(t){ window.APP_ACCESS_TOKEN = t; return t; }
         }
       }
     }catch(_e2){}
