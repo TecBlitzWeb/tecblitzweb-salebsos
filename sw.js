@@ -1,4 +1,4 @@
-const CACHE = 'tecblitzweb-sos-v4';
+const CACHE = 'tecblitzweb-sos-v5';
 const ASSETS = [
   '/',
   '/index.html',
@@ -95,7 +95,9 @@ self.addEventListener('fetch', e => {
             }
             return res;
           });
-        return cached || networkFetch;
+        return networkFetch.catch(function () {
+          return cached || new Response('', { status: 504, statusText: 'Offline' });
+        });
       })
     );
     return;
