@@ -247,6 +247,7 @@
   }
 
   var SYNC_TABLES = ["jobs", "prospects", "calls", "interested_leads", "closed_deals"];
+  var SYNC_VERSION = 2;
   var PAGE_TABLE_MAP = {
     dashboard: ["calls", "interested_leads", "prospects"],
     prospects: ["prospects"],
@@ -359,13 +360,18 @@
     var needFullReload = false;
     if(res.error && since){
       needFullReload = true;
-    } else if(since && Array.isArray(res.data) && res.data.length === 0 && store){
-      // Incremental fetch found nothing. If the local cache is also empty the
-      // stored watermark is stale/poisoned, so recover with a full fetch.
-      try{
-        var cached = await store.getAll(table);
-        if(!cached || cached.length === 0) needFullReload = true;
-      }catch(_e){ needFullReload = true; }
+    } else if(since && Array.isArray(res.data) && res.data.length === 0){
+      var mem = readMemoryTable(table);
+      var memCount = (table === "jobs") ? Object.keys(mem || {}).length
+                                        : (Array.isArray(mem) ? mem.length : 0);
+      if(memCount === 0){
+        var cached = [];
+        if(store){ try { cached = await store.getAll(table) || []; } catch(_e){ cached = []; } }
+        if(cached.length){
+          return { data: cached, error: null, incremental: false };
+        }
+        needFullReload = true;
+      }
     }
     if(needFullReload){
       var full = await safeFetch(tableUrl(table, "?select=*" + roleFilter), { headers: getBaseHeaders() });
@@ -378,6 +384,11 @@
     var store = getLocalStore();
     if(!store) return false;
     await store.init();
+    var storedVer = await store.getMeta("__sync_version");
+    if(String(storedVer) !== String(SYNC_VERSION)){
+      for(var v = 0; v < SYNC_TABLES.length; v++){ await store.setMeta(SYNC_TABLES[v], null); }
+      await store.setMeta("__sync_version", SYNC_VERSION);
+    }
     for(var i = 0; i < SYNC_TABLES.length; i++){
       var table = SYNC_TABLES[i];
       if(table === "jobs"){
@@ -423,7 +434,13 @@
       var idbRows = table === "jobs" ? Object.keys(merged).map(function(k){ return merged[k]; }) : merged;
       await store.patchRows(table, normalized);
       if(!opts.incremental) await store.persistFromMemory(lsKeyForTable(table), merged);
-      await store.setMeta(table, new Date().toISOString());
+      var maxTs = 0;
+      normalized.forEach(function(r){ maxTs = Math.max(maxTs, rowUpdatedMillis(r)); });
+      if(maxTs > 0){
+        var prevWm = await store.getMeta(table);
+        var prevMs = prevWm ? Date.parse(prevWm) : 0;
+        if(maxTs > prevMs) await store.setMeta(table, new Date(maxTs).toISOString());
+      }
     }
     return { merged: merged, changed: changed };
   }
