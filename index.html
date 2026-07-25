@@ -1849,10 +1849,13 @@
         }
         .page{overflow-x:hidden;}
         .card,.prospect-card,.followup-card{padding:18px 16px;}
-        .info-row,.prospect-footer,.prospect-pain,.prospect-rep,.user-name,.page-header h2{
+        .prospect-footer,.prospect-pain,.prospect-rep,.user-name,.page-header h2{
         overflow-wrap:anywhere;
         word-break:break-word;
         }
+        .info-row{overflow-x:hidden;}
+        .prospect-phone-entry{max-width:100%;}
+        .prospect-phone-entry span{white-space:nowrap;}
         body.light .sidebar-bottom .logout-btn.mobile-sign-out,
         body.light .sidebar-bottom #mobile-sign-out-btn{
         color:#ef4444 !important;
@@ -1890,7 +1893,7 @@
 
     /* ── Tablet / large phone — 391px–768px (iPhone 14, etc.) ── */
     @media (min-width: 391px) and (max-width: 768px) {
-        .main-content{padding:16px 14px;padding-top:70px;}
+        .main-content{padding-left:14px;padding-right:14px;padding-top:70px;padding-bottom:calc(20px + var(--bottom-nav-h) + env(safe-area-inset-bottom,0px));}
         .stat-grid{gap:14px;}
     }
 
@@ -3498,6 +3501,22 @@
         letter-spacing: 0.01em;
         overflow-wrap: anywhere;
         word-break: break-word;
+    }
+
+    #page-prospects .prospect-card .info-row {
+        overflow-x: hidden;
+    }
+
+    #page-prospects .prospect-card .info-row .prospect-phone-entry {
+        max-width: 100%;
+        overflow-wrap: normal;
+        word-break: normal;
+    }
+
+    #page-prospects .prospect-card .info-row .prospect-phone-entry span {
+        white-space: nowrap;
+        overflow-wrap: normal;
+        word-break: normal;
     }
 
     /* Culprit: phone/Log Call row — inline flex row + .info-row (global display:flex, min-width:auto) */
@@ -7700,14 +7719,29 @@
 
     function ls(key, val){
     if(val===undefined) { try{ return JSON.parse(localStorage.getItem(key)); }catch(e){ return null; } }
-    try { localStorage.setItem(key, JSON.stringify(val)); }
-    catch(e){ console.error('localStorage write failed for', key, e); return false; }
+    var _lsOk = true;
+    try {
+        localStorage.setItem(key, JSON.stringify(val));
+    } catch(e){
+        if(e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014)){
+        try {
+            localStorage.clear();
+            localStorage.setItem(key, JSON.stringify(val));
+        } catch(e2){
+            console.warn('localStorage write failed after quota clear for', key, e2);
+            _lsOk = false;
+        }
+        } else {
+        console.warn('localStorage write failed for', key, e);
+        _lsOk = false;
+        }
+    }
     if(DATA_LS_KEYS.has(key) && window.LOCAL_STORE){
         LOCAL_STORE.persistFromMemory(key, val).catch(function(err){
         console.warn('IndexedDB persist failed for', key, err);
         });
     }
-    return true;
+    return _lsOk;
     }
 
     function getData(key, def){ return ls(key) || def; }
@@ -10456,7 +10490,7 @@
         wrap.style.display = '';
         wrap.innerHTML =
             '<div class="section-head" style="margin-top:24px;"><h3>Rep Accountability</h3></div>' +
-            '<ul style="list-style:none;margin:0;padding:0;">' +
+            '<ul style="list-style:none;margin:0;padding:0 0 12px 0;">' +
             rows.map(function(r){
                 return '<li class="dash-rep-balance-row" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-subtle, var(--border));font-size:14px;">' +
                     '<span style="color:var(--color-text-primary, var(--text));font-weight:500;">' + esc(r.label) + '</span>' +
