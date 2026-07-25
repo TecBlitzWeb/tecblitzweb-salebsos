@@ -356,7 +356,18 @@
     }
     var query = buildIncrementalQuery(table, roleFilter, since);
     var res = await safeFetch(tableUrl(table, query), { headers: getBaseHeaders() });
+    var needFullReload = false;
     if(res.error && since){
+      needFullReload = true;
+    } else if(since && Array.isArray(res.data) && res.data.length === 0 && store){
+      // Incremental fetch found nothing. If the local cache is also empty the
+      // stored watermark is stale/poisoned, so recover with a full fetch.
+      try{
+        var cached = await store.getAll(table);
+        if(!cached || cached.length === 0) needFullReload = true;
+      }catch(_e){ needFullReload = true; }
+    }
+    if(needFullReload){
       var full = await safeFetch(tableUrl(table, "?select=*" + roleFilter), { headers: getBaseHeaders() });
       return { data: full.data || [], error: full.error, incremental: false };
     }
