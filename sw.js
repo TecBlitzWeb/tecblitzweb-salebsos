@@ -1,4 +1,4 @@
-const CACHE = 'tecblitzweb-sos-v3';
+const CACHE = 'tecblitzweb-sos-v4';
 const ASSETS = [
   '/',
   '/index.html',
@@ -9,6 +9,14 @@ const ASSETS = [
 ];
 const NETWORK_TIMEOUT_MS = 4000;
 const STATIC_ASSETS = ['/main.js', '/api.js', '/local-store.js', '/config.js'];
+
+function isSameOrigin(request) {
+  try {
+    return new URL(request.url).origin === self.location.origin;
+  } catch (_e) {
+    return false;
+  }
+}
 
 function isHtmlRequest(request) {
   if (request.mode === 'navigate') return true;
@@ -60,6 +68,8 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+
+  if (!isSameOrigin(e.request)) return;
 
   if (isHtmlRequest(e.request)) {
     e.respondWith(
