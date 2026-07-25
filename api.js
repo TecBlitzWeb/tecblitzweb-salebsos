@@ -77,7 +77,11 @@
       var payload = null;
       try { payload = text ? JSON.parse(text) : null; } catch(e){ payload = text; }
       if(!res.ok){
-        return { data: null, error: payload || { message: "Request failed", status: res.status } };
+        var errObj = (payload && typeof payload === "object" && !Array.isArray(payload))
+          ? payload
+          : { message: (typeof payload === "string" && payload) ? payload : "Request failed" };
+        errObj.status = res.status;
+        return { data: null, error: errObj };
       }
       return { data: payload, error: null };
     } catch(err){
@@ -249,7 +253,7 @@
     return buildSalesRepAssigneeFilter(col, currentUid, USERS);
   }
 
-  var SYNC_TABLES = ["jobs", "prospects", "calls", "interested_leads", "closed_deals"];
+  var SYNC_TABLES = ["jobs", "prospects", "calls", "interested_leads"];
   var SYNC_VERSION = 2;
   var PAGE_TABLE_MAP = {
     dashboard: ["calls", "interested_leads", "prospects"],
@@ -260,7 +264,7 @@
     followups: ["calls", "interested_leads"],
     allcalls: ["calls"],
     performance: ["calls"],
-    revenue: ["calls", "closed_deals"],
+    revenue: ["calls"],
     settings: [],
     aireport: ["calls"]
   };
@@ -300,6 +304,16 @@
       if(!isNaN(t)) max = Math.max(max, t);
     });
     return max;
+  }
+
+  /** Watermark source for updated_at=gt queries — never fall back to created/ts fields. */
+  function rowServerUpdatedMillis(row){
+    if(!row || typeof row !== "object") return 0;
+    var v = row.updated_at;
+    if(v == null || v === "") return 0;
+    if(typeof v === "number" && isFinite(v)) return v;
+    var t = Date.parse(v);
+    return isNaN(t) ? 0 : t;
   }
 
   function tableFingerprint(table, value){
@@ -374,6 +388,12 @@
           return { data: cached, error: null, incremental: false };
         }
         needFullReload = true;
+      } else if(store){
+        var fullCountMeta = await store.getMeta(table + ":fullcount");
+        var fullCount = Number(fullCountMeta);
+        if(isFinite(fullCount) && fullCount > 0 && memCount < fullCount){
+          needFullReload = true;
+        }
       }
     }
     if(needFullReload){
@@ -438,10 +458,22 @@
     if(store){
       var idbRows = table === "jobs" ? Object.keys(merged).map(function(k){ return merged[k]; }) : merged;
       await store.patchRows(table, normalized);
-      if(!opts.incremental) await store.persistFromMemory(lsKeyForTable(table), merged);
+      if(!opts.incremental){
+        await store.persistFromMemory(lsKeyForTable(table), merged);
+        var fullCount = table === "jobs"
+          ? Object.keys(merged || {}).length
+          : (Array.isArray(merged) ? merged.length : 0);
+        await store.setMeta(table + ":fullcount", fullCount);
+      }
+      var rawList = Array.isArray(rows) ? rows : [];
       var maxTs = 0;
-      normalized.forEach(function(r){ maxTs = Math.max(maxTs, rowUpdatedMillis(r)); });
-      if(maxTs > 0){
+      var allHaveUpdatedAt = true;
+      rawList.forEach(function(r){
+        var ts = rowServerUpdatedMillis(r);
+        if(!ts){ allHaveUpdatedAt = false; return; }
+        maxTs = Math.max(maxTs, ts);
+      });
+      if(allHaveUpdatedAt && maxTs > 0){
         var prevWm = await store.getMeta(table);
         var prevMs = prevWm ? Date.parse(prevWm) : 0;
         if(maxTs > prevMs) await store.setMeta(table, new Date(maxTs).toISOString());
@@ -452,6 +484,7 @@
 
   var _syncInflight = Object.create(null);
   var _syncRetryTimers = Object.create(null);
+  var _syncFatalLogged = Object.create(null);
 
   function scheduleSyncRetry(table, fn, attempt){
     if(_syncRetryTimers[table]) return;
@@ -474,6 +507,16 @@
         }
         var res = await fetchTableRows(table, currentUid, USERS, opts);
         if(res.error){
+          var errStatus = res.error && res.error.status;
+          var errMsg = res.error && res.error.message ? String(res.error.message) : "";
+          if(errStatus === 404 || /does not exist/i.test(errMsg)){
+            // Table is missing server-side: retrying can never succeed.
+            if(!_syncFatalLogged[table]){
+              _syncFatalLogged[table] = true;
+              console.warn("Sync disabled for table \"" + table + "\": " + (errMsg || "HTTP " + errStatus));
+            }
+            return { changed: false, error: res.error, fatal: true };
+          }
           scheduleSyncRetry(table, function(){
             syncTable(table, currentUid, USERS, opts).catch(function(){});
           }, (opts._attempt || 0) + 1);
@@ -972,6 +1015,30 @@
     return insertSalesUser(row);
   }
 
+  /**
+   * One-shot escape hatch for a poisoned local cache (e.g. a bad sync
+   * watermark): drops the whole IndexedDB database, clears the in-memory
+   * (localStorage-backed) table keys, and reloads so the app re-syncs from
+   * the server.
+   */
+  async function resetLocalCache(){
+    var store = getLocalStore();
+    var dbName = (store && store.DB_NAME) || "salesOS";
+    var tableKeys = (store && store.TABLES) ? store.TABLES.slice() : SYNC_TABLES.slice();
+    tableKeys.forEach(function(key){
+      try{ localStorage.removeItem(key); }catch(_e){}
+    });
+    await new Promise(function(resolve){
+      try{
+        var req = indexedDB.deleteDatabase(dbName);
+        // onblocked: open connections keep the delete pending; the reload
+        // below closes them, letting the deletion complete.
+        req.onsuccess = req.onerror = req.onblocked = function(){ resolve(); };
+      }catch(_e){ resolve(); }
+    });
+    location.reload();
+  }
+
   if(typeof window !== "undefined"){
     window.addEventListener("online", function(){
       flushWriteQueue().catch(function(){});
@@ -1005,6 +1072,7 @@
     syncTables: syncTables,
     syncTablesForPage: syncTablesForPage,
     syncAllTablesBackground: syncAllTablesBackground,
+    resetLocalCache: resetLocalCache,
     flushWriteQueue: flushWriteQueue,
     writeThrough: writeThrough,
     mergeRowsById: mergeRowsById,
