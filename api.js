@@ -227,7 +227,7 @@
     });
     var selfId = getSalesUserIdForKey(currentUid, USERS);
     if(selfId != null) parts.push(col + ".eq." + selfId);
-    return parts.length === 1 ? "&" + parts[0] : "&or=(" + parts.join(",") + ")";
+    return "&or=(" + parts.join(",") + ")";
   }
 
   function buildRoleFilterQuery(table, currentUid, USERS){
@@ -250,7 +250,7 @@
   var SYNC_VERSION = 2;
   var PAGE_TABLE_MAP = {
     dashboard: ["calls", "interested_leads", "prospects"],
-    prospects: ["prospects"],
+    prospects: ["prospects", "calls", "interested_leads"],
     jobs: ["jobs", "interested_leads"],
     pipeline: ["interested_leads"],
     mycalls: ["calls"],
