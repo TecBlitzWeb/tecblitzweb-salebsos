@@ -433,6 +433,8 @@
     var merged = mergeRowsById(prev, normalized);
     var changed = tableFingerprint(table, prev) !== tableFingerprint(table, merged);
     writeMemoryTable(table, merged);
+    console.log('[sync]', table, 'server:', rows.length, 'merged:',
+                Array.isArray(merged) ? merged.length : Object.keys(merged).length);
     if(store){
       var idbRows = table === "jobs" ? Object.keys(merged).map(function(k){ return merged[k]; }) : merged;
       await store.patchRows(table, normalized);

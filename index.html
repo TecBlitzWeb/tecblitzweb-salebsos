@@ -7716,32 +7716,31 @@
     })();
 
     const DATA_LS_KEYS = new Set(['prospects','calls','interested_leads','jobs','closed_deals']);
+    const MEM_TABLES = Object.create(null);
 
     function ls(key, val){
+    if(DATA_LS_KEYS.has(key)){
+        if(val===undefined) return MEM_TABLES[key] !== undefined ? MEM_TABLES[key] : null;
+        MEM_TABLES[key] = val;
+        if(window.LOCAL_STORE){
+        LOCAL_STORE.persistFromMemory(key, val).catch(function(err){
+            console.warn('IndexedDB persist failed for', key, err);
+        });
+        }
+        return true;
+    }
     if(val===undefined) { try{ return JSON.parse(localStorage.getItem(key)); }catch(e){ return null; } }
-    var _lsOk = true;
     try {
         localStorage.setItem(key, JSON.stringify(val));
+        return true;
     } catch(e){
         if(e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014)){
-        try {
-            localStorage.clear();
-            localStorage.setItem(key, JSON.stringify(val));
-        } catch(e2){
-            console.warn('localStorage write failed after quota clear for', key, e2);
-            _lsOk = false;
-        }
+        console.warn('localStorage quota exceeded for', key, e);
         } else {
         console.warn('localStorage write failed for', key, e);
-        _lsOk = false;
         }
+        return false;
     }
-    if(DATA_LS_KEYS.has(key) && window.LOCAL_STORE){
-        LOCAL_STORE.persistFromMemory(key, val).catch(function(err){
-        console.warn('IndexedDB persist failed for', key, err);
-        });
-    }
-    return _lsOk;
     }
 
     function getData(key, def){ return ls(key) || def; }
