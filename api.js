@@ -250,7 +250,7 @@
   var SYNC_VERSION = 2;
   var PAGE_TABLE_MAP = {
     dashboard: ["calls", "interested_leads", "prospects"],
-    prospects: ["prospects"],
+    prospects: ["prospects", "calls"],
     jobs: ["jobs", "interested_leads"],
     pipeline: ["interested_leads"],
     mycalls: ["calls"],
