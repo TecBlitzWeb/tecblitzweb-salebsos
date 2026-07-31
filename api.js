@@ -406,9 +406,25 @@
   }
 
   function buildIncrementalQuery(table, roleFilter, since){
-    var q = "?select=*" + (roleFilter || "");
+    var q = "?select=*" + (roleFilter || "") + "&order=id.asc";
     if(!since) return q;
     return q + "&updated_at=gt." + encodeURIComponent(since);
+  }
+
+  var PAGE_SIZE = 1000;
+  async function fetchAllPages(table, query){
+    var out = [];
+    var offset = 0;
+    for(var guard = 0; guard < 200; guard++){
+      var paged = query + "&limit=" + PAGE_SIZE + "&offset=" + offset;
+      var res = await safeFetch(tableUrl(table, paged), { headers: getBaseHeaders() });
+      if(res.error) return { data: null, error: res.error };
+      var rows = Array.isArray(res.data) ? res.data : [];
+      out = out.concat(rows);
+      if(rows.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
+    }
+    return { data: out, error: null };
   }
 
   async function fetchTableRows(table, currentUid, USERS, opts){
@@ -422,7 +438,7 @@
       roleFilter = buildRoleFilterQuery(table, currentUid, USERS);
     }
     var query = buildIncrementalQuery(table, roleFilter, since);
-    var res = await safeFetch(tableUrl(table, query), { headers: getBaseHeaders() });
+    var res = await fetchAllPages(table, query);
     var needFullReload = false;
     if(res.error && since){
       needFullReload = true;
@@ -446,7 +462,7 @@
       }
     }
     if(needFullReload){
-      var full = await safeFetch(tableUrl(table, "?select=*" + roleFilter), { headers: getBaseHeaders() });
+      var full = await fetchAllPages(table, "?select=*" + roleFilter + "&order=id.asc");
       return { data: full.data || [], error: full.error, incremental: false };
     }
     return { data: res.data || [], error: res.error, incremental: !!since };
