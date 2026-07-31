@@ -440,6 +440,14 @@
     var query = buildIncrementalQuery(table, roleFilter, since);
     var res = await fetchAllPages(table, query);
     var needFullReload = false;
+    if(since && !res.error && store){
+      var memNow = readMemoryTable(table);
+      var memCountNow = (table === "jobs")
+        ? Object.keys(memNow || {}).length
+        : (Array.isArray(memNow) ? memNow.length : 0);
+      var fcNow = Number(await store.getMeta(table + ":fullcount"));
+      if(memCountNow === 0 && isFinite(fcNow) && fcNow > 0) needFullReload = true;
+    }
     if(res.error && since){
       needFullReload = true;
     } else if(since && Array.isArray(res.data) && res.data.length === 0){
@@ -531,17 +539,19 @@
         await store.setMeta(table + ":fullcount", fullCount);
       }
       var rawList = Array.isArray(rows) ? rows : [];
-      var maxTs = 0;
-      var allHaveUpdatedAt = true;
+      var maxTs = 0, maxIso = "", allHaveUpdatedAt = true;
       rawList.forEach(function(r){
+        var v = r && r.updated_at;
         var ts = rowServerUpdatedMillis(r);
-        if(!ts){ allHaveUpdatedAt = false; return; }
-        maxTs = Math.max(maxTs, ts);
+        if(!v || !ts){ allHaveUpdatedAt = false; return; }
+        if(ts >= maxTs){ maxTs = ts; maxIso = String(v); }
       });
-      if(allHaveUpdatedAt && maxTs > 0){
+      if(allHaveUpdatedAt && maxIso){
         var prevWm = await store.getMeta(table);
         var prevMs = prevWm ? Date.parse(prevWm) : 0;
-        if(maxTs > prevMs) await store.setMeta(table, new Date(maxTs).toISOString());
+        if(!isFinite(prevMs) || maxTs >= prevMs){
+          await store.setMeta(table, maxIso);
+        }
       }
     }
     return { merged: merged, changed: changed };
