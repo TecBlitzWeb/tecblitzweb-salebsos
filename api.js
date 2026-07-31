@@ -736,14 +736,18 @@
     var cfg = getConfig();
     if(!cfg.SUPABASE_URL) return { data: [], error: { message: "Missing SUPABASE_URL" } };
     var pending = fetchTableRows(table, currentUid, USERS, opts).then(async function(res){
+      var out = res.data;
       if(!res.error){
-        if(res.data && res.data.length) _roleTableCache[cacheKey] = { data: res.data, error: null };
         if(res.data && res.data.length){
-          await applySyncedRows(table, res.data, { incremental: res.incremental });
+          var applied = await applySyncedRows(table, res.data, { incremental: res.incremental });
+          out = (applied && applied.merged) ? applied.merged : res.data;
+        } else {
+          out = readMemoryTable(table);
         }
+        if(out && out.length) _roleTableCache[cacheKey] = { data: out, error: null };
       }
       delete _roleTableInflight[cacheKey];
-      return { data: res.data, error: res.error };
+      return { data: out, error: res.error };
     }).catch(function(err){
       delete _roleTableInflight[cacheKey];
       throw err;
