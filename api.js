@@ -21,6 +21,18 @@
     };
   }
 
+  function isJwtExpired(tok){
+    try{
+      var p = String(tok).split(".")[1];
+      if(!p) return false;
+      p = p.replace(/-/g, "+").replace(/_/g, "/");
+      while(p.length % 4) p += "=";
+      var claims = JSON.parse(atob(p));
+      if(!claims || !claims.exp) return false;
+      return (claims.exp * 1000) <= (Date.now() + 5000);  // 5s clock skew
+    }catch(_e){ return false; }   // unparseable: let the server decide
+  }
+
   /**
    * Current logged-in user's access token, or null. Prefers the live value set
    * by config.js (onAuthStateChange), and falls back to the session that
@@ -28,7 +40,10 @@
    * still carries the token before getSession() resolves.
    */
   function getStoredAccessToken(){
-    if(window.APP_ACCESS_TOKEN) return window.APP_ACCESS_TOKEN;
+    if(window.APP_ACCESS_TOKEN){
+      if(!isJwtExpired(window.APP_ACCESS_TOKEN)) return window.APP_ACCESS_TOKEN;
+      window.APP_ACCESS_TOKEN = null;
+    }
     try{
       var cfg = getConfig();
       var ref = "";
@@ -41,7 +56,7 @@
           }
           var j = JSON.parse(raw);
           var t = j && (j.access_token || (j.currentSession && j.currentSession.access_token));
-          if(t){ window.APP_ACCESS_TOKEN = t; return t; }
+          if(t && !isJwtExpired(t)){ window.APP_ACCESS_TOKEN = t; return t; }
         }
       }
     }catch(_e2){}
@@ -70,13 +85,47 @@
     return (cfg.SUPABASE_URL || "") + "/rest/v1/" + table + (query || "");
   }
 
-  async function safeFetch(url, options){
+  var _refreshInflight = null;
+  async function refreshAccessToken(){
+    if(_refreshInflight) return _refreshInflight;
+    _refreshInflight = (async function(){
+      try{
+        var c = window.APP_SUPABASE_CLIENT;
+        if(!c || !c.auth || typeof c.auth.refreshSession !== "function") return null;
+        var r = await c.auth.refreshSession();
+        var t = r && r.data && r.data.session ? r.data.session.access_token : null;
+        window.APP_ACCESS_TOKEN = t || null;
+        if(t) window._authExpired = false;
+        return t;
+      }catch(_e){
+        window.APP_ACCESS_TOKEN = null;
+        return null;
+      } finally {
+        _refreshInflight = null;
+      }
+    })();
+    return _refreshInflight;
+  }
+
+  async function safeFetch(url, options, _isRetry){
     try{
       var res = await fetch(url, options || {});
       var text = await res.text();
       var payload = null;
       try { payload = text ? JSON.parse(text) : null; } catch(e){ payload = text; }
       if(!res.ok){
+        if(res.status === 401 && !_isRetry){
+          var fresh = await refreshAccessToken();
+          if(fresh){
+            var retryOptions = Object.assign({}, options || {});
+            retryOptions.headers = Object.assign({}, (options && options.headers) || {}, {
+              "Authorization": "Bearer " + fresh
+            });
+            return safeFetch(url, retryOptions, true);
+          }
+          window._authExpired = true;
+          window.dispatchEvent(new CustomEvent("sos:auth-expired"));
+        }
         var errObj = (payload && typeof payload === "object" && !Array.isArray(payload))
           ? payload
           : { message: (typeof payload === "string" && payload) ? payload : "Request failed" };
@@ -509,11 +558,14 @@
         if(res.error){
           var errStatus = res.error && res.error.status;
           var errMsg = res.error && res.error.message ? String(res.error.message) : "";
-          if(errStatus === 404 || /does not exist/i.test(errMsg)){
-            // Table is missing server-side: retrying can never succeed.
+          if(errStatus === 404 || errStatus === 401 || /does not exist/i.test(errMsg)){
+            // Missing table or a session we could not refresh: retrying can never succeed.
             if(!_syncFatalLogged[table]){
               _syncFatalLogged[table] = true;
-              console.warn("Sync disabled for table \"" + table + "\": " + (errMsg || "HTTP " + errStatus));
+              var reason = errStatus === 401
+                ? "authentication failed (session expired)"
+                : "table missing server-side";
+              console.warn("Sync disabled for table \"" + table + "\" — " + reason + ": " + (errMsg || "HTTP " + errStatus));
             }
             return { changed: false, error: res.error, fatal: true };
           }
