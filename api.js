@@ -411,7 +411,7 @@
     return q + "&updated_at=gt." + encodeURIComponent(since);
   }
 
-  var PAGE_SIZE = 1000;
+  var PAGE_SIZE = 500;
   async function fetchAllPages(table, query){
     var out = [];
     var offset = 0;
