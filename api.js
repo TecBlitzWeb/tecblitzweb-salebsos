@@ -485,6 +485,18 @@
       for(var v = 0; v < SYNC_TABLES.length; v++){ await store.setMeta(SYNC_TABLES[v], null); }
       await store.setMeta("__sync_version", SYNC_VERSION);
     }
+    var scope = String(window.currentUser || "");
+    var storedScope = await store.getMeta("__scope_uid");
+    if(scope && String(storedScope || "") !== scope){
+      for(var s = 0; s < SYNC_TABLES.length; s++){
+        var st = SYNC_TABLES[s];
+        await store.replaceTable(st, []);
+        await store.setMeta(st, null);
+        await store.setMeta(st + ":fullcount", null);
+        writeMemoryTable(st, st === "jobs" ? {} : []);
+      }
+      await store.setMeta("__scope_uid", scope);
+    }
     for(var i = 0; i < SYNC_TABLES.length; i++){
       var table = SYNC_TABLES[i];
       if(table === "jobs"){
