@@ -1,4 +1,4 @@
-const CACHE = 'tecblitzweb-sos-v5';
+const CACHE = 'tecblitzweb-sos-v6';
 const ASSETS = [
   '/',
   '/index.html',
@@ -8,6 +8,7 @@ const ASSETS = [
   '/config.js'
 ];
 const NETWORK_TIMEOUT_MS = 4000;
+const HTML_TIMEOUT_MS = 12000;   // index.html is ~700KB; 4s is too short on mobile data
 const STATIC_ASSETS = ['/main.js', '/api.js', '/local-store.js', '/config.js'];
 
 function isSameOrigin(request) {
@@ -58,6 +59,7 @@ self.addEventListener('install', e => {
 });
 
 self.addEventListener('activate', e => {
+  console.log('[SW] active:', CACHE);
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
@@ -73,7 +75,7 @@ self.addEventListener('fetch', e => {
 
   if (isHtmlRequest(e.request)) {
     e.respondWith(
-      networkWithTimeout(e.request, NETWORK_TIMEOUT_MS)
+      networkWithTimeout(e.request, HTML_TIMEOUT_MS)
         .then(function (res) { return res; })
         .catch(function () {
           return caches.match(e.request).then(function (cached) {
