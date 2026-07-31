@@ -12882,8 +12882,13 @@
     // closed_deals table may not exist yet in Supabase
     window._closedDealsTableMissing = true;
     // Repair / cleanup deferred so first paint is not blocked
-    setTimeout(pipelineRepairMissing, 600);
-    setTimeout(purgeInvalidCalls, 800);
+    // DISARMED 2026-07-31: auto-repair writes full leads array to Supabase
+    // on every load; corrupts pipeline when calls data is truncated/401.
+    // setTimeout(pipelineRepairMissing, 600);
+    // DISARMED 2026-07-31: hard-DELETEs call rows from Supabase based on a
+    // possibly-empty or truncated getCalls() at 800ms; has already destroyed
+    // rows whose `prospect` column was null.
+    // setTimeout(purgeInvalidCalls, 800);
     // Polling replaced by stale-while-revalidate on navigation + focus sync
     if(window._dashPollTimer) clearInterval(window._dashPollTimer);
     if(window._leadsPollTimer) clearInterval(window._leadsPollTimer);
