@@ -18,13 +18,17 @@
    mutation shows a red toast with the status code and retries next attempt. The
    `_closedDealsTableMissing` pattern in v1 destroyed the entire revenue record. Never repeat it.
 6. **Free-text assignee is a fact of life.** `prospects.assignedto` and `calls.rep` hold values
-   like `Himanthi2525`, `rashitha`, `Avishka`. Normalize with one shared `canonicalRepKey()`
-   mirroring the DB's `canonical_rep()`: lowercase, strip trailing digits, trim.
+   like `Himanthi2525`, `rashitha`, `Avishka`. Normalize with one shared `canonicalRepKey()` that
+   mirrors the DB's `public.canonical_rep()` exactly: strip trailing digits, lowercase, no trim.
+   See rule 10 and the comment in `src/lib/repKey.ts`.
 7. **`calls.prospect` joins `prospects.name` by text.** No foreign key. Duplicate names exist.
    Joins must handle N:N and never assume uniqueness.
 8. **`sales_users.role` stores `Sales`, not `rep`.** Roles in prod: `CEO`, `Co-CEO`, `Sales`.
 9. **Never generate record IDs from `Date.now()`.** v1 did this for leads and produced triplicate
    rows across devices. Use `crypto.randomUUID()`, and dedupe against the server, not local state.
+10. **Client normalization must mirror the database function byte-for-byte, including its flaws.**
+    Never "improve" a normalization on the client — a client that is more correct than the database
+    silently returns fewer rows.
 
 ---
 
