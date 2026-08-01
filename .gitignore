@@ -1,2 +1,6 @@
 copy*/
 .vercel
+# db dumps live at the repo root; supabase/*.sql migrations stay tracked
+/*.sql
+app/node_modules
+app/.env
