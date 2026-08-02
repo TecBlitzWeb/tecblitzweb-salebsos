@@ -43,12 +43,26 @@ Sort options include "Coldest first." A rep who wants work opens Prospects and s
 
 ```css
 --font-sans: "Inter", "Noto Sans Sinhala", system-ui, sans-serif;
+--font-display: "Archivo", "Noto Sans Sinhala", system-ui, sans-serif;
 --font-mono: "JetBrains Mono", ui-monospace, monospace;
 ```
 
 **Sinhala is mandatory, not optional.** Live notes and business names contain Sinhala script. Inter
 has no Sinhala glyphs. Load `@fontsource/noto-sans-sinhala` and keep it second in the stack so Latin
 still renders as Inter. Test with: `සොරොම්බ ඇගම් සජී, Horana Ana Kade`
+
+**Display face — Archivo, used sparingly.** `@fontsource/archivo`, weights 500/600 only — same
+discipline as body, never 700. Trade-gothic lineage: its condensed numerals hold their width in a
+stat card instead of ballooning at large sizes, and its Latin letterforms stay restrained enough to
+sit next to a Sinhala fallback without looking like two typefaces collided. Scope is deliberately
+narrow — **page titles, section/card headings, and stat-card numbers only.** Everything else —
+every workhorse size, every table, every form — stays Inter.
+
+**Wordmark only:** static Archivo 600 via the `.font-wordmark` utility, with `letter-spacing: 0.01em`
+standing in for expanded width. "TecBlitzWeb" is a fixed string that never needs a Sinhala fallback,
+so its stack is just Archivo, system-ui. Archivo Expanded is not published on Fontsource, and the
+variable font's width axis costs 88 KB for one 11-character string — not justifiable for reps on
+mobile data.
 
 **Scale** — 8 sizes, no others:
 
@@ -74,6 +88,38 @@ Non-negotiable — columns of counts must align.
 ---
 
 ## 3. Density — exact numbers
+
+**The §2 type scale, as it must appear in `app/src/index.css`.** Tailwind ships its own `text-*`
+scale that disagrees with this file on five of the eight sizes and has no `text-2xs` at all. These
+must be declared explicitly or the components silently render at the wrong size:
+
+```css
+@theme {
+  --text-2xs: 11px;
+  --text-2xs--line-height: 16px;
+  --text-xs: 12px;
+  --text-xs--line-height: 18px;
+  --text-sm: 13px;
+  --text-sm--line-height: 20px;
+  --text-base: 14px;
+  --text-base--line-height: 22px;
+  --text-lg: 16px;
+  --text-lg--line-height: 24px;
+  --text-xl: 20px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 24px;
+  --text-2xl--line-height: 32px;
+  --text-3xl: 32px;
+  --text-3xl--line-height: 40px;
+}
+```
+
+**If a token is specified in this file but absent from `@theme`, Tailwind silently falls back to its
+own default and the failure is invisible. Verify every token compiles.** This is not hypothetical:
+the scale above was missing for the whole of Phase 3, so `text-2xs` inherited 16px instead of 11px
+and `text-lg` rendered 18/28 instead of 16/24 — which pushed the prospect card's three rows past its
+fixed 88px and clipped the third row. Nothing errored; the build passed. Check with
+`getComputedStyle` on a probe element, not by eye.
 
 | Element | Value |
 |---|---|
@@ -127,30 +173,92 @@ element. Never `outline: none` without a replacement.
 **Icons:** lucide, 16px inline, 20px standalone, `stroke-width: 1.75`. Never 2.5 — v1's heavy icons
 read as clip art.
 
+**Potential vs real.** Unclosed value must always read visually weaker than closed value — never a
+second hue. (v1 was purple before a repo-wide migration to cyan; adding a second brand color back in
+for this would reverse that on purpose, so the distinction is treatment, not color.)
+- **Closed / real** (e.g. `closed_deals` revenue): `--color-brand` solid — solid fill, solid border.
+- **Pipeline / unclosed** (e.g. pipeline value, forecasts): `--color-brand` at 40% opacity, `1px`
+  dashed border. Never a solid fill.
+- **Charts:** actuals filled, forecast outlined only.
+
+This isn't a style preference — v1 showed Rs 21M of pipeline more prominently than the Rs 0 it had
+actually closed, and that inversion is part of how the business lost track of its own revenue. If a
+pipeline figure and a closed figure are ever on screen together, the closed one must win the eye.
+
 ---
 
-## 5. Light theme
+## 5. Theme palettes
 
 Ship both. Same token names, different values, swapped via `.dark` class on `<html>`.
 
+**Dark is a deliberate warm graphite, not a neutral near-black.** R > G > B at every surface step,
+by a small delta — this is not the "generic dark SaaS" blue-black default. Two reasons this matters,
+not just taste: it makes `--color-brand` the only cool, saturated thing on screen (cyan doesn't have
+to fight a background that's *also* faintly cool), and it sits better against the temperature bar's
+warm end — amber, orange, red read as intentional against a warm floor instead of clashing with a
+cool one.
+
+```css
+/* dark (default) */
+--color-bg:            #0C0A09;
+--color-surface:       #14110F;
+--color-surface-2:     #1C1815;
+--color-surface-3:     #26211D;
+--color-border:        #342E29;
+--color-border-strong: #4A423B;
+```
+
+Verified: `--color-text` (`#F2F4F8`) on `--color-bg` is **17.9:1**. `--color-brand` (`#00E5FF`) on
+`--color-surface` is **12.2:1**. Both clear the §10 floor of 4.5:1 with room to spare.
+
+**Light — same warm recast, mirrored.** The old light values leaned faintly cool (`--color-surface-2`
+etc. all had their blue channel highest), so this flips that same small delta the other way, warm.
+`--color-surface` stays pure white rather than warming — dense tables and stat cards need the
+clearest possible surface, and keeping it white also preserves the elevation logic (surface reads as
+the raised plane above a warmer, faintly receded `bg`, in both themes).
+
 ```css
 /* light */
---color-bg:            #FAFAFB;
+--color-bg:            #F7F6F4;
 --color-surface:       #FFFFFF;
---color-surface-2:     #F4F5F7;
---color-surface-3:     #EBEDF0;
---color-border:        #E2E5EA;
---color-border-strong: #CBD1DA;
+--color-surface-2:     #F1EFEC;
+--color-surface-3:     #E8E5E1;
+--color-border:        #DEDAD5;
+--color-border-strong: #C3BDB5;
 --color-text:          #0E1014;
 --color-text-muted:    #545C6B;
 --color-text-subtle:   #8992A3;
---color-brand:         #0891B2;   /* #00E5FF is unreadable on white — darken for light mode */
+--color-brand:         #07758F;   /* #00E5FF is unreadable on white; #0891B2 failed at 3.68:1 */
 --color-brand-hover:   #0E7490;
 --color-brand-dim:     #06798F;
---color-brand-ghost:   rgba(8, 145, 178, 0.08);
+--color-brand-ghost:   rgba(7, 117, 143, 0.08);
+--color-on-brand:      #FFFFFF;   /* light-mode brand is dark, so on-brand text flips to white */
 ```
 
-Semantic colors (success/warning/danger/info) stay the same in both themes.
+`--color-brand` was darkened from `#0891B2` to `#07758F`. Verified against **every** light surface,
+not just white — the raised planes are the binding constraint:
+
+| Brand on | Ratio | §10 floor (4.5:1) |
+|---|---|---|
+| `--color-surface` (#FFFFFF) | 5.32:1 | passes |
+| `--color-bg` (#F7F6F4) | 4.92:1 | passes |
+| `--color-surface-2` (#F1EFEC) | 4.63:1 | passes |
+| `--color-surface-3` (#E8E5E1) | 4.23:1 | fails — see rule below |
+
+**Overlays carrying brand-coloured text sit on `--color-surface`, not `--color-surface-3`.** Brand
+on `surface-3` measures 4.23:1, under the body-text floor. Elevation on those layers comes from the
+`1px` border plus `--shadow-2`, which is enough separation without stepping the surface up — so
+toasts, and any future popover with a brand-coloured action, use `surface`. `surface-3` remains
+correct for overlays whose text is `--color-text` or `--color-text-muted` (the combobox list and the
+date picker panel), both of which clear the floor comfortably there.
+
+**`--color-on-brand`** is the foreground for text and icons sitting on a *solid* brand fill (the
+primary button). It must flip per theme, because a single value fails badly in one direction:
+dark-mode `#00181C` on `#00E5FF` is 11.90:1 but white on that same cyan is 1.54:1; light-mode white
+on `#07758F` is 5.32:1 but `#00181C` on it is only 3.44:1. Never hardcode either value in a
+component.
+
+Semantic colors (success/warning/danger/info/cold) stay the same in both themes.
 
 Default: follow `prefers-color-scheme` on first load, then persist the user's choice.
 

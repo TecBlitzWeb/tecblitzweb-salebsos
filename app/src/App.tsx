@@ -3,55 +3,53 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './lib/queryClient'
 import { AuthProvider } from './auth/AuthProvider'
 import { RequireAuth } from './auth/RequireAuth'
+import { RequireRole } from './auth/RequireRole'
 import { LoginPage } from './auth/LoginPage'
-import { useAuth } from './auth/useAuth'
-
-function Home() {
-  const { profile, role, repKey, signOut } = useAuth()
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-bg px-4">
-      <div className="w-full max-w-sm rounded-md border border-border bg-surface p-6">
-        <h1 className="text-xl font-semibold text-text">Signed in</h1>
-        <dl className="mt-4 space-y-2 text-sm">
-          <div className="flex justify-between gap-4">
-            <dt className="text-text-muted">Name</dt>
-            <dd className="text-text">{profile?.name ?? '—'}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-text-muted">Role</dt>
-            <dd className="text-text">{role ?? '—'}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-text-muted">Rep key</dt>
-            <dd className="font-mono text-text">{repKey || '—'}</dd>
-          </div>
-        </dl>
-        <button
-          type="button"
-          onClick={() => signOut()}
-          className="mt-6 h-9 w-full rounded-sm border border-border-strong text-sm text-text outline-none transition-colors hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-        >
-          Sign out
-        </button>
-      </div>
-    </div>
-  )
-}
+import { ThemeProvider } from './components/layout/ThemeProvider'
+import { AppShell } from './components/layout/AppShell'
+import { NAV_ITEMS } from './components/layout/navConfig'
+import { KitchenSinkPage } from './features/kitchen-sink/KitchenSinkPage'
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route element={<RequireAuth />}>
-              <Route path="/" element={<Home />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route element={<RequireAuth />}>
+                <Route element={<AppShell />}>
+                  {NAV_ITEMS.map((item) => {
+                    const Page = item.page
+                    return (
+                      <Route
+                        key={item.path}
+                        path={item.path}
+                        element={
+                          <RequireRole allowed={item.roles}>
+                            <Page />
+                          </RequireRole>
+                        }
+                      />
+                    )
+                  })}
+                </Route>
+              </Route>
+              {/*
+                Design verification surface. Dev-only, and deliberately outside
+                RequireAuth: it renders hardcoded fixtures with zero data access,
+                so gating it would mean needing production credentials to review
+                a component gallery. `import.meta.env.DEV` strips it from
+                production builds entirely.
+              */}
+              {import.meta.env.DEV && (
+                <Route path="/kitchen-sink" element={<KitchenSinkPage />} />
+              )}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AuthProvider>
+        </ThemeProvider>
       </BrowserRouter>
     </QueryClientProvider>
   )

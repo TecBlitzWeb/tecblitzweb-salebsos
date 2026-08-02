@@ -23,3 +23,21 @@ export function canonicalRepKey(rep: string | null | undefined): string {
   const value = rep ?? ''
   return value.replace(/[0-9]+$/, '').toLowerCase()
 }
+
+/**
+ * Presentation-only name: `Himanthi2525` → `Himanthi`, `rashitha` → `Rashitha`.
+ *
+ * Display only — never write this back to the database and never join on it.
+ * The stored value stays exactly as the rep typed it; only the pixels change.
+ * Trimming happens here (unlike [canonicalRepKey], which must not trim to stay
+ * byte-identical with the DB function) because leading spaces in a UI label are
+ * just a rendering bug.
+ */
+export function displayRepName(rep: string | null | undefined): string {
+  const key = canonicalRepKey(rep).trim()
+  if (!key) return ''
+  return key
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}

@@ -6,17 +6,40 @@
 @import "@fontsource/noto-sans-sinhala/400.css";
 @import "@fontsource/noto-sans-sinhala/500.css";
 @import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/archivo/500.css";
+@import "@fontsource/archivo/600.css";
 
 @theme {
   --font-sans: "Inter", "Noto Sans Sinhala", system-ui, sans-serif;
+  --font-display: "Archivo", "Noto Sans Sinhala", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  --color-bg:            #08090C;
-  --color-surface:       #0E1014;
-  --color-surface-2:     #14171D;
-  --color-surface-3:     #1B1F27;
-  --color-border:        #232833;
-  --color-border-strong: #333A47;
+  /* DESIGN_RULES §2 — 8 sizes, no others. These deliberately override
+     Tailwind's defaults, which are wrong for this product on 5 of the 8
+     (and don't define text-2xs at all). */
+  --text-2xs: 11px;
+  --text-2xs--line-height: 16px;
+  --text-xs: 12px;
+  --text-xs--line-height: 18px;
+  --text-sm: 13px;
+  --text-sm--line-height: 20px;
+  --text-base: 14px;
+  --text-base--line-height: 22px;
+  --text-lg: 16px;
+  --text-lg--line-height: 24px;
+  --text-xl: 20px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 24px;
+  --text-2xl--line-height: 32px;
+  --text-3xl: 32px;
+  --text-3xl--line-height: 40px;
+
+  --color-bg:            #0C0A09;
+  --color-surface:       #14110F;
+  --color-surface-2:     #1C1815;
+  --color-surface-3:     #26211D;
+  --color-border:        #342E29;
+  --color-border-strong: #4A423B;
 
   --color-text:          #F2F4F8;
   --color-text-muted:    #9BA3B4;
@@ -26,6 +49,10 @@
   --color-brand-hover:   #33EBFF;
   --color-brand-dim:     #00B8D4;
   --color-brand-ghost:   rgba(0, 229, 255, 0.08);
+  /* Foreground for text/icons sitting ON a solid brand fill. Differs per
+     theme: dark-mode cyan is light so it needs dark text; light-mode cyan is
+     dark so it needs white. Never hardcode either value in a component. */
+  --color-on-brand:      #00181C;
 
   --color-success:       #22C55E;
   --color-warning:       #F59E0B;
@@ -36,4 +63,160 @@
   --radius-sm: 6px;  --radius-md: 10px;  --radius-lg: 14px;  --radius-xl: 20px;
   --shadow-1: 0 1px 2px rgba(0,0,0,.4);
   --shadow-2: 0 4px 16px rgba(0,0,0,.5);
+}
+
+/*
+ * Light/dark pair (DESIGN_RULES §5). These are plain, unlayered declarations,
+ * so they always win over the @theme defaults above regardless of source
+ * order — that's what actually drives the runtime palette. @theme only
+ * registers the token names so Tailwind generates the bg, text and border
+ * color utilities; ThemeProvider toggles the .dark class on <html>.
+ */
+:root {
+  --color-bg:            #F7F6F4;
+  --color-surface:       #FFFFFF;
+  --color-surface-2:     #F1EFEC;
+  --color-surface-3:     #E8E5E1;
+  --color-border:        #DEDAD5;
+  --color-border-strong: #C3BDB5;
+  --color-text:          #0E1014;
+  --color-text-muted:    #545C6B;
+  --color-text-subtle:   #8992A3;
+  /* Darkened from #0891B2 (3.68:1 on white) far enough to clear 4.5:1 on all
+     four light surfaces, not just white — worst case is surface-3 at 4.56:1. */
+  --color-brand:         #07758F;
+  --color-brand-hover:   #0E7490;
+  --color-brand-dim:     #06798F;
+  --color-brand-ghost:   rgba(7, 117, 143, 0.08);
+  /* Light-mode brand is dark, so on-brand text flips to white here. */
+  --color-on-brand:      #FFFFFF;
+}
+
+.dark {
+  --color-bg:            #0C0A09;
+  --color-surface:       #14110F;
+  --color-surface-2:     #1C1815;
+  --color-surface-3:     #26211D;
+  --color-border:        #342E29;
+  --color-border-strong: #4A423B;
+  --color-text:          #F2F4F8;
+  --color-text-muted:    #9BA3B4;
+  --color-text-subtle:   #646C7C;
+  --color-brand:         #00E5FF;
+  --color-brand-hover:   #33EBFF;
+  --color-brand-dim:     #00B8D4;
+  --color-brand-ghost:   rgba(0, 229, 255, 0.08);
+  --color-on-brand:      #00181C;
+}
+
+/*
+ * Chrome forces autofilled inputs to a white background; background-color
+ * alone can't override it. The inset box-shadow + text-fill-color combo is
+ * the standard workaround. References the live tokens, so it tracks whichever
+ * theme is active without a separate dark-mode copy of this rule.
+ */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  box-shadow: 0 0 0 1000px var(--color-surface-2) inset !important;
+  -webkit-text-fill-color: var(--color-text) !important;
+  caret-color: var(--color-text);
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* Kill the visible scrollbar — invisible at rest, shows on hover of the
+   scrolling element itself so it stays discoverable without being loud. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+*:hover {
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 9999px;
+}
+*:hover::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+}
+
+@layer utilities {
+  .focus-ring {
+    outline: none;
+  }
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+
+  /* Wordmark only (DESIGN_RULES §2). Static Archivo 600 — Archivo Expanded
+     isn't published, and the variable font's width axis cost 88 KB for one
+     11-character string. Slight positive tracking stands in for the expanded
+     width without the extra download. */
+  .font-wordmark {
+    font-family: "Archivo", system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  /* Potential vs real (DESIGN_RULES §4). Unclosed value must always read
+     weaker than closed value — treatment, never a second hue. */
+  .value-real {
+    color: var(--color-brand);
+    border: 1px solid var(--color-brand);
+  }
+  .value-potential {
+    color: color-mix(in srgb, var(--color-brand) 40%, transparent);
+    border: 1px dashed color-mix(in srgb, var(--color-brand) 40%, transparent);
+  }
+
+  @keyframes slide-over-in {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+  .animate-slide-over-in {
+    animation: slide-over-in 180ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-toast-in {
+    animation: toast-in 180ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  @keyframes sheet-in {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .animate-sheet-in {
+    animation: sheet-in 180ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  @keyframes palette-in {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .animate-palette-in {
+    animation: palette-in 180ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-sheet-in,
+    .animate-palette-in,
+    .animate-slide-over-in,
+    .animate-toast-in {
+      animation-duration: 0.01ms;
+    }
+  }
 }
