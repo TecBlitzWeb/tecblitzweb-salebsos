@@ -182,12 +182,19 @@ Also ship a light theme. Toggle in Settings, persisted to localStorage, respects
 WORK              PIPELINE            INSIGHTS         ADMIN
   Today             Prospects           Performance      Team
   My Calls          Interested Leads    Revenue          Announcements
-  Follow-ups        Jobs                AI Report        Settings
+  Follow-ups        Jobs                AI Report
+  Settings
 ```
 
-- `Sales` → WORK + Prospects, Interested Leads, Jobs. Own data only.
-- `Co-CEO` → above + INSIGHTS, scoped to `owned_reps`.
-- `CEO` → everything + ADMIN.
+Settings lives in WORK, not ADMIN — every role needs to reach their own profile,
+theme, and password, not just management.
+
+- `Sales` → WORK (including Settings) + Prospects, Interested Leads, Jobs. Own data only.
+- `Co-CEO` → above + INSIGHTS, scoped to `owned_reps`, + Announcements.
+- `CEO` → everything, including Team.
+
+CEO and Co-CEO differ in data scope (`owned_reps` vs. everything), not page access.
+Team is the sole exception: org control is CEO-only.
 
 ---
 

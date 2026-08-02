@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "salesos-v2",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["app/node_modules/vite/bin/vite.js", "app"],
+      "port": 5174,
+      "autoPort": true
+    }
+  ]
+}
