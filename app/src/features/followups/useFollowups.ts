@@ -27,8 +27,14 @@ export function colomboToday(): string {
 /**
  * A follow-up is a call carrying a non-empty `followup` date. There is no
  * separate table and no done flag — clearing the date is what "done" means.
+ *
+ * `showUnlinked` defaults to hidden at the call site: with 106 of 171 overdue
+ * follow-ups being orphaned calls (SPEC §0.14), showing them by default would
+ * bury the 65 that are actually actionable. Hidden, not deleted — the count
+ * stays visible via `unlinkedCount` so the data isn't invisible, just kept out
+ * of the daily-work view.
  */
-export function useFollowups(repFilter: string | null) {
+export function useFollowups(repFilter: string | null, showUnlinked: boolean) {
   const calls = useCalls()
   const { byJoinKey, isLoading: prospectsLoading, error: prospectsError } = useProspectViews()
 
@@ -63,12 +69,23 @@ export function useFollowups(repFilter: string | null) {
       .sort((a, b) => a.due.localeCompare(b.due))
   }, [calls.data, byJoinKey])
 
-  const filtered = useMemo(() => {
+  const repFiltered = useMemo(() => {
     if (!repFilter) return items
     // Rep identity is only ever compared through canonicalRepKey (SPEC §0.13).
     const want = canonicalRepKey(repFilter).trim()
     return items.filter((i) => canonicalRepKey(i.call.rep).trim() === want)
   }, [items, repFilter])
+
+  /** Orphans within the current rep scope — shown in the toggle chip regardless of its own state. */
+  const unlinkedCount = useMemo(
+    () => repFiltered.filter((i) => i.prospect === null).length,
+    [repFiltered]
+  )
+
+  const filtered = useMemo(
+    () => (showUnlinked ? repFiltered : repFiltered.filter((i) => i.prospect !== null)),
+    [repFiltered, showUnlinked]
+  )
 
   const buckets = useMemo(
     () => ({
@@ -111,6 +128,7 @@ export function useFollowups(repFilter: string | null) {
   return {
     buckets,
     reps,
+    unlinkedCount,
     total: filtered.length,
     isLoading: calls.isLoading || prospectsLoading,
     error: calls.error ?? prospectsError ?? null,

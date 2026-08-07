@@ -38,6 +38,8 @@ export function FollowupsPage() {
   const { showToast } = useToast()
   const updateFollowup = useUpdateFollowup()
   const [repFilter, setRepFilter] = useState<string | null>(null)
+  // Orphaned calls default to hidden — see useFollowups for why.
+  const [showUnlinked, setShowUnlinked] = useState(false)
   const [selected, setSelected] = useState<ProspectView | null>(null)
   const [logTarget, setLogTarget] = useState<{ prospect: string; phone: string } | null>(null)
 
@@ -48,7 +50,10 @@ export function FollowupsPage() {
     upcoming: false,
   })
 
-  const { buckets, reps, total, isLoading, error, refetch } = useFollowups(repFilter)
+  const { buckets, reps, unlinkedCount, total, isLoading, error, refetch } = useFollowups(
+    repFilter,
+    showUnlinked
+  )
 
   async function apply(item: FollowupItem, followup: string | null, message: string) {
     try {
@@ -88,7 +93,7 @@ export function FollowupsPage() {
         </p>
       </div>
 
-      {reps.length > 0 && (
+      {(reps.length > 0 || unlinkedCount > 0) && (
         <div className="flex flex-wrap items-center gap-2">
           <FilterChip
             label="Everyone"
@@ -104,6 +109,22 @@ export function FollowupsPage() {
               onClick={() => setRepFilter(repFilter === r.key ? null : r.key)}
             />
           ))}
+          {unlinkedCount > 0 && (
+            <>
+              <span className="h-4 w-px bg-border" aria-hidden="true" />
+              {/*
+                Hidden by default: the count stays visible on the chip so the
+                data isn't invisible, only filtered out of daily work — toggling
+                it on reveals the same rows rather than fetching anything new.
+              */}
+              <FilterChip
+                label="Unlinked"
+                count={unlinkedCount}
+                active={showUnlinked}
+                onClick={() => setShowUnlinked((v) => !v)}
+              />
+            </>
+          )}
         </div>
       )}
 

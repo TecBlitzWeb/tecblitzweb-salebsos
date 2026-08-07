@@ -105,15 +105,15 @@ export function FollowupRow({ item, onSnooze, onSnoozeTo, onDone, onOpen }: Foll
             onOpen(item)
           }
         }}
-        title={linked ? 'Open prospect' : 'This call matches no prospect'}
-        // Only the horizontal offset is inline — it changes every pointer frame
-        // and cannot be a utility class.
+        // No title attribute here on purpose — the native tooltip rendered as
+        // an opaque box overlapping the outcome chip. The Unlinked badge below
+        // is the explanation now; it doesn't need a hover to be read.
         style={{ transform: `translateX(${dx}px)` }}
         className={clsx(
           'focus-ring relative flex touch-pan-y border bg-surface',
           dx === 0 && 'transition-transform duration-[120ms] motion-reduce:transition-none',
           bucket === 'overdue' ? 'border-danger/30' : 'border-border',
-          linked && 'cursor-pointer hover:bg-surface-2'
+          linked ? 'cursor-pointer hover:bg-surface-2' : 'cursor-not-allowed'
         )}
       >
         <TemperatureBar daysSinceLastCall={prospect?.daysSinceLastCall ?? null} />
@@ -128,23 +128,31 @@ export function FollowupRow({ item, onSnooze, onSnoozeTo, onDone, onOpen }: Foll
             >
               {call.prospect || 'Unknown business'}
             </span>
-            {!linked && (
-              <span className="shrink-0 rounded-sm bg-warning/12 px-1.5 py-0.5 text-2xs font-medium text-warning">
-                Unlinked
-              </span>
-            )}
-            <span
-              className={clsx(
-                'shrink-0 whitespace-nowrap text-xs tabular-nums',
-                bucket === 'overdue'
-                  ? 'text-danger'
-                  : bucket === 'today'
-                    ? 'text-brand'
-                    : 'text-text-subtle'
+            {/*
+              Badge and days-overdue as one fixed cluster with its own gap, so
+              the badge can never collide with — or be pushed into — the
+              overdue text regardless of how little room the business name
+              leaves. The name is the only thing that shrinks.
+            */}
+            <div className="flex shrink-0 items-center gap-2">
+              {!linked && (
+                <span className="shrink-0 rounded-sm bg-text-subtle/12 px-1.5 py-0.5 text-2xs font-medium text-text-subtle">
+                  Unlinked
+                </span>
               )}
-            >
-              {overdueLabel}
-            </span>
+              <span
+                className={clsx(
+                  'shrink-0 whitespace-nowrap text-xs tabular-nums',
+                  bucket === 'overdue'
+                    ? 'text-danger'
+                    : bucket === 'today'
+                      ? 'text-brand'
+                      : 'text-text-subtle'
+                )}
+              >
+                {overdueLabel}
+              </span>
+            </div>
           </div>
 
           <div className="flex min-w-0 items-center gap-2">
