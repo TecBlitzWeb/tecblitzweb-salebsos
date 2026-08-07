@@ -4,9 +4,15 @@
     {
       "name": "salesos-v2",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["app/node_modules/vite/bin/vite.js", "app"],
-      "port": 5174,
-      "autoPort": true
+      "runtimeArgs": [
+        "app/node_modules/vite/bin/vite.js",
+        "app",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
+      "port": 5173,
+      "autoPort": false
     }
   ]
 }

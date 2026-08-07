@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Monitor, Moon, Search, Sun, X } from 'lucide-react'
+import { Monitor, Moon, Search, Sun } from 'lucide-react'
 import { NAV_ITEMS } from './navConfig'
 import { useTheme, type ThemePreference } from './ThemeProvider'
 import { Wordmark } from '../shared/Wordmark'
@@ -15,7 +14,6 @@ const THEME_META: Record<ThemePreference, { icon: typeof Monitor; label: string 
 export function TopBar() {
   const location = useLocation()
   const { preference, setPreference } = useTheme()
-  const [searchOpen, setSearchOpen] = useState(false)
   const title = NAV_ITEMS.find((item) => item.path === location.pathname)?.label ?? ''
   const ThemeIcon = THEME_META[preference].icon
 
@@ -30,40 +28,15 @@ export function TopBar() {
       <h1 className="hidden text-lg font-semibold text-text lg:block">{title}</h1>
 
       {/* Mobile: wordmark + page title, or an expanded search field */}
+      {/*
+        The mobile search affordance is hidden rather than disabled: a magnifier
+        that expands into a dead input wastes a tap and reads as broken. It
+        returns in Phase 11 with the real thing behind it.
+      */}
       <div className="flex flex-1 items-center gap-2 lg:hidden">
-        {searchOpen ? (
-          <>
-            <Search size={16} strokeWidth={1.75} className="shrink-0 text-text-subtle" />
-            <input
-              autoFocus
-              type="search"
-              placeholder="Search…"
-              className="focus-ring h-9 flex-1 rounded-sm border border-border-strong bg-surface px-3 text-base text-text outline-none"
-            />
-            <button
-              type="button"
-              aria-label="Close search"
-              onClick={() => setSearchOpen(false)}
-              className="focus-ring flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-text-muted hover:bg-surface-2 hover:text-text"
-            >
-              <X size={20} strokeWidth={1.75} />
-            </button>
-          </>
-        ) : (
-          <>
-            <div className="flex-1">
-              <Wordmark subtitle={title} />
-            </div>
-            <button
-              type="button"
-              aria-label="Search"
-              onClick={() => setSearchOpen(true)}
-              className="focus-ring flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-text-muted hover:bg-surface-2 hover:text-text"
-            >
-              <Search size={20} strokeWidth={1.75} />
-            </button>
-          </>
-        )}
+        <div className="flex-1">
+          <Wordmark subtitle={title} />
+        </div>
       </div>
 
       {/* Desktop: persistent search + single theme toggle */}
@@ -74,10 +47,19 @@ export function TopBar() {
             strokeWidth={1.75}
             className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-text-subtle"
           />
+          {/*
+            Disabled until Phase 11 wires global search. An input that accepts
+            typing and silently does nothing is the same defect as a button
+            labelled "Add prospect" while writes aren't implemented — it lies
+            about what the app can do.
+          */}
           <input
             type="search"
-            placeholder="Search prospects, calls, leads…"
-            className="focus-ring h-9 w-64 rounded-sm border border-border-strong bg-surface pl-8 pr-3 text-base text-text outline-none"
+            disabled
+            title="Search comes in Phase 11"
+            aria-label="Global search — comes in Phase 11"
+            placeholder="Search comes in Phase 11"
+            className="h-9 w-64 cursor-not-allowed rounded-sm border border-border-strong bg-surface pl-8 pr-3 text-base text-text-subtle opacity-60 outline-none"
           />
         </div>
 

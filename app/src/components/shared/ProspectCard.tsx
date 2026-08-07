@@ -25,6 +25,8 @@ export interface ProspectCardData {
 interface ProspectCardProps {
   prospect: ProspectCardData
   onOpen?: (id: string) => void
+  onLogCall?: (id: string) => void
+  onToggleFavourite?: (id: string) => void
 }
 
 /**
@@ -35,7 +37,12 @@ interface ProspectCardProps {
 const ICON_BUTTON =
   'focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-sm transition-colors duration-[120ms] hover:bg-surface-2 motion-reduce:transition-none lg:h-8 lg:w-8'
 
-export function ProspectCard({ prospect, onOpen }: ProspectCardProps) {
+export function ProspectCard({
+  prospect,
+  onOpen,
+  onLogCall,
+  onToggleFavourite,
+}: ProspectCardProps) {
   const {
     id,
     name,
@@ -70,12 +77,23 @@ export function ProspectCard({ prospect, onOpen }: ProspectCardProps) {
       <div className="flex min-w-0 flex-1 flex-col justify-between px-3.5 py-2.5">
         {/* Row 1 — star, business name, package + value */}
         <div className="flex min-w-0 items-center gap-2">
-          <Star
-            size={16}
-            strokeWidth={1.75}
-            aria-hidden="true"
-            className={clsx('shrink-0', favourite ? 'fill-warning text-warning' : 'text-text-subtle')}
-          />
+          <button
+            type="button"
+            aria-pressed={Boolean(favourite)}
+            aria-label={favourite ? 'Remove from favourites' : 'Add to favourites'}
+            title={favourite ? 'Remove from favourites' : 'Add to favourites'}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleFavourite?.(id)
+            }}
+            className="focus-ring -m-1 shrink-0 rounded-sm p-1"
+          >
+            <Star
+              size={16}
+              strokeWidth={1.75}
+              className={favourite ? 'fill-warning text-warning' : 'text-text-subtle'}
+            />
+          </button>
           <span className="min-w-0 flex-1 truncate text-lg font-medium text-text">{name}</span>
           <span className="shrink-0 whitespace-nowrap text-sm tabular-nums text-text-muted">
             {packageName} · {formatCurrency(value)}
@@ -111,7 +129,7 @@ export function ProspectCard({ prospect, onOpen }: ProspectCardProps) {
             <a
               href={`https://wa.me/${phone.replace(/\D/g, '')}`}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               title="WhatsApp"
               aria-label={`WhatsApp ${name}`}
               className={clsx(ICON_BUTTON, 'text-success')}
@@ -122,6 +140,7 @@ export function ProspectCard({ prospect, onOpen }: ProspectCardProps) {
               type="button"
               title="Log call"
               aria-label={`Log call for ${name}`}
+              onClick={() => onLogCall?.(id)}
               className={clsx(ICON_BUTTON, 'text-text-muted hover:text-text')}
             >
               <PlusCircle size={16} strokeWidth={1.75} />

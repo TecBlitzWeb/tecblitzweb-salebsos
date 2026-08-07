@@ -29,6 +29,20 @@
 10. **Client normalization must mirror the database function byte-for-byte, including its flaws.**
     Never "improve" a normalization on the client — a client that is more correct than the database
     silently returns fewer rows.
+11. **`git commit -- <pathspec>` re-reads the working tree for those paths, not the index.** A staged
+    `git rm --cached` deletion is silently discarded and the index reset, leaving a clean
+    `git status` that hides the failure. Always verify git's reported file count matches what you
+    staged. For `--cached` deletions, commit without a pathspec.
+12. **Never use `lsof -ti:<port> | xargs kill -9`.** `lsof -ti` matches any process with a socket on
+    that port, including closed client connections — it will kill the editor, the browser, or the
+    Claude session itself. Always filter to listeners:
+    `lsof -ti:<port> -sTCP:LISTEN | xargs kill -9`.
+13. **`calls.rep` and `prospects.assignedto` store the same person under multiple spellings.**
+    Verified 7 Aug 2026: 503 Himanthi calls split across `Himanthi2525` and `Himanthi`. Always
+    `canonicalRepKey()` before any comparison, group, or count. Display with `displayRepName()`.
+    Never trust the raw string. Never use `startsWith`, `includes`, or any prefix match to compare
+    rep identity. Only `canonicalRepKey()` equality. A prefix match appears correct when digits are
+    a suffix and silently fails on real names.
 
 ---
 
@@ -211,8 +225,11 @@ Tells the rep what to do next, not just stats.
 - CEO/Co-CEO variant adds rep coverage — who has untouched assigned prospects, worst first.
 
 ### 5.2 Prospects
-- Server-side search, filter, sort. Virtualized list (673+ rows must not block the thread).
-- Filters: assignee, status, last-contacted range, has-follow-up, never-called, source.
+- Server-side search, filter, sort. Virtualized list (677+ rows must not block the thread).
+  Exception: "Coldest first" and the last-contacted filter derive from `max(calls.createdat)`,
+  which is not a column on `prospects` — those sort and filter client-side after the calls join.
+- Filters: assignee, status (derived from latest call outcome), last-contacted range,
+  has-follow-up, never-called, type, area. **No `source` filter — the column does not exist.**
 - Saved views per user in localStorage.
 - Activity chips (Follow-up / WhatsApp / Not Interested / No Answer) from the calls join.
 - Bulk select → bulk reassign (CEO/Co-CEO), bulk tag.
@@ -285,7 +302,7 @@ logic make a security decision — never repeat that.
 export function useProspects(filters: ProspectFilters) {
   return useQuery({
     queryKey: ['prospects', filters],
-    queryFn: () => supabase.from('prospects').select('*').order('createdat', { ascending: false }),
+    queryFn: () => supabase.from('prospects').select('*').order('created_at', { ascending: false }),
     staleTime: 30_000,
   })
 }
@@ -294,10 +311,55 @@ export function useProspects(filters: ProspectFilters) {
 **One canonical count per entity.** All counts come from a single `src/api/counts.ts` hook.
 v1 showed Interested Leads as 189 / 193 / 172 on three different pages. Every page must agree.
 
-**Column naming is inconsistent — verify each before use:**
-- `prospects`: `assignedto`, `createdat` / `"createdAt"`, `createdby`
-- `calls`: `rep`, `prospect`, `createdat`
-- Three near-duplicate timestamp conventions exist. Inspect, don't assume.
+### Column authority — measured on production, 2 Aug 2026
+
+Duplicate near-identical columns exist on every table. Populated-row counts were measured on live
+data; **the repo SQL does not describe production and neither did earlier drafts of this spec.**
+
+**`prospects`** — 677 rows
+
+| Column | Type | Populated | Verdict |
+|---|---|---|---|
+| `created_at` | timestamptz | 677/677 | **authoritative** — sorting, "added" date |
+| `updated_at` | timestamptz | 677/677 | **authoritative** — last modified |
+| `"createdAt"` | text | 674/677 | ignore — incomplete, and text sorts lexicographically |
+| `createdat` | timestamp | **0/677** | **dead** — never read, never write |
+| `"updatedAt"` | text | 677/677 | ignore — redundant with `updated_at` |
+
+**`calls`** — 1074 rows
+
+| Column | Type | Populated | Verdict |
+|---|---|---|---|
+| `createdat` | timestamp | 1074/1074 | **authoritative** |
+| `"createdAt"` | text | **0/1074** | **dead** |
+| `date`, `time` | text | 1074/1074 | display only — never sort or range-filter on these |
+
+> **The single most dangerous trap in this schema:** `createdat` is **dead on `prospects`** (0/677)
+> and **authoritative on `calls`** (1074/1074). Same column name, opposite answer, no error either
+> way — ordering `prospects` by `createdat` silently returns rows in arbitrary order.
+
+**Days since last contact** (the temperature bar, DESIGN_RULES §1) is
+`now() - max(calls.createdat)` for that prospect. **Never** `prospects.created_at` — that is when
+the row was added, not when anyone last called.
+
+**Created by** is complete in neither column (`createdby` 310/677, `"createdBy"` 364/677). Resolve
+with `coalesce(NULLIF("createdBy",''), NULLIF(createdby,''))` and render `Unknown` when both are empty.
+
+### Field mapping — spec name → real column
+
+| Spec calls it | Real column | Notes |
+|---|---|---|
+| Business name | `prospects.name` | |
+| Package + value | `prospects.pkg` | free text with the value embedded in the string; parse it |
+| Prospect notes | `prospects.pain` | the pain-point field; **not** a `notes` column |
+| Call notes | `calls.notes` | card note preview comes from the latest call |
+| Status | *derived* | from the latest call's `outcome`; not stored on `prospects` |
+| Phone 1 / 2 | `prospects.phone` | free text; may hold two numbers separated by `/` |
+| Script | `prospects.script` | own collapsed field, never merged into notes |
+| Email, Source | **do not exist** | dropped from §5.2 filters and §6c |
+
+`interested_leads`: `id`, `lead`, `rep`, `status`, `phone`, `"createdAt"` (text), `updated_at`.
+`closed_deals`: `id`, `rep`, `value` (numeric), `date` (text), `created_at`.
 
 **Error handling — surface all three differently:**
 - RLS denial on read → empty array `[]`, never 401
@@ -340,6 +402,12 @@ Each phase ends deployable and verifiable. Do not start N+1 until N is verified 
 - Network tab: every data request carries the user JWT, not the anon key.
 - Test at 390px and 1440px.
 - Throttle to Slow 3G once per phase.
+
+**After any dev server restart, hard-reload the browser (Cmd+Shift+R).** A tab open across a
+restart keeps running the pre-restart bundle from memory — HMR does not always force a reload.
+Every test after a restart must begin with a hard reload, or you are testing stale code. This cost
+a full round of false debugging: a guard was verified present in source, compiled, and deployed,
+while the browser was still executing the version from before the fix.
 
 ---
 

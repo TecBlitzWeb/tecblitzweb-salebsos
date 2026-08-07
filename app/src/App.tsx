@@ -6,6 +6,7 @@ import { RequireAuth } from './auth/RequireAuth'
 import { RequireRole } from './auth/RequireRole'
 import { LoginPage } from './auth/LoginPage'
 import { ThemeProvider } from './components/layout/ThemeProvider'
+import { ToastProvider } from './components/ui/Toast'
 import { AppShell } from './components/layout/AppShell'
 import { NAV_ITEMS } from './components/layout/navConfig'
 import { KitchenSinkPage } from './features/kitchen-sink/KitchenSinkPage'
@@ -15,8 +16,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ThemeProvider>
-          <AuthProvider>
-            <Routes>
+          <ToastProvider>
+            <AuthProvider>
+              <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route element={<RequireAuth />}>
                 <Route element={<AppShell />}>
@@ -47,8 +49,9 @@ function App() {
                 <Route path="/kitchen-sink" element={<KitchenSinkPage />} />
               )}
               <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </AuthProvider>
+              </Routes>
+            </AuthProvider>
+          </ToastProvider>
         </ThemeProvider>
       </BrowserRouter>
     </QueryClientProvider>

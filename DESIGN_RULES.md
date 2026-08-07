@@ -338,15 +338,20 @@ Fields in this order, because it matches how a rep actually gets the information
    Himanthi, last called 12 days ago."* with **[Open it]** and **[Add anyway]**. This is how you stop
    the Zanbara Villa triplication from happening again.
 2. **Phone** — required, mono input, auto-formats to `0XX XXX XXXX`. Also duplicate-checked.
+   One free-text column (`prospects.phone`) holds both numbers, separated by `/` when there are two,
+   so phone 1 and phone 2 are two inputs writing back into a single joined string.
 3. **Phone 2** — optional, appears once phone 1 is filled.
 4. **Type** — searchable select: Hotel/Guesthouse, Salon, Restaurant, Garage, Retail, Construction,
    Education, Medical, Other. Free-text allowed.
 5. **Area** — combobox pre-filled with areas already in the data.
-6. **Package** — Landing Page / Business Website / eCommerce. Selecting one auto-fills the standard
-   value; editable.
+6. **Package** — free text (`prospects.pkg`), with the value embedded in the string. Not an enum and
+   not a separate numeric column — it is parsed for display, never split on write.
 7. **Assign to** — CEO/Co-CEO see all reps; a Sales rep sees only themselves, disabled.
-8. **Notes** — 3-row textarea, `text-base`.
+8. **Pain / notes** — 3-row textarea, `text-base`, writes to `prospects.pain`.
 9. **Script** — separate collapsed field, mono, expands to full height.
+
+**No email and no source field.** Neither column exists on `prospects`; both were dropped rather
+than adding schema (§0.1).
 
 Save button is sticky at the bottom of the sheet, full width, 44px on mobile. Label: **"Add prospect."**
 On success the toast says **"Prospect added"** with an **Undo** action for 5 seconds.
