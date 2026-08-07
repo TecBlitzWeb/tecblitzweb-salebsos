@@ -43,6 +43,10 @@
     Never trust the raw string. Never use `startsWith`, `includes`, or any prefix match to compare
     rep identity. Only `canonicalRepKey()` equality. A prefix match appears correct when digits are
     a suffix and silently fails on real names.
+14. **Deleting a prospect orphans its calls** — `calls.prospect` is free text with no foreign key.
+    106 calls (~10% of history) were lost this way in v1, including one business with 9 calls over
+    six weeks. v2 must never hard-delete a prospect that has calls. Offer archive instead, and warn
+    with the call count before any delete.
 
 ---
 
@@ -244,6 +248,10 @@ Tells the rep what to do next, not just stats.
 ### 5.4 Follow-ups
 - Three buckets: Overdue (red), Today (brand), Upcoming (muted).
 - Snooze: +1d / +3d / +1w / pick date.
+- **Mark done clears `calls.followup` to null**, matching v1. This destroys the record that a
+  follow-up was ever scheduled, so completed-follow-up counts are impossible. Revisit in Phase 9 if
+  Performance needs the metric — it would require a `followup_done` column and a decision from
+  Bisara.
 
 ### 5.5 Interested Leads → Pipeline
 - Kanban by stage, drag to move (desktop). Mobile: stage tabs + list, move via row menu.

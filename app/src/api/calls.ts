@@ -158,6 +158,50 @@ export function useLogCall() {
   })
 }
 
+/**
+ * Snooze or clear a follow-up.
+ *
+ * There is no `followup_done` column, so "mark done" means clearing
+ * `calls.followup` to null — the same mechanism v1 uses. Snooze rewrites it to
+ * a new `yyyy-MM-dd`. Optimistic with rollback; a failure is surfaced, never
+ * swallowed (SPEC §0.5).
+ */
+export function useUpdateFollowup() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, followup }: { id: string; followup: string | null }) => {
+      const { data, error, status } = await supabase
+        .from('calls')
+        .update({ followup })
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw toSupabaseError(error, status)
+      return data as CallRow
+    },
+
+    onMutate: async ({ id, followup }) => {
+      await queryClient.cancelQueries({ queryKey: CALLS_QUERY_KEY })
+      const previous = queryClient.getQueryData<CallRow[]>(CALLS_QUERY_KEY)
+      queryClient.setQueryData<CallRow[]>(CALLS_QUERY_KEY, (old) =>
+        (old ?? []).map((c) => (c.id === id ? { ...c, followup } : c))
+      )
+      return { previous }
+    },
+
+    onError: (_error, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(CALLS_QUERY_KEY, context.previous)
+    },
+
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: CALLS_QUERY_KEY })
+      // hasFollowUp feeds the Prospects count strip.
+      void queryClient.invalidateQueries({ queryKey: ['prospects'] })
+    },
+  })
+}
+
 /** Inline outcome edit from the My Calls list. Same rules as the insert. */
 export function useUpdateCallOutcome() {
   const queryClient = useQueryClient()
