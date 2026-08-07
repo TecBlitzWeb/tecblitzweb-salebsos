@@ -417,6 +417,28 @@ Every test after a restart must begin with a hard reload, or you are testing sta
 a full round of false debugging: a guard was verified present in source, compiled, and deployed,
 while the browser was still executing the version from before the fix.
 
+**Start dev server.** The agent's Bash tool runs a persistent shell that stays alive across tool
+calls. `nohup cmd & disown` is not enough on its own — it only reparents to init once the
+*immediate parent* exits, and that persistent shell never does, so the server stays a child of the
+shell and dies with it. `disown` only stops the shell from tracking the job; it does not detach the
+process tree. Use a double-backgrounded subshell instead, so the outer subshell (the server's
+immediate parent) exits within milliseconds of launching it, orphaning the server straight to init
+(macOS has no `setsid`, which is the usual fix on Linux):
+
+```bash
+cd app
+( nohup node node_modules/vite/bin/vite.js --port 5173 --strictPort \
+    > /tmp/salesos-dev.log 2>&1 < /dev/null & ) & disown
+```
+
+Verify it actually detached — don't take a clean start as proof:
+
+```bash
+PID=$(lsof -ti:5173 -sTCP:LISTEN)
+ps -o pid=,ppid=,comm= -p "$PID"   # PPID must read 1. Anything else will die again.
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5173/   # must be 200
+```
+
 ---
 
 ## 10. Out of scope

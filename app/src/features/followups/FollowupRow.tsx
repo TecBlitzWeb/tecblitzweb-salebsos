@@ -32,6 +32,10 @@ export function FollowupRow({ item, onSnooze, onSnoozeTo, onDone, onOpen }: Foll
   const [pickDate, setPickDate] = useState(item.due)
   const [dx, setDx] = useState(0)
   const startX = useRef<number | null>(null)
+  // A completed or in-progress swipe must not also register as the tap that
+  // opens the row — pointerup and click are independent event types, so
+  // nothing suppresses click for us just because a drag happened.
+  const suppressClick = useRef(false)
 
   const { call, prospect, daysOverdue, bucket } = item
   const linked = prospect !== null
@@ -46,10 +50,26 @@ export function FollowupRow({ item, onSnooze, onSnoozeTo, onDone, onOpen }: Foll
   }
   function onPointerUp() {
     if (startX.current === null) return
-    if (dx > SWIPE_COMMIT_PX) onSnooze(item, 1)
-    else if (dx < -SWIPE_COMMIT_PX) onDone(item)
+    if (dx > SWIPE_COMMIT_PX) {
+      onSnooze(item, 1)
+      suppressClick.current = true
+    } else if (dx < -SWIPE_COMMIT_PX) {
+      onDone(item)
+      suppressClick.current = true
+    } else if (Math.abs(dx) > 8) {
+      // Dragged but didn't commit — still not a tap.
+      suppressClick.current = true
+    }
     startX.current = null
     setDx(0)
+  }
+
+  function onRowClick() {
+    if (suppressClick.current) {
+      suppressClick.current = false
+      return
+    }
+    if (linked) onOpen(item)
   }
 
   const overdueLabel =
@@ -72,35 +92,42 @@ export function FollowupRow({ item, onSnooze, onSnoozeTo, onDone, onOpen }: Foll
       </div>
 
       <div
+        role={linked ? 'button' : undefined}
+        tabIndex={linked ? 0 : undefined}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onClick={onRowClick}
+        onKeyDown={(e) => {
+          if (linked && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault()
+            onOpen(item)
+          }
+        }}
+        title={linked ? 'Open prospect' : 'This call matches no prospect'}
         // Only the horizontal offset is inline — it changes every pointer frame
         // and cannot be a utility class.
         style={{ transform: `translateX(${dx}px)` }}
         className={clsx(
-          'relative flex touch-pan-y border bg-surface',
+          'focus-ring relative flex touch-pan-y border bg-surface',
           dx === 0 && 'transition-transform duration-[120ms] motion-reduce:transition-none',
-          bucket === 'overdue' ? 'border-danger/30' : 'border-border'
+          bucket === 'overdue' ? 'border-danger/30' : 'border-border',
+          linked && 'cursor-pointer hover:bg-surface-2'
         )}
       >
         <TemperatureBar daysSinceLastCall={prospect?.daysSinceLastCall ?? null} />
 
         <div className="flex min-w-0 flex-1 flex-col gap-1 px-3 py-2">
           <div className="flex min-w-0 items-center gap-2">
-            <button
-              type="button"
-              disabled={!linked}
-              onClick={() => onOpen(item)}
-              title={linked ? 'Open prospect' : 'This call matches no prospect'}
+            <span
               className={clsx(
-                'focus-ring min-w-0 flex-1 truncate rounded-sm text-left text-sm',
-                linked ? 'text-text hover:text-brand' : 'cursor-not-allowed text-text-muted'
+                'min-w-0 flex-1 truncate text-sm',
+                linked ? 'text-text' : 'text-text-muted'
               )}
             >
               {call.prospect || 'Unknown business'}
-            </button>
+            </span>
             {!linked && (
               <span className="shrink-0 rounded-sm bg-warning/12 px-1.5 py-0.5 text-2xs font-medium text-warning">
                 Unlinked
@@ -125,13 +152,26 @@ export function FollowupRow({ item, onSnooze, onSnoozeTo, onDone, onOpen }: Foll
             <span className="min-w-0 flex-1 truncate text-xs text-text-muted">
               {displayRepName(call.rep)}
             </span>
-            <Button size="sm" variant="secondary" onClick={() => setExpanded((v) => !v)}>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={(e) => {
+                e.stopPropagation()
+                setExpanded((v) => !v)
+              }}
+            >
               Update
             </Button>
           </div>
 
           {expanded && (
-            <div className="flex flex-wrap items-center gap-2 pt-1">
+            // stopPropagation on the panel, not just each control: this sits
+            // inside the now-clickable row, and any click here — including
+            // whitespace between controls — must not also open the prospect.
+            <div
+              className="flex flex-wrap items-center gap-2 pt-1"
+              onClick={(e) => e.stopPropagation()}
+            >
               {SNOOZE.map((s) => (
                 <button
                   key={s.label}
