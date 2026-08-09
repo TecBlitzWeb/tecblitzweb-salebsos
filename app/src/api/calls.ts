@@ -89,8 +89,8 @@ export interface LogCallInput {
  *
  * - `id` is `crypto.randomUUID()`. v1 used `Date.now().toString()` and produced
  *   triplicate rows across devices (SPEC §0.9). Never do that again.
- * - `createdat` (lowercase) is the authoritative timestamp on `calls`
- *   (1074/1074). `"createdAt"` is dead there (0/1074) and is deliberately
+ * - `createdat` (lowercase) is the authoritative timestamp on `calls`, populated
+ *   on every row. `"createdAt"` is dead there (0 rows) and is deliberately
  *   not written (SPEC §7).
  * - `date`/`time` are display-only text, written to match v1's shape so the
  *   old app keeps rendering rows this app creates.

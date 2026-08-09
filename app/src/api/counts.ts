@@ -31,6 +31,8 @@ export interface ProspectCounts {
   mine: number
   /** Keyed by canonicalRepKey — never by the raw string. */
   byAssignee: Map<string, AssigneeTally>
+  /** Same keying, but only prospects with `daysSinceLastCall === null`. Feeds Today's Coverage block. */
+  byAssigneeNeverCalled: Map<string, AssigneeTally>
   byArea: Map<string, number>
   byType: Map<string, number>
 }
@@ -42,6 +44,7 @@ export const EMPTY_COUNTS: ProspectCounts = {
   cold: 0,
   mine: 0,
   byAssignee: new Map(),
+  byAssigneeNeverCalled: new Map(),
   byArea: new Map(),
   byType: new Map(),
 }
@@ -112,11 +115,13 @@ export function useProspectCounts(repKey: string) {
       cold: 0,
       mine: 0,
       byAssignee: new Map(),
+      byAssigneeNeverCalled: new Map(),
       byArea: new Map(),
       byType: new Map(),
     }
 
     const spellings = new Map<string, Map<string, number>>()
+    const neverCalledSpellings = new Map<string, Map<string, number>>()
     // Canonicalise the viewer's key once, so "mine" is an identity comparison
     // rather than a string-shape comparison.
     const mineKey = canonicalRepKey(repKey).trim()
@@ -125,8 +130,9 @@ export function useProspectCounts(repKey: string) {
       const bucket = byName.get(callJoinKey(row.name))
       const days = daysSinceLastCall(bucket)
       const tier = temperatureTier(days)
+      const neverCalled = days === null
 
-      if (days === null) result.neverCalled += 1
+      if (neverCalled) result.neverCalled += 1
       if (tier === 'cold' || tier === 'dead') result.cold += 1
       if (bucket?.some((c) => (c.followup ?? '').trim())) result.hasFollowUp += 1
 
@@ -136,11 +142,13 @@ export function useProspectCounts(repKey: string) {
       if (mineKey && canonicalRepKey(row.assignedto).trim() === mineKey) result.mine += 1
 
       bumpAssignee(result.byAssignee, spellings, row.assignedto)
+      if (neverCalled) bumpAssignee(result.byAssigneeNeverCalled, neverCalledSpellings, row.assignedto)
       bump(result.byArea, row.area)
       bump(result.byType, row.type)
     }
 
     resolveSpellings(result.byAssignee, spellings)
+    resolveSpellings(result.byAssigneeNeverCalled, neverCalledSpellings)
     return result
   }, [prospects.data, calls.data, repKey])
 

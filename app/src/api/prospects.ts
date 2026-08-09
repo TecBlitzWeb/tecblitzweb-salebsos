@@ -198,3 +198,44 @@ export function useToggleFavourite() {
     },
   })
 }
+
+/**
+ * Reassigns explicit prospect ids to a new `assignedto`. Used by Today's
+ * Coverage block, which already knows — via the canonical join — exactly
+ * which rows belong to a rep regardless of how their name is spelled. Scoping
+ * by `id IN (...)` sidesteps re-matching spellings server-side entirely,
+ * which matters because one rep's prospects can carry several raw spellings
+ * of `assignedto` (SPEC §0.13) that a single `.eq()` would miss.
+ */
+export function useBulkReassign() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ ids, assignedto }: { ids: string[]; assignedto: string }) => {
+      const { error, status } = await supabase
+        .from('prospects')
+        .update({ assignedto, updated_at: new Date().toISOString() })
+        .in('id', ids)
+      if (error) throw toSupabaseError(error, status)
+      return { ids, assignedto }
+    },
+
+    onMutate: async ({ ids, assignedto }) => {
+      await queryClient.cancelQueries({ queryKey: PROSPECTS_QUERY_KEY })
+      const previous = queryClient.getQueryData<ProspectRow[]>(PROSPECTS_QUERY_KEY)
+      const idSet = new Set(ids)
+      queryClient.setQueryData<ProspectRow[]>(PROSPECTS_QUERY_KEY, (old) =>
+        (old ?? []).map((p) => (idSet.has(p.id) ? { ...p, assignedto } : p))
+      )
+      return { previous }
+    },
+
+    onError: (_error, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(PROSPECTS_QUERY_KEY, context.previous)
+    },
+
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: PROSPECTS_QUERY_KEY })
+    },
+  })
+}

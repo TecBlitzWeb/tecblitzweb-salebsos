@@ -11,6 +11,11 @@ interface StatCardProps {
   potential?: boolean
   /** One hero stat per page maximum (§2). */
   hero?: boolean
+  /**
+   * Explains an intentionally-empty delta slot (e.g. a metric with no valid
+   * week-over-week comparison) — rendered as a native tooltip, not a fake "0".
+   */
+  hint?: string
 }
 
 export function StatCard({
@@ -20,12 +25,14 @@ export function StatCard({
   deltaLabel,
   potential = false,
   hero = false,
+  hint,
 }: StatCardProps) {
   const direction = delta === undefined ? null : delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'
   const DeltaIcon = direction === 'up' ? ArrowUp : direction === 'down' ? ArrowDown : Minus
 
   return (
     <div
+      title={hint}
       className={clsx(
         'rounded-md border bg-surface p-3.5',
         potential ? 'border-dashed border-brand/40' : 'border-border'
