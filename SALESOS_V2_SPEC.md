@@ -334,17 +334,26 @@ data; **the repo SQL does not describe production and neither did earlier drafts
 | `createdat` | timestamp | **0/677** | **dead** — never read, never write |
 | `"updatedAt"` | text | 677/677 | ignore — redundant with `updated_at` |
 
-**`calls`** — 1074 rows
+**`calls`** — 1145 rows (verified 8 Aug 2026; the table grows, so treat any absolute count
+here as a snapshot and re-probe rather than relying on it)
 
 | Column | Type | Populated | Verdict |
 |---|---|---|---|
-| `createdat` | timestamp | 1074/1074 | **authoritative** |
-| `"createdAt"` | text | **0/1074** | **dead** |
-| `date`, `time` | text | 1074/1074 | display only — never sort or range-filter on these |
+| `createdat` | timestamp | all rows | **authoritative** |
+| `"createdAt"` | text | **0** | **dead** |
+| `date`, `time` | text | all rows | display only — never sort or range-filter on these |
 
 > **The single most dangerous trap in this schema:** `createdat` is **dead on `prospects`** (0/677)
-> and **authoritative on `calls`** (1074/1074). Same column name, opposite answer, no error either
+> and **authoritative on `calls`**. Same column name, opposite answer, no error either
 > way — ordering `prospects` by `createdat` silently returns rows in arbitrary order.
+
+**`calls.outcome`** — the five stored values and their distribution at 1145 rows:
+Follow-up needed 347 · Not interested 301 · Interested 205 · No answer 197 · WhatsApp sent 95.
+These account for every row; there are no blanks. **Connect rate** counts *Follow-up needed,
+Not interested and Interested* as connected — someone who answered and said no was still
+reached — and *No answer and WhatsApp sent* as not connected, since neither reached a human.
+Any sixth value must be counted and surfaced separately, never folded into either side or into
+the denominator.
 
 **Days since last contact** (the temperature bar, DESIGN_RULES §1) is
 `now() - max(calls.createdat)` for that prospect. **Never** `prospects.created_at` — that is when
@@ -366,8 +375,30 @@ with `coalesce(NULLIF("createdBy",''), NULLIF(createdby,''))` and render `Unknow
 | Script | `prospects.script` | own collapsed field, never merged into notes |
 | Email, Source | **do not exist** | dropped from §5.2 filters and §6c |
 
-`interested_leads`: `id`, `lead`, `rep`, `status`, `phone`, `"createdAt"` (text), `updated_at`.
-`closed_deals`: `id`, `rep`, `value` (numeric), `date` (text), `created_at`.
+`interested_leads`: **shape unverified — see the warning below.** Previously documented here as
+`id`, `lead`, `rep`, `status`, `phone`, `"createdAt"` (text), `updated_at`.
+
+`closed_deals` (verified against production 8 Aug 2026 — nine columns):
+`id` (text), `biz` (text), `value` (numeric), `rep` (text), `date` (text),
+`pkg` (text), `"leadId"` (text, quoted camelCase), `source` (text), `created_at` (timestamptz).
+
+> This line previously listed only five columns for `closed_deals` and omitted `biz`, `pkg`,
+> `"leadId"` and `source`. Phase 7 was built against that wrong list. A deal row without `biz`
+> and `pkg` cannot tell Revenue what was sold; without `"leadId"` revenue cannot be traced to
+> the lead it closed from.
+>
+> **Do not trust the `interested_leads` line above.** `formatLeadForCloud()` in the live v1
+> app (`index.html:13188`) upserts nineteen columns to that table — `id`, `biz`, `rep`,
+> `callDate`, `callNotes`, `sourceCallId`, `phone`, `pkg`, `bizType`, `status`, `mockupNotes`,
+> `mockupUrl`, `mockupSentBy`, `mockupSentAt`, `callbackNotes`, `callbackOutcome`, `callbackAt`,
+> `advance_cleared`, `createdAt`. A PostgREST upsert hard-fails on an unknown column, and v1
+> syncs successfully in production, so those columns exist. In particular the business name
+> appears to be **`biz`**, not `lead`, and `pkg` is on the lead row itself.
+> Verify against the SQL editor before writing any code that reads this table.
+
+**Stage vocabulary for `interested_leads.status`** (v1 `index.html:13548`, a data contract —
+writing anything else produces rows v1's dashboards silently fail to count):
+`new` → New · `pending` → Mockup sent · `called` → Callback · `won` → Won · `lost` → Lost.
 
 **Error handling — surface all three differently:**
 - RLS denial on read → empty array `[]`, never 401
