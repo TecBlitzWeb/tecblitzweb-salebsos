@@ -337,8 +337,8 @@ the four steps measure different populations.
 **Commit state, 9 Aug 2026.** Everything through Phase 9 is now committed on `v2`: Phases 7 and 8
 in `7e420b6`, Phase 9 in `dfa2459`. An earlier draft of this file claimed Phases 7 and 8 were
 already on `origin/v2` — they were not; all three of 7, 8 and 9 sat uncommitted in the working tree
-until 9 Aug. **Never state a phase is committed without reading `git log`.** Both commits are local
-until pushed.
+until 9 Aug. **Never state a phase is committed without reading `git log`.** Both are pushed to
+`origin/v2`.
 
 ---
 
