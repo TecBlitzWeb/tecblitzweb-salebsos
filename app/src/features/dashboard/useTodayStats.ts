@@ -36,8 +36,10 @@ const PACE_WINDOW_DAYS = 30
 /**
  * Today's three weekday-over-weekday deltas (calls, interested, deals) plus
  * the pace-bar ratio. Follow-ups due has no delta here — see useActionQueue
- * and TodayPage for why: "mark done" destroys the record that a follow-up was
- * ever due, so there is no reliable count of what was due on a past date.
+ * and TodayPage for why: "mark done" now sets `followup_done` and preserves
+ * `calls.followup`, so this is recoverable going forward, but the rows
+ * completed under the old clear-the-date behaviour have no date left. A past-week
+ * delta would be wrong for those rather than merely missing.
  *
  * `callsLogged`/`dealsClosed` bucket by `createdat`/`created_at` — real
  * timestamptz columns. `interestedCreated` buckets by

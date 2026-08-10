@@ -242,16 +242,27 @@ Tells the rep what to do next, not just stats.
 
 ### 5.3 My Calls
 - Grouped by day, newest first, infinite scroll.
-- Inline outcome edit. Filter by outcome and date range.
+- Inline outcome edit. The row picker **excludes `Follow-up needed`** — that outcome requires a
+  date, and the picker has nowhere to ask for one; setting it there would recreate the dateless
+  rows the follow-up queue can never surface. It is set from Log call, where the date field and its
+  required-date guard live. The day's outcome-mix bar and the outcome filter still list it: those
+  *read* existing data, and hundreds of rows already carry it.
+- Filter by outcome and date range.
 - Log Call = floating action button on mobile, `C` shortcut on desktop.
 
 ### 5.4 Follow-ups
 - Three buckets: Overdue (red), Today (brand), Upcoming (muted).
 - Snooze: +1d / +3d / +1w / pick date.
-- **Mark done clears `calls.followup` to null**, matching v1. This destroys the record that a
-  follow-up was ever scheduled, so completed-follow-up counts are impossible. Revisit in Phase 9 if
-  Performance needs the metric — it would require a `followup_done` column and a decision from
-  Bisara.
+- **Mark done sets `calls.followup_done = true` and never writes `calls.followup`.** The scheduled
+  date is preserved permanently. v1 cleared the date instead; that destroyed the schedule on 305
+  rows, which cannot be recovered.
+- Queue membership is the date and the flag, never the outcome:
+  `followup is not null AND btrim(followup) <> '' AND followup_done = false`. 134 rows carry a real
+  follow-up date under some other outcome, so an `outcome = 'Follow-up needed'` filter drops them
+  silently. One shared definition — `hasOpenFollowup` in `api/calls.ts`; do not re-derive it.
+- Snooze writes the new date **and** `followup_done = false` in the same update — a snoozed item is
+  by definition not done.
+- There is no undo affordance. Re-opening a completed follow-up is done by snoozing it.
 
 ### 5.5 Interested Leads → Pipeline
 - Kanban by stage, drag to move (desktop). Mobile: stage tabs + list, move via row menu.
