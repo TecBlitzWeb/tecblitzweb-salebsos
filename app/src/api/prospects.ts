@@ -206,12 +206,17 @@ export function useToggleFavourite() {
  * by `id IN (...)` sidesteps re-matching spellings server-side entirely,
  * which matters because one rep's prospects can carry several raw spellings
  * of `assignedto` (SPEC §0.13) that a single `.eq()` would miss.
+ *
+ * The detail panel's owner control calls this with a single id rather than
+ * having its own mutation: one write path for "who owns this" means one place
+ * where the stored spelling is decided. `null` clears the owner — the column is
+ * nullable and four production rows are already blank.
  */
 export function useBulkReassign() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ ids, assignedto }: { ids: string[]; assignedto: string }) => {
+    mutationFn: async ({ ids, assignedto }: { ids: string[]; assignedto: string | null }) => {
       const { error, status } = await supabase
         .from('prospects')
         .update({ assignedto, updated_at: new Date().toISOString() })

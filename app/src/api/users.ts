@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { fetchAllRows } from './supabaseQuery'
-import { canonicalRepKey } from '../lib/repKey'
+import { canonicalRepKey, displayRepName } from '../lib/repKey'
 
 export interface SalesUser {
   id: number
@@ -34,6 +34,31 @@ export const SALES_USER_COLUMNS = 'id, auth_user_id, name, username, email, role
  */
 export function salesUserKey(user: Pick<SalesUser, 'username' | 'name'>): string {
   return canonicalRepKey(user.username).trim() || canonicalRepKey(user.name).trim()
+}
+
+/**
+ * The spelling to *write* into `prospects.assignedto` for a roster member —
+ * the clean capitalised display form, e.g. `Himanthi`.
+ *
+ * Settled against production (680 rows, 11 Aug 2026), not inferred:
+ *
+ *   Himanthi 428 · Chamindu 142 · Avishka 67 · Manoj 11 · avishka 9
+ *   Mohammad 9 · Sandaruwan 7 · (blank) 4 · bisara 3
+ *
+ * 597/680 already hold the clean form and *no* row holds the trailing-digit
+ * username form — there is no `Himanthi2525` in `assignedto` at all. Since
+ * canonical_rep() lowercases and strips trailing digits, all of these spellings
+ * resolve identically for RLS, so this is not about access. It is about not
+ * inventing a tenth spelling: the per-assignee tallies in `useProspectCounts`
+ * and the assignee filter in `useProspectList` group on the raw string, so a new
+ * spelling silently splits one person's counts in two.
+ *
+ * This contradicts the comment on `ProspectSheet`'s assignee select, which
+ * claims `assignedto` holds `sales_users.username`. That comment is wrong about
+ * production; `Coverage` is the one that had it right.
+ */
+export function assignedtoSpelling(user: Pick<SalesUser, 'username' | 'name'>): string {
+  return displayRepName(user.username) || displayRepName(user.name)
 }
 
 /**

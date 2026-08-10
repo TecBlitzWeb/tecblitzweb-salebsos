@@ -1,14 +1,20 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Copy, Maximize2, MessageCircle, Phone } from 'lucide-react'
 import { SlideOver } from '../../components/ui/SlideOver'
 import { ScriptReader } from './ScriptReader'
 import { Button } from '../../components/ui/Button'
+import { Select } from '../../components/ui/Select'
+import { Field } from '../../components/ui/Input'
+import { useToast } from '../../components/ui/Toast'
 import { Timeline, type TimelineEntry } from '../../components/shared/Timeline'
 import { EmptyState } from '../../components/shared/EmptyState'
 import { formatDetailDate, formatPhone } from '../../lib/format'
 import { toPhoneLink } from '../../lib/phone'
-import { displayRepName } from '../../lib/repKey'
-import { resolveCreatedBy } from '../../api/prospects'
+import { canonicalRepKey, displayRepName } from '../../lib/repKey'
+import { useAuth } from '../../auth/useAuth'
+import { assignedtoSpelling, salesUserKey, useSalesUsers } from '../../api/users'
+import { describeWriteError } from '../../api/writeError'
+import { resolveCreatedBy, useBulkReassign } from '../../api/prospects'
 import { timeOf } from '../../api/calls'
 import { NEEDS_FOLLOWUP, type CanonicalOutcome } from '../../api/outcomes'
 import { toOutcome } from './ProspectRow'
@@ -21,12 +27,74 @@ interface ProspectDetailProps {
   onLogCall: (view: ProspectView, outcome?: CanonicalOutcome) => void
 }
 
+/** Sentinel for the "no owner" option — `assignedto` is nullable and four production rows are blank. */
+const UNASSIGNED = '__unassigned__'
+
 export function ProspectDetail({ view, onClose, onLogCall }: ProspectDetailProps) {
   const [scriptOpen, setScriptOpen] = useState(false)
   const [readerOpen, setReaderOpen] = useState(false)
+  const { role } = useAuth()
+  const salesUsers = useSalesUsers()
+  const reassign = useBulkReassign()
+  const { showToast } = useToast()
+
+  // §6c step 7: CEO and Co-CEO choose an owner; a rep never sees the control.
+  const canAssign = role === 'CEO' || role === 'Co-CEO'
+
+  /*
+    Options are keyed by canonical identity, not by the stored spelling, so the
+    select can match a row holding `avishka` to the roster's `Avishka` without a
+    second lookup. The value written on change is resolved through
+    [assignedtoSpelling] — never the option key, which is lowercased.
+  */
+  const ownerOptions = useMemo(() => {
+    const options = [{ value: UNASSIGNED, label: 'Unassigned' }]
+    for (const user of salesUsers.data ?? []) {
+      const key = salesUserKey(user)
+      if (!key) continue
+      options.push({ value: key, label: user.name?.trim() || displayRepName(user.username) })
+    }
+    return options
+  }, [salesUsers.data])
+
+  const currentKey = canonicalRepKey(view?.row.assignedto).trim() || UNASSIGNED
+
+  /*
+    A stored owner who is not on the roster (an offboarded rep still on their
+    rows) would otherwise leave the native select showing the first option and
+    silently misreport who owns this prospect. Naming them keeps the control
+    honest, and re-selecting them is a no-op.
+  */
+  const ownerSelectOptions = useMemo(() => {
+    if (ownerOptions.some((o) => o.value === currentKey)) return ownerOptions
+    return [
+      ...ownerOptions,
+      { value: currentKey, label: `${displayRepName(currentKey)} — not on the roster` },
+    ]
+  }, [ownerOptions, currentKey])
 
   if (!view) return null
   const { row, phones, calls, packageLabel, packageValue } = view
+
+  async function changeOwner(nextKey: string) {
+    if (nextKey === currentKey) return
+    const target = (salesUsers.data ?? []).find((u) => salesUserKey(u) === nextKey)
+    // Unknown key that isn't the sentinel means the roster moved under us.
+    if (nextKey !== UNASSIGNED && !target) return
+
+    const assignedto = target ? assignedtoSpelling(target) : null
+    try {
+      await reassign.mutateAsync({ ids: [row.id], assignedto })
+      showToast({
+        message: assignedto
+          ? `${row.name || 'Prospect'} assigned to ${assignedto}`
+          : `${row.name || 'Prospect'} is now unassigned`,
+        tone: 'success',
+      })
+    } catch (error) {
+      showToast({ message: describeWriteError(error, 'reassign this prospect'), tone: 'error' })
+    }
+  }
 
   const entries: TimelineEntry[] = calls.map((call) => ({
     id: call.id,
@@ -80,6 +148,25 @@ export function ProspectDetail({ view, onClose, onLogCall }: ProspectDetailProps
               Add follow-up
             </Button>
           </div>
+
+          {canAssign && (
+            <section>
+              <h3 className="mb-2 font-display text-lg text-text">Owner</h3>
+              <Field
+                label="Assigned to"
+                htmlFor="prospect-owner"
+                hint="Writes prospects.assignedto. Reps see only their own prospects."
+              >
+                <Select
+                  id="prospect-owner"
+                  options={ownerSelectOptions}
+                  value={currentKey}
+                  disabled={salesUsers.isLoading || reassign.isPending}
+                  onChange={(e) => void changeOwner(e.target.value)}
+                />
+              </Field>
+            </section>
+          )}
 
           <section>
             <h3 className="mb-2 font-display text-lg text-text">Contact</h3>
