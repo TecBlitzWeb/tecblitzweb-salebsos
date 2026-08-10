@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import clsx from 'clsx'
 import { EmptyState } from '../../components/shared/EmptyState'
 import { ErrorState } from '../../components/shared/ErrorState'
@@ -18,6 +19,10 @@ import { usePipeline, UNKNOWN_STAGE, type LeadView, type StageTotal } from './us
 
 /** Starting estimate only — cards grow with their optional rows and are measured. */
 const CARD_HEIGHT = 124
+
+/** How long a jumped-to card stays ringed. Long enough to find it, short enough
+    that it doesn't read as a permanent status on the card. */
+const HIGHLIGHT_MS = 3000
 
 function readError(error: unknown): { message: string; status: number } {
   if (error instanceof SupabaseError) {
@@ -69,6 +74,64 @@ export function PipelinePage() {
   // Mobile only: which stage tab is showing. Desktop renders every column.
   const [activeStage, setActiveStage] = useState<string>('new')
 
+  /*
+    `?focus=<id>` — the command palette's way of saying "show me this lead".
+
+    A lead has no detail view, so focusing one means making its card *visible*:
+    drop the rep filter that might be hiding it, switch the mobile tab to its
+    stage, scroll its column to it, and ring it. Nothing here opens or touches
+    the Won/Lost sheets — a search result is a place to look, not an action.
+
+    Two effects, because the rep filter has to clear before the lookup: byStage
+    is already rep-filtered, so on the render that requests the reset the lead
+    may still be filtered out of it.
+  */
+  const [searchParams, setSearchParams] = useSearchParams()
+  const focusId = searchParams.get('focus')
+  const [highlightId, setHighlightId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!focusId) return
+    setRepFilter(null)
+  }, [focusId])
+
+  useEffect(() => {
+    // A lead that hasn't loaded is not a lead that doesn't exist.
+    if (!focusId || repFilter !== null || isLoading) return
+
+    let found: LeadView | undefined
+    for (const bucket of byStage.values()) {
+      found = bucket.find((v) => v.row.id === focusId)
+      if (found) break
+    }
+
+    if (found) {
+      setActiveStage(found.stage)
+      setHighlightId(found.row.id)
+    } else {
+      // interested_leads is RLS-scoped, so a real id can legitimately not be
+      // here. Say so rather than landing on the board with nothing highlighted.
+      showToast({ message: `That lead isn't in your pipeline.`, tone: 'error' })
+    }
+
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('focus')
+        return next
+      },
+      { replace: true }
+    )
+  }, [focusId, repFilter, isLoading, byStage, setSearchParams, showToast])
+
+  // The ring is an orientation cue, not a state the card is in — it goes away
+  // once it has done its job.
+  useEffect(() => {
+    if (!highlightId) return
+    const timer = setTimeout(() => setHighlightId(null), HIGHLIGHT_MS)
+    return () => clearTimeout(timer)
+  }, [highlightId])
+
   async function move(view: LeadView, stage: string) {
     // Won and Lost carry required extra information, so they open their sheets
     // rather than moving the card silently.
@@ -104,11 +167,15 @@ export function PipelinePage() {
         getItemKey={(view) => view.row.id}
         estimateSize={CARD_HEIGHT}
         className="max-h-[calc(100vh-22rem)] min-h-48"
+        // Handed to every column; only the one actually holding the card acts
+        // on it, so the caller doesn't have to know which stage that is.
+        scrollToKey={highlightId}
       >
         {(view) => (
           <LeadCard
             view={view}
             moving={updateStage.isPending}
+            highlighted={view.row.id === highlightId}
             onWon={() => setWonTarget(view)}
             onLost={() => setLostTarget(view)}
             onMove={(stage) => void move(view, stage)}

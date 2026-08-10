@@ -11,7 +11,15 @@ const THEME_META: Record<ThemePreference, { icon: typeof Monitor; label: string 
   dark: { icon: Moon, label: 'Dark' },
 }
 
-export function TopBar() {
+/**
+ * `navigator.platform` is deprecated and `userAgentData` isn't in Safari, so the
+ * user-agent string is what's left. Read once — the OS does not change mid
+ * session — and a wrong guess costs a wrong hint label, nothing more.
+ */
+const IS_APPLE = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
+const SHORTCUT_HINT = IS_APPLE ? '⌘K' : 'Ctrl K'
+
+export function TopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
   const location = useLocation()
   const { preference, setPreference } = useTheme()
   const title = NAV_ITEMS.find((item) => item.path === location.pathname)?.label ?? ''
@@ -27,52 +35,51 @@ export function TopBar() {
       {/* Desktop title */}
       <h1 className="hidden text-lg font-semibold text-text lg:block">{title}</h1>
 
-      {/* Mobile: wordmark + page title, or an expanded search field */}
+      {/* Mobile: wordmark + page title */}
+      <div className="shrink-0 lg:hidden">
+        <Wordmark subtitle={title} />
+      </div>
+
       {/*
-        The mobile search affordance is hidden rather than disabled: a magnifier
-        that expands into a dead input wastes a tap and reads as broken. It
-        returns in Phase 11 with the real thing behind it.
+        A button, not an input. Typing happens in the palette's own field, and a
+        text box here would take focus, raise the phone keyboard, and then be
+        replaced by the field you actually type into.
+
+        Rendered at every breakpoint: ⌘K does not exist on a phone, so on touch
+        this is the only way into search. It flexes to fill the mobile bar and
+        is 44px tall there (DESIGN_RULES §6a touch target), fixed-width and 36px
+        on desktop where it sits beside the theme toggle.
+
+        w-72, not the w-64 the old disabled input used: the label needs 184px
+        and w-64 leaves 170px, so it truncated to "…and lea". A placeholder that
+        is itself cut off reads as a broken control.
       */}
-      <div className="flex flex-1 items-center gap-2 lg:hidden">
-        <div className="flex-1">
-          <Wordmark subtitle={title} />
-        </div>
-      </div>
+      <button
+        type="button"
+        onClick={onOpenSearch}
+        aria-label="Search prospects, leads and pages"
+        aria-keyshortcuts="Meta+K Control+K"
+        className="focus-ring ml-auto flex h-11 min-w-0 flex-1 items-center gap-2 rounded-sm border border-border-strong bg-surface px-2.5 text-left text-text-subtle transition-colors duration-[120ms] hover:border-brand/40 hover:text-text motion-reduce:transition-none lg:h-9 lg:w-72 lg:flex-none"
+      >
+        <Search size={16} strokeWidth={1.75} className="shrink-0" />
+        <span className="min-w-0 flex-1 truncate text-base lg:hidden">Search</span>
+        <span className="hidden min-w-0 flex-1 truncate text-base lg:inline">
+          Search prospects and leads
+        </span>
+        <kbd className="hidden shrink-0 rounded-sm border border-border-strong px-1.5 py-0.5 font-sans text-2xs text-text-subtle lg:inline-block">
+          {SHORTCUT_HINT}
+        </kbd>
+      </button>
 
-      {/* Desktop: persistent search + single theme toggle */}
-      <div className="ml-auto hidden items-center gap-3 lg:flex">
-        <div className="relative">
-          <Search
-            size={16}
-            strokeWidth={1.75}
-            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-text-subtle"
-          />
-          {/*
-            Disabled until Phase 11 wires global search. An input that accepts
-            typing and silently does nothing is the same defect as a button
-            labelled "Add prospect" while writes aren't implemented — it lies
-            about what the app can do.
-          */}
-          <input
-            type="search"
-            disabled
-            title="Search comes in Phase 11"
-            aria-label="Global search — comes in Phase 11"
-            placeholder="Search comes in Phase 11"
-            className="h-9 w-64 cursor-not-allowed rounded-sm border border-border-strong bg-surface pl-8 pr-3 text-base text-text-subtle opacity-60 outline-none"
-          />
-        </div>
-
-        <button
-          type="button"
-          title={THEME_META[preference].label}
-          aria-label={`Theme: ${THEME_META[preference].label}`}
-          onClick={cycleTheme}
-          className="focus-ring flex h-8 w-8 items-center justify-center rounded-sm text-text-muted transition-colors duration-[120ms] hover:bg-surface-2 hover:text-text motion-reduce:transition-none"
-        >
-          <ThemeIcon size={16} strokeWidth={1.75} />
-        </button>
-      </div>
+      <button
+        type="button"
+        title={THEME_META[preference].label}
+        aria-label={`Theme: ${THEME_META[preference].label}`}
+        onClick={cycleTheme}
+        className="focus-ring hidden h-8 w-8 shrink-0 items-center justify-center rounded-sm text-text-muted transition-colors duration-[120ms] hover:bg-surface-2 hover:text-text motion-reduce:transition-none lg:flex"
+      >
+        <ThemeIcon size={16} strokeWidth={1.75} />
+      </button>
     </header>
   )
 }

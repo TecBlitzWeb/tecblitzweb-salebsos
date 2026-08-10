@@ -133,3 +133,22 @@ export function visibleNavItems(role: string | null): NavItem[] {
   if (!role) return []
   return NAV_ITEMS.filter((item) => item.roles.includes(role as Role))
 }
+
+/**
+ * THE role check for a route, backed by the same `roles` array above that the
+ * sidebar filters on.
+ *
+ * `RequireRole` calls this, and so does anything that *offers* a way into a
+ * page — the command palette's Navigation and People groups. That is the whole
+ * point: a page can never be reachable from one and refused by the other, and
+ * no caller has to know which role happens to own a page today. Nothing outside
+ * this file should ever compare a role to a literal like 'CEO'.
+ *
+ * An unknown path is denied rather than allowed: a shortcut to a route that
+ * isn't in NAV_ITEMS has no declared audience, so it has no audience.
+ */
+export function canAccessPath(role: string | null, path: string): boolean {
+  if (!role) return false
+  const item = NAV_ITEMS.find((i) => i.path === path)
+  return item ? item.roles.includes(role as Role) : false
+}

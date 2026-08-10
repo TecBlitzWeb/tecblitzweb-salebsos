@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/shared/EmptyState'
@@ -88,6 +89,55 @@ export function ProspectsPage() {
 
   const { views, isLoading, error, refetch } = useProspectList(filters)
   const { counts } = useProspectCounts(repKey)
+
+  /*
+    `?focus=<id>` — the command palette's way of saying "open this one".
+
+    Filters reset first. Arriving with a stale filter still applied and finding
+    nothing would look exactly like the prospect not existing, and the whole
+    point of the shortcut is that the row is known to exist.
+
+    Two effects rather than one because the reset has to land before the row can
+    be looked up: `views` is the *filtered* list, so a row hidden by the
+    outgoing filters isn't in it yet on this render.
+  */
+  const [searchParams, setSearchParams] = useSearchParams()
+  const focusId = searchParams.get('focus')
+
+  useEffect(() => {
+    if (!focusId) return
+    setFilters(DEFAULT_FILTERS)
+  }, [focusId])
+
+  useEffect(() => {
+    // Identity, not a deep compare: the reset above assigns the shared
+    // DEFAULT_FILTERS object itself, and every other path through `change`
+    // builds a fresh one. So `=== DEFAULT_FILTERS` means precisely "the reset
+    // has landed", including when only `sort` differed.
+    if (!focusId || filters !== DEFAULT_FILTERS) return
+    // Nothing is decided while the data is still arriving — a row that hasn't
+    // loaded is not a row that doesn't exist.
+    if (isLoading) return
+
+    const match = views.find((v) => v.row.id === focusId)
+    if (match) {
+      setSelected(match)
+    } else {
+      // RLS scopes this list, so a real id can legitimately be invisible here.
+      // Say so rather than opening nothing and looking broken.
+      showToast({ message: `That prospect isn't in your list.`, tone: 'error' })
+    }
+
+    // Stripped either way, so a reload or a back-navigation doesn't reopen it.
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('focus')
+        return next
+      },
+      { replace: true }
+    )
+  }, [focusId, filters, isLoading, views, setSearchParams, showToast])
 
   const areas = useMemo(() => [...counts.byArea.keys()].sort(), [counts.byArea])
 

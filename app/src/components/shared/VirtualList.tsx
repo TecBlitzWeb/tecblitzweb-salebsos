@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import clsx from 'clsx'
 
@@ -12,6 +12,14 @@ interface VirtualListProps<T> {
   overscan?: number
   /** Scroll container classes — callers own their own max-height. */
   className?: string
+  /**
+   * Scroll this item into view when the key changes. A row deep in a
+   * virtualized list is not merely off-screen — it isn't mounted, so nothing
+   * outside this component can scroll to it. Ignored when the key matches no
+   * item, which is what lets a caller hand the same key to several lists and
+   * have only the one holding it respond.
+   */
+  scrollToKey?: string | number | null
   children: (item: T) => ReactNode
 }
 
@@ -37,9 +45,18 @@ export function VirtualList<T>({
   gap = 8,
   overscan = 8,
   className,
+  scrollToKey = null,
   children,
 }: VirtualListProps<T>) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  // The scroll effect below reads both of these through refs so it depends on
+  // `scrollToKey` alone. Every caller passes an inline `getItemKey` arrow, and
+  // `items` is a fresh array on each refetch — in the deps, either would
+  // re-scroll a list the user had since scrolled away from.
+  const getItemKeyRef = useRef(getItemKey)
+  getItemKeyRef.current = getItemKey
+  const itemsRef = useRef(items)
+  itemsRef.current = items
 
   const virtualizer = useVirtualizer({
     count: items.length,
@@ -51,6 +68,18 @@ export function VirtualList<T>({
       return item === undefined ? index : getItemKey(item, index)
     },
   })
+
+  useEffect(() => {
+    if (scrollToKey === null || scrollToKey === undefined) return
+    const index = itemsRef.current.findIndex(
+      (item, i) => getItemKeyRef.current(item, i) === scrollToKey
+    )
+    if (index < 0) return
+    // Centred rather than 'start': a card pinned to the top edge of the column
+    // reads as "the list begins here", which is the wrong thing to say about a
+    // card that was jumped to from somewhere else.
+    virtualizer.scrollToIndex(index, { align: 'center' })
+  }, [scrollToKey, virtualizer])
 
   return (
     <div ref={scrollRef} className={clsx('overflow-y-auto', className)}>

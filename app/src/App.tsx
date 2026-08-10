@@ -29,7 +29,7 @@ function App() {
                         key={item.path}
                         path={item.path}
                         element={
-                          <RequireRole allowed={item.roles}>
+                          <RequireRole path={item.path}>
                             <Page />
                           </RequireRole>
                         }

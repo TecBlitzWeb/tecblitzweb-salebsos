@@ -35,6 +35,8 @@ interface LeadCardProps {
   onLost: () => void
   onMove: (stage: string) => void
   moving?: boolean
+  /** Ringed after being jumped to from search, so the eye lands on it. */
+  highlighted?: boolean
 }
 
 /** One Call/WhatsApp pair for a single number. Disabled when there is no number. */
@@ -95,7 +97,14 @@ function NumberActions({ name, phone }: { name: string; phone: string | null }) 
  * the card rather than behind a menu. v1 had no way to close a deal at all and
  * recorded Rs 0 for its entire life — these two buttons are that fix.
  */
-export function LeadCard({ view, onWon, onLost, onMove, moving = false }: LeadCardProps) {
+export function LeadCard({
+  view,
+  onWon,
+  onLost,
+  onMove,
+  moving = false,
+  highlighted = false,
+}: LeadCardProps) {
   const { row, packageLabel, packageValue, phones, daysInStage, closedValue, stage } = view
   const name = row.biz || 'Unnamed'
   const isTerminal = TERMINAL.has(stage)
@@ -104,7 +113,12 @@ export function LeadCard({ view, onWon, onLost, onMove, moving = false }: LeadCa
   const numbers = phones.length > 0 ? phones : [null]
 
   return (
-    <div className="flex overflow-hidden rounded-md border border-border bg-surface">
+    <div
+      className={clsx(
+        'flex overflow-hidden rounded-md border bg-surface',
+        highlighted ? 'border-brand ring-1 ring-brand' : 'border-border'
+      )}
+    >
       <TemperatureBar daysSinceLastCall={view.daysSinceLastCall} />
 
       <div className="flex min-w-0 flex-1 flex-col gap-2 px-3.5 py-2.5">
