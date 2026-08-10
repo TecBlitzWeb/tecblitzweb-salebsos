@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { TemperatureBar } from '../../components/shared/TemperatureBar'
 import { StatusChip, type CallOutcome } from '../../components/shared/StatusChip'
 import { formatCurrency, formatPhone } from '../../lib/format'
+import { toPhoneLink } from '../../lib/phone'
 import { displayRepName } from '../../lib/repKey'
 import type { ProspectView } from './useProspectList'
 
@@ -31,6 +32,10 @@ interface ProspectRowProps {
 export function ProspectRow({ view, onOpen, onLogCall, onToggleFavourite }: ProspectRowProps) {
   const { row, packageLabel, packageValue, phones, callCount, daysSinceLastCall } = view
   const primary = phones[0] ?? ''
+  // Null when there is no number, and equally when the stored one is too short
+  // to dial — both cases render the disabled control below.
+  const link = primary ? toPhoneLink(primary) : null
+  const noPhoneReason = primary ? 'Phone number on record is incomplete' : 'No phone number on record'
   const favourite = Boolean(row.favourite)
 
   return (
@@ -100,14 +105,14 @@ export function ProspectRow({ view, onOpen, onLogCall, onToggleFavourite }: Pros
           </span>
           <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
             {/*
-              With no phone these render as <button disabled> rather than an
-              inert <a>: a disabled control announces itself to screen readers
+              With no usable phone these render as <button disabled> rather than
+              an inert <a>: a disabled control announces itself to screen readers
               and shows a not-allowed cursor, where `pointer-events-none` just
               swallowed the click silently.
             */}
-            {primary ? (
+            {link ? (
               <a
-                href={`tel:${primary}`}
+                href={`tel:${link.tel}`}
                 title="Call"
                 aria-label={`Call ${row.name ?? 'prospect'}`}
                 className={clsx(ICON_BUTTON, 'text-brand')}
@@ -118,17 +123,17 @@ export function ProspectRow({ view, onOpen, onLogCall, onToggleFavourite }: Pros
               <button
                 type="button"
                 disabled
-                title="No phone number on record"
-                aria-label="Call — no phone number on record"
+                title={noPhoneReason}
+                aria-label={`Call — ${noPhoneReason.toLowerCase()}`}
                 className={clsx(ICON_BUTTON, 'cursor-not-allowed text-text-subtle opacity-40')}
               >
                 <Phone size={16} strokeWidth={1.75} />
               </button>
             )}
 
-            {primary ? (
+            {link ? (
               <a
-                href={`https://wa.me/${primary.replace(/\D/g, '')}`}
+                href={`https://wa.me/${link.whatsapp}`}
                 target="_blank"
                 // noopener/noreferrer is required with target="_blank" — without
                 // it the opened tab can reach back via window.opener.
@@ -143,8 +148,8 @@ export function ProspectRow({ view, onOpen, onLogCall, onToggleFavourite }: Pros
               <button
                 type="button"
                 disabled
-                title="No phone number on record"
-                aria-label="WhatsApp — no phone number on record"
+                title={noPhoneReason}
+                aria-label={`WhatsApp — ${noPhoneReason.toLowerCase()}`}
                 className={clsx(ICON_BUTTON, 'cursor-not-allowed text-text-subtle opacity-40')}
               >
                 <MessageCircle size={16} strokeWidth={1.75} />

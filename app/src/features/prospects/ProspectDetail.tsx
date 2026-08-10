@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button'
 import { Timeline, type TimelineEntry } from '../../components/shared/Timeline'
 import { EmptyState } from '../../components/shared/EmptyState'
 import { formatDetailDate, formatPhone } from '../../lib/format'
+import { toPhoneLink } from '../../lib/phone'
 import { displayRepName } from '../../lib/repKey'
 import { resolveCreatedBy } from '../../api/prospects'
 import { timeOf } from '../../api/calls'
@@ -80,22 +81,58 @@ export function ProspectDetail({ view, onClose, onLogCall }: ProspectDetailProps
             <p className="text-sm text-text-subtle">No phone number on record.</p>
           ) : (
             <ul className="flex flex-col gap-1">
-              {phones.map((p, i) => (
+              {/*
+                One link pair per number, primary and alt alike — a row holding
+                two numbers must offer both. Each is normalised on its own; a
+                number too short to dial gets a disabled control, which is why
+                an unusable alt can't take the primary's link with it.
+              */}
+              {phones.map((p, i) => {
+                const link = toPhoneLink(p)
+                return (
                 <li key={p} className="flex items-center gap-2 text-sm">
                   <span className="font-mono tracking-[0.02em] text-text">{formatPhone(p)}</span>
                   <span className="text-2xs text-text-subtle">{i === 0 ? 'primary' : 'alt'}</span>
-                  <a href={`tel:${p}`} title="Call" className="focus-ring ml-auto rounded-sm p-1 text-brand">
-                    <Phone size={16} strokeWidth={1.75} />
-                  </a>
-                  <a
-                    href={`https://wa.me/${p.replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="WhatsApp"
-                    className="focus-ring rounded-sm p-1 text-success"
-                  >
-                    <MessageCircle size={16} strokeWidth={1.75} />
-                  </a>
+                  {link ? (
+                    <a
+                      href={`tel:${link.tel}`}
+                      title="Call"
+                      className="focus-ring ml-auto rounded-sm p-1 text-brand"
+                    >
+                      <Phone size={16} strokeWidth={1.75} />
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      title="Phone number on record is incomplete"
+                      aria-label="Call — phone number on record is incomplete"
+                      className="focus-ring ml-auto cursor-not-allowed rounded-sm p-1 text-text-subtle opacity-40"
+                    >
+                      <Phone size={16} strokeWidth={1.75} />
+                    </button>
+                  )}
+                  {link ? (
+                    <a
+                      href={`https://wa.me/${link.whatsapp}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="WhatsApp"
+                      className="focus-ring rounded-sm p-1 text-success"
+                    >
+                      <MessageCircle size={16} strokeWidth={1.75} />
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      title="Phone number on record is incomplete"
+                      aria-label="WhatsApp — phone number on record is incomplete"
+                      className="focus-ring cursor-not-allowed rounded-sm p-1 text-text-subtle opacity-40"
+                    >
+                      <MessageCircle size={16} strokeWidth={1.75} />
+                    </button>
+                  )}
                   <button
                     type="button"
                     title="Copy"
@@ -105,7 +142,8 @@ export function ProspectDetail({ view, onClose, onLogCall }: ProspectDetailProps
                     <Copy size={16} strokeWidth={1.75} />
                   </button>
                 </li>
-              ))}
+                )
+              })}
             </ul>
           )}
         </section>

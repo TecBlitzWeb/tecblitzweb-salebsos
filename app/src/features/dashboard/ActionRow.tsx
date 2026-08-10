@@ -14,16 +14,21 @@ interface ActionRowProps {
   onLogCall: () => void
 }
 
-/** One Call/WhatsApp pair for a single number. Disabled when there is no number at all. */
+/**
+ * One Call/WhatsApp pair for a single number. Disabled when there is no number
+ * at all, and equally when the stored value is too short to dial.
+ */
 function NumberActions({ name, phone }: { name: string; phone: string | null }) {
-  if (!phone) {
+  const link = phone ? toPhoneLink(phone) : null
+  if (!link) {
+    const reason = phone ? 'Phone number on record is incomplete' : 'No phone number on record'
     return (
       <>
         <button
           type="button"
           disabled
-          title="No phone number on record"
-          aria-label="Call — no phone number on record"
+          title={reason}
+          aria-label={`Call — ${reason.toLowerCase()}`}
           className={clsx(ICON_BUTTON, 'cursor-not-allowed text-text-subtle opacity-40')}
         >
           <Phone size={16} strokeWidth={1.75} />
@@ -31,8 +36,8 @@ function NumberActions({ name, phone }: { name: string; phone: string | null }) 
         <button
           type="button"
           disabled
-          title="No phone number on record"
-          aria-label="WhatsApp — no phone number on record"
+          title={reason}
+          aria-label={`WhatsApp — ${reason.toLowerCase()}`}
           className={clsx(ICON_BUTTON, 'cursor-not-allowed text-text-subtle opacity-40')}
         >
           <MessageCircle size={16} strokeWidth={1.75} />
@@ -41,7 +46,6 @@ function NumberActions({ name, phone }: { name: string; phone: string | null }) 
     )
   }
 
-  const link = toPhoneLink(phone)
   return (
     <>
       <a

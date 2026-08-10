@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { TemperatureBar } from './TemperatureBar'
 import { StatusChip, type CallOutcome } from './StatusChip'
 import { formatCurrency, formatPhone } from '../../lib/format'
+import { toPhoneLink } from '../../lib/phone'
 import { displayRepName } from '../../lib/repKey'
 
 export interface ProspectCardData {
@@ -57,6 +58,11 @@ export function ProspectCard({
     daysSinceLastCall,
     favourite,
   } = prospect
+
+  // Null when there is no number, and equally when the stored one is too short
+  // to dial — both cases render the disabled controls below.
+  const link = phone ? toPhoneLink(phone) : null
+  const noPhoneReason = phone ? 'Phone number on record is incomplete' : 'No phone number on record'
 
   return (
     <div
@@ -118,24 +124,48 @@ export function ProspectCard({
             {formatPhone(phone)}
           </span>
           <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            <a
-              href={`tel:${phone}`}
-              title="Call"
-              aria-label={`Call ${name}`}
-              className={clsx(ICON_BUTTON, 'text-brand')}
-            >
-              <Phone size={16} strokeWidth={1.75} />
-            </a>
-            <a
-              href={`https://wa.me/${phone.replace(/\D/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="WhatsApp"
-              aria-label={`WhatsApp ${name}`}
-              className={clsx(ICON_BUTTON, 'text-success')}
-            >
-              <MessageCircle size={16} strokeWidth={1.75} />
-            </a>
+            {link ? (
+              <a
+                href={`tel:${link.tel}`}
+                title="Call"
+                aria-label={`Call ${name}`}
+                className={clsx(ICON_BUTTON, 'text-brand')}
+              >
+                <Phone size={16} strokeWidth={1.75} />
+              </a>
+            ) : (
+              <button
+                type="button"
+                disabled
+                title={noPhoneReason}
+                aria-label={`Call — ${noPhoneReason.toLowerCase()}`}
+                className={clsx(ICON_BUTTON, 'cursor-not-allowed text-text-subtle opacity-40')}
+              >
+                <Phone size={16} strokeWidth={1.75} />
+              </button>
+            )}
+            {link ? (
+              <a
+                href={`https://wa.me/${link.whatsapp}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="WhatsApp"
+                aria-label={`WhatsApp ${name}`}
+                className={clsx(ICON_BUTTON, 'text-success')}
+              >
+                <MessageCircle size={16} strokeWidth={1.75} />
+              </a>
+            ) : (
+              <button
+                type="button"
+                disabled
+                title={noPhoneReason}
+                aria-label={`WhatsApp — ${noPhoneReason.toLowerCase()}`}
+                className={clsx(ICON_BUTTON, 'cursor-not-allowed text-text-subtle opacity-40')}
+              >
+                <MessageCircle size={16} strokeWidth={1.75} />
+              </button>
+            )}
             <button
               type="button"
               title="Log call"
