@@ -21,8 +21,12 @@ import { Coverage } from './Coverage'
 import { useActionQueue, type ActionItem } from './useActionQueue'
 import { useTodayStats } from './useTodayStats'
 
+// Marking done now preserves the due date, so this is recoverable going
+// forward. It is still not shown: the 305 rows cleared by the old behaviour
+// have no date to compare against, which would make any historical delta wrong
+// for past weeks rather than merely absent.
 const FOLLOWUPS_DUE_HINT =
-  "No week-over-week comparison — marking a follow-up done clears its due date, so there's no record of what was due on a past date."
+  'No week-over-week comparison — follow-ups completed before this was fixed had their due dates cleared, so past weeks cannot be reconstructed.'
 
 function readError(error: unknown): { message: string; status: number } {
   if (error instanceof SupabaseError) {
@@ -77,7 +81,7 @@ export function TodayPage() {
   async function handleDone(item: ActionItem) {
     if (!item.followup) return
     try {
-      await updateFollowup.mutateAsync({ id: item.followup.call.id, followup: null })
+      await updateFollowup.mutateAsync({ id: item.followup.call.id, kind: 'done' })
       showToast({ message: 'Follow-up done', tone: 'success' })
     } catch (error) {
       showToast({ message: describeWriteError(error, 'mark this done'), tone: 'error' })

@@ -10,7 +10,7 @@ import { useToast } from '../../components/ui/Toast'
 import { ProspectDetail } from '../prospects/ProspectDetail'
 import { LogCallSheet } from '../calls/LogCallSheet'
 import type { ProspectView } from '../prospects/useProspectList'
-import { useUpdateFollowup } from '../../api/calls'
+import { useUpdateFollowup, type FollowupUpdate } from '../../api/calls'
 import { describeWriteError } from '../../api/writeError'
 import { SupabaseError } from '../../lib/queryClient'
 import { displayRepName } from '../../lib/repKey'
@@ -55,13 +55,22 @@ export function FollowupsPage() {
     showUnlinked
   )
 
-  async function apply(item: FollowupItem, followup: string | null, message: string) {
+  /**
+   * `snooze` carries the new date; `done` carries no date at all, so this path
+   * cannot write to `calls.followup` even by accident. Marking done preserves
+   * the scheduled date — it is what the queue orders by and the only record of
+   * what was due when.
+   */
+  async function apply(update: FollowupUpdate, message: string) {
     try {
-      await updateFollowup.mutateAsync({ id: item.call.id, followup })
+      await updateFollowup.mutateAsync(update)
       showToast({ message, tone: 'success' })
     } catch (err) {
       showToast({
-        message: describeWriteError(err, followup ? 'snooze this follow-up' : 'mark this done'),
+        message: describeWriteError(
+          err,
+          update.kind === 'snooze' ? 'snooze this follow-up' : 'mark this done'
+        ),
         tone: 'error',
       })
     }
@@ -72,13 +81,13 @@ export function FollowupsPage() {
       // Snooze from today, not from the original due date — a follow-up three
       // weeks overdue snoozed "+1d" must land tomorrow, not three weeks ago.
       const next = format(addDays(new Date(`${colomboToday()}T00:00:00`), days), 'yyyy-MM-dd')
-      void apply(item, next, `Snoozed to ${next}`)
+      void apply({ id: item.call.id, kind: 'snooze', followup: next }, `Snoozed to ${next}`)
     },
     onSnoozeTo: (item: FollowupItem, date: string) => {
       if (!date) return
-      void apply(item, date, `Follow-up set to ${date}`)
+      void apply({ id: item.call.id, kind: 'snooze', followup: date }, `Follow-up set to ${date}`)
     },
-    onDone: (item: FollowupItem) => void apply(item, null, 'Follow-up done'),
+    onDone: (item: FollowupItem) => void apply({ id: item.call.id, kind: 'done' }, 'Follow-up done'),
     onOpen: (item: FollowupItem) => {
       if (item.prospect) setSelected(item.prospect)
     },

@@ -18,9 +18,18 @@ const SNOOZE = [
   { label: '+1w', days: 7 },
 ]
 
+/**
+ * `yyyy-MM-dd` in local wall-clock, matching the text already stored in every
+ * dated row. Never `toISOString()`: that emits a datetime in UTC, which both
+ * shifts the day across the Colombo offset and sorts differently from the
+ * existing rows, so the queue would order wrong.
+ */
 function isoDay(d: Date): string {
   return format(d, 'yyyy-MM-dd')
 }
+
+/** The stored shape, enforced before any write. */
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
 
 interface LogCallSheetProps {
   open: boolean
@@ -59,6 +68,7 @@ export function LogCallSheet({
   const [picked, setPicked] = useState<ProspectRow | null>(null)
   const [outcome, setOutcome] = useState<CanonicalOutcome | null>(defaultOutcome)
   const [followup, setFollowup] = useState(isoDay(addDays(new Date(), 1)))
+  const [followupError, setFollowupError] = useState<string | null>(null)
   const [notes, setNotes] = useState('')
 
   // Re-seed when reopened for a different prospect.
@@ -67,6 +77,7 @@ export function LogCallSheet({
       setPicked(null)
       setOutcome(defaultOutcome)
       setFollowup(isoDay(addDays(new Date(), 1)))
+      setFollowupError(null)
       setNotes('')
     }
   }, [open, defaultProspect, defaultOutcome])
@@ -89,6 +100,23 @@ export function LogCallSheet({
 
   async function save() {
     if (!outcome || !matchedProspect) return
+
+    /*
+      'Follow-up needed' without a date is what produced 305 rows that could
+      never appear in the queue. Validated here rather than by disabling the
+      button: a disabled button blocks the save silently and never explains
+      why. This applies to this one outcome only — every other outcome saves
+      with no date, as before.
+    */
+    const date = followup.trim()
+    if (needsFollowup && !ISO_DAY.test(date)) {
+      setFollowupError(
+        date ? 'Use a date in YYYY-MM-DD format.' : 'Pick a follow-up date — this outcome requires one.'
+      )
+      return
+    }
+    setFollowupError(null)
+
     try {
       await logCall.mutateAsync({
         input: {
@@ -97,7 +125,7 @@ export function LogCallSheet({
           outcome,
           notes,
           phone: defaultPhone,
-          followup: needsFollowup ? followup : null,
+          followup: needsFollowup ? date : null,
         },
         // Stored rep value: v1 wrote the username, and canonicalRepKey()
         // normalises it on read.
@@ -171,20 +199,35 @@ export function LogCallSheet({
         {needsFollowup && (
           <div>
             <label className="mb-1 block text-xs text-text-muted" htmlFor="lc-followup">
-              Follow up on
+              Follow up on <span className="text-danger">*</span>
             </label>
             <Input
               id="lc-followup"
               type="date"
               value={followup}
-              onChange={(e) => setFollowup(e.target.value)}
+              aria-invalid={followupError ? true : undefined}
+              aria-describedby={followupError ? 'lc-followup-error' : undefined}
+              onChange={(e) => {
+                setFollowup(e.target.value)
+                // Clear as soon as they act on it — a stale error next to a
+                // now-valid field reads as a bug.
+                if (followupError) setFollowupError(null)
+              }}
             />
+            {followupError && (
+              <p id="lc-followup-error" role="alert" className="mt-1 text-2xs text-danger">
+                {followupError}
+              </p>
+            )}
             <div className="mt-2 flex gap-2">
               {SNOOZE.map((s) => (
                 <button
                   key={s.label}
                   type="button"
-                  onClick={() => setFollowup(isoDay(addDays(new Date(), s.days)))}
+                  onClick={() => {
+                    setFollowup(isoDay(addDays(new Date(), s.days)))
+                    if (followupError) setFollowupError(null)
+                  }}
                   className="focus-ring rounded-sm border border-border-strong px-2 py-1 text-xs text-text hover:bg-surface-2"
                 >
                   {s.label}

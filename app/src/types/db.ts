@@ -38,7 +38,19 @@ export interface CallRow {
   /** Display only — text, never sort on it. */
   time: string | null
   duration: number | null
+  /**
+   * A DATE held as text, `yyyy-MM-dd`. Not a note. Never cleared to mark a
+   * follow-up complete — that is what `followup_done` is for.
+   */
   followup: string | null
+  /**
+   * `not null default false`. Completing a follow-up flips this; the date in
+   * `followup` is preserved forever so "what was due on that day" stays
+   * answerable. Must stay in CALL_COLUMNS: if it is not selected it reads
+   * `undefined`, which is falsy, so every row would look not-done and the
+   * counts would be plausible and wrong.
+   */
+  followup_done: boolean
   /** Authoritative on calls (every row). Dead on prospects — see §7. */
   createdat: string | null
 }
@@ -127,7 +139,7 @@ export const PROSPECT_COLUMNS =
   'id,name,type,area,phone,assignedto,pkg,pain,script,favourite,created_at,updated_at,createdby,createdBy'
 
 export const CALL_COLUMNS =
-  'id,prospect,rep,outcome,notes,phone,date,time,duration,followup,createdat'
+  'id,prospect,rep,outcome,notes,phone,date,time,duration,followup,followup_done,createdat'
 
 /**
  * `leadId` is written bare here, matching `createdAt` in INTERESTED_LEAD_COLUMNS:

@@ -1,6 +1,12 @@
 import { useMemo } from 'react'
 import { useProspects } from './prospects'
-import { useCalls, callJoinKey, daysSinceLastCall, groupCallsByName } from './calls'
+import {
+  useCalls,
+  callJoinKey,
+  daysSinceLastCall,
+  groupCallsByName,
+  hasOpenFollowup,
+} from './calls'
 import { temperatureTier } from '../lib/temperature'
 import { canonicalRepKey } from '../lib/repKey'
 
@@ -134,7 +140,7 @@ export function useProspectCounts(repKey: string) {
 
       if (neverCalled) result.neverCalled += 1
       if (tier === 'cold' || tier === 'dead') result.cold += 1
-      if (bucket?.some((c) => (c.followup ?? '').trim())) result.hasFollowUp += 1
+      if (bucket?.some(hasOpenFollowup)) result.hasFollowUp += 1
 
       // Equality on canonical identity. Never startsWith — a prefix match looks
       // correct while digits are the only difference and silently fails on real

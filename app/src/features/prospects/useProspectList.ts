@@ -1,7 +1,13 @@
 import { useMemo } from 'react'
 import type { CallRow, ProspectRow } from '../../types/db'
 import { useProspects, parsePackage, splitPhones } from '../../api/prospects'
-import { callJoinKey, daysSinceLastCall, groupCallsByName, useCalls } from '../../api/calls'
+import {
+  callJoinKey,
+  daysSinceLastCall,
+  groupCallsByName,
+  hasOpenFollowup,
+  useCalls,
+} from '../../api/calls'
 import { temperatureTier, type TemperatureTier } from '../../lib/temperature'
 import { canonicalRepKey } from '../../lib/repKey'
 
@@ -153,7 +159,7 @@ function buildProspectView(
     tier: temperatureTier(days),
     latestOutcome: latest?.outcome?.trim() || null,
     latestNote: latest?.notes?.trim() || null,
-    hasFollowUp: bucket.some((c) => (c.followup ?? '').trim()),
+    hasFollowUp: bucket.some(hasOpenFollowup),
     packageLabel: pkg.label,
     packageValue: pkg.value,
     phones: splitPhones(row.phone),
@@ -194,7 +200,7 @@ export function useProspectList(filters: ProspectFilters) {
         tier: temperatureTier(days),
         latestOutcome: latest?.outcome?.trim() || null,
         latestNote: latest?.notes?.trim() || null,
-        hasFollowUp: bucket.some((c) => (c.followup ?? '').trim()),
+        hasFollowUp: bucket.some(hasOpenFollowup),
         packageLabel: pkg.label,
         packageValue: pkg.value,
         phones: splitPhones(row.phone),

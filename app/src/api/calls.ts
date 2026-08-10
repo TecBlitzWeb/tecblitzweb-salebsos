@@ -25,6 +25,24 @@ export function timeOf(iso: string | null): number {
   return Number.isNaN(t) ? 0 : t
 }
 
+/**
+ * THE definition of "this call has an open follow-up". The SQL it mirrors:
+ *
+ *     followup is not null AND btrim(followup) <> '' AND followup_done = false
+ *
+ * Every consumer — the Follow-ups queue, the Today action queue, the Prospects
+ * count strip — must call this and nothing else. There were four hand-rolled
+ * copies of `(c.followup ?? '').trim()` before this existed, and none of them
+ * knew about the done flag.
+ *
+ * Deliberately *not* keyed off `outcome`: 134 rows carry a real follow-up date
+ * under a different outcome, and filtering by `'Follow-up needed'` drops them
+ * silently.
+ */
+export function hasOpenFollowup(call: CallRow): boolean {
+  return Boolean((call.followup ?? '').trim()) && call.followup_done === false
+}
+
 export function useCalls() {
   return useQuery({
     queryKey: ['calls', 'all'],
@@ -111,6 +129,9 @@ export function buildCallRow(input: LogCallInput, rep: string, now: Date = new D
     time,
     duration: input.durationSeconds ?? null,
     followup: input.followup?.trim() || null,
+    // The DB default is false; written explicitly so the optimistic row in the
+    // cache satisfies hasOpenFollowup() before the server row comes back.
+    followup_done: false,
     createdat: now.toISOString(),
   }
 }
@@ -159,33 +180,59 @@ export function useLogCall() {
 }
 
 /**
- * Snooze or clear a follow-up.
+ * Snooze or complete a follow-up.
  *
- * There is no `followup_done` column, so "mark done" means clearing
- * `calls.followup` to null — the same mechanism v1 uses. Snooze rewrites it to
- * a new `yyyy-MM-dd`. Optimistic with rollback; a failure is surfaced, never
- * swallowed (SPEC §0.5).
+ * `calls.followup` is a DATE, and completing a follow-up must never destroy it.
+ * 305 rows already lost their date to the old "mark done = write null" path and
+ * cannot be recovered. So the two operations are separate cases here rather
+ * than one nullable date argument:
+ *
+ * - `done`   → writes only `followup_done: true`. The date is never in the patch.
+ * - `snooze` → writes the new date *and* `followup_done: false`, because a
+ *              snoozed item is by definition not done; leaving a stale `true`
+ *              would hide it from the queue permanently.
+ *
+ * There is intentionally no `reopen` case — the UI has no undo affordance, and
+ * one is not being invented here.
+ *
+ * Optimistic with rollback; a failure is surfaced, never swallowed (SPEC §0.5).
  */
+export type FollowupUpdate =
+  | { id: string; kind: 'done' }
+  /** `yyyy-MM-dd`, matching the 176 rows already stored. Never a datetime. */
+  | { id: string; kind: 'snooze'; followup: string }
+
+/** The exact column patch for an update — the single place `followup_done` is set. */
+function followupPatch(update: FollowupUpdate): Partial<CallRow> {
+  return update.kind === 'done'
+    ? { followup_done: true }
+    : { followup: update.followup, followup_done: false }
+}
+
 export function useUpdateFollowup() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, followup }: { id: string; followup: string | null }) => {
+    mutationFn: async (update: FollowupUpdate) => {
       const { data, error, status } = await supabase
         .from('calls')
-        .update({ followup })
-        .eq('id', id)
+        .update(followupPatch(update))
+        .eq('id', update.id)
         .select()
         .single()
       if (error) throw toSupabaseError(error, status)
       return data as CallRow
     },
 
-    onMutate: async ({ id, followup }) => {
+    onMutate: async (update) => {
       await queryClient.cancelQueries({ queryKey: CALLS_QUERY_KEY })
       const previous = queryClient.getQueryData<CallRow[]>(CALLS_QUERY_KEY)
+      // Applies the same patch the server gets — including followup_done, or a
+      // completed row would sit in the queue until the next refetch and the rep
+      // would click it twice.
+      const patch = followupPatch(update)
       queryClient.setQueryData<CallRow[]>(CALLS_QUERY_KEY, (old) =>
-        (old ?? []).map((c) => (c.id === id ? { ...c, followup } : c))
+        (old ?? []).map((c) => (c.id === update.id ? { ...c, ...patch } : c))
       )
       return { previous }
     },

@@ -2,9 +2,27 @@ import clsx from 'clsx'
 import type { CallRow } from '../../types/db'
 import { StatusChip } from '../../components/shared/StatusChip'
 import { OUTCOME_META } from '../../components/shared/StatusChip'
-import { CANONICAL_OUTCOMES, OUTCOME_TO_CHIP, type CanonicalOutcome } from '../../api/outcomes'
+import {
+  CANONICAL_OUTCOMES,
+  NEEDS_FOLLOWUP,
+  OUTCOME_TO_CHIP,
+  type CanonicalOutcome,
+} from '../../api/outcomes'
 import { displayRepName } from '../../lib/repKey'
 import { toOutcome } from '../prospects/ProspectRow'
+
+/**
+ * Outcomes this inline picker may *set*. 'Follow-up needed' is excluded because
+ * a follow-up requires a date and this row editor has nowhere to ask for one —
+ * setting it here would recreate the dateless rows the follow-up queue can
+ * never surface. It is set from Log call, where the date field and its guard
+ * live.
+ *
+ * Only the picker is narrowed. CANONICAL_OUTCOMES stays intact for the mix bar
+ * and the filter dropdown: those *read* existing data, and hundreds of rows
+ * already carry this outcome.
+ */
+const EDITABLE_OUTCOMES = CANONICAL_OUTCOMES.filter((o) => o !== NEEDS_FOLLOWUP)
 
 /** 4px stacked bar showing the day's outcome mix (§7). */
 function OutcomeMix({ calls }: { calls: CallRow[] }) {
@@ -111,7 +129,7 @@ export function CallDayGroup({
                 className="flex w-full flex-wrap gap-1 pt-1"
                 onClick={(e) => e.stopPropagation()}
               >
-                {CANONICAL_OUTCOMES.map((o) => (
+                {EDITABLE_OUTCOMES.map((o) => (
                   <button
                     key={o}
                     type="button"
@@ -133,6 +151,13 @@ export function CallDayGroup({
                 >
                   Cancel
                 </button>
+                {call.outcome === NEEDS_FOLLOWUP && (
+                  // Otherwise no button appears selected and the row looks broken.
+                  <p className="w-full text-2xs text-text-subtle">
+                    Currently “{NEEDS_FOLLOWUP}”. Changing it here won’t remove the scheduled
+                    date — use Log call to set that outcome, so a date can be given.
+                  </p>
+                )}
               </div>
             ) : (
               <button

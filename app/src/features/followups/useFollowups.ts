@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 import type { CallRow } from '../../types/db'
-import { callJoinKey, useCalls } from '../../api/calls'
+import { callJoinKey, hasOpenFollowup, useCalls } from '../../api/calls'
 import { useProspectViews, type ProspectView } from '../prospects/useProspectList'
 import { canonicalRepKey } from '../../lib/repKey'
 import { colomboDateTime } from '../../lib/format'
@@ -25,8 +25,13 @@ export function colomboToday(): string {
 }
 
 /**
- * A follow-up is a call carrying a non-empty `followup` date. There is no
- * separate table and no done flag — clearing the date is what "done" means.
+ * A follow-up is a call carrying a non-empty `followup` date that has not been
+ * completed — `hasOpenFollowup`, the one shared definition. Completing sets
+ * `followup_done`; the date is kept.
+ *
+ * Membership is never decided by `outcome`. 134 rows carry a real follow-up
+ * date under some other outcome, and an `outcome = 'Follow-up needed'` filter
+ * drops every one of them without saying so.
  *
  * `showUnlinked` defaults to hidden at the call site: with 106 of 171 overdue
  * follow-ups being orphaned calls (SPEC §0.14), showing them by default would
@@ -43,7 +48,7 @@ export function useFollowups(repFilter: string | null, showUnlinked: boolean) {
     const rows = calls.data ?? []
 
     return rows
-      .filter((c) => (c.followup ?? '').trim())
+      .filter(hasOpenFollowup)
       .map((call) => {
         const due = (call.followup ?? '').trim()
         // ISO yyyy-MM-dd compares correctly as a string, but the day delta
