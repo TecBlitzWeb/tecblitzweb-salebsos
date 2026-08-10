@@ -1,13 +1,11 @@
 import {
   Banknote,
-  Briefcase,
   Clock,
   Flame,
   Home,
   Megaphone,
   Phone,
   Settings,
-  Sparkles,
   TrendingUp,
   UserCog,
   Users,
@@ -19,10 +17,8 @@ import { MyCallsPage } from '../../features/calls/MyCallsPage'
 import { FollowupsPage } from '../../features/followups/FollowupsPage'
 import { ProspectsPage } from '../../features/prospects/ProspectsPage'
 import { PipelinePage } from '../../features/pipeline/PipelinePage'
-import { JobsPage } from '../../features/jobs/JobsPage'
 import { PerformancePage } from '../../features/performance/PerformancePage'
 import { RevenuePage } from '../../features/revenue/RevenuePage'
-import { AiReportPage } from '../../features/ai-report/AiReportPage'
 import { TeamPage } from '../../features/team/TeamPage'
 import { AnnouncementsPage } from '../../features/announcements/AnnouncementsPage'
 import { SettingsPage } from '../../features/settings/SettingsPage'
@@ -91,8 +87,6 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ALL_ROLES,
     page: PipelinePage,
   },
-  { label: 'Jobs', path: '/jobs', icon: Briefcase, group: 'pipeline', roles: ALL_ROLES, page: JobsPage },
-
   {
     label: 'Performance',
     path: '/performance',
@@ -109,15 +103,6 @@ export const NAV_ITEMS: NavItem[] = [
     roles: MANAGER_ROLES,
     page: RevenuePage,
   },
-  {
-    label: 'AI report',
-    path: '/ai-report',
-    icon: Sparkles,
-    group: 'insights',
-    roles: MANAGER_ROLES,
-    page: AiReportPage,
-  },
-
   { label: 'Team', path: '/team', icon: UserCog, group: 'admin', roles: CEO_ONLY, page: TeamPage },
   {
     label: 'Announcements',

@@ -40,7 +40,7 @@ const DEBOUNCE_MS = 150
  * though their NAV_ITEMS entries are otherwise reachable. Delete a name from
  * this set the phase its page is built.
  */
-const UNBUILT_PAGES = new Set(['Jobs', 'Announcements', 'AI report'])
+const UNBUILT_PAGES = new Set(['Announcements'])
 
 /**
  * A query with no letters in it is a phone query. Without this, typing a
