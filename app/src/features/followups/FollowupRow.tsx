@@ -81,12 +81,30 @@ export function FollowupRow({ item, onSnooze, onSnoozeTo, onDone, onOpen }: Foll
 
   return (
     <li className="relative overflow-hidden rounded-md">
-      {/* Gesture affordances revealed as the row slides. */}
-      <div className="absolute inset-y-0 left-0 flex items-center gap-1 px-3 text-xs text-warning">
+      {/*
+        Gesture affordances revealed as the row slides. Labels only — the
+        gesture is handled by the pointer handlers below, and the equivalent
+        buttons live in the Update panel.
+
+        `pointer-events-none` is load-bearing, not decoration: this div reads
+        "Mark done" and sits in the same row as the real button, so a click
+        landing here does nothing at all — no mutation, no error, no feedback.
+        That cost hours of misdiagnosis. Clicks now pass straight through.
+
+        `aria-hidden` for the matching reason: without it the row announces
+        "Mark done" twice, once on something inert.
+      */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 left-0 flex items-center gap-1 px-3 text-xs text-warning"
+      >
         <Clock size={16} strokeWidth={1.75} />
         Snooze 1 day
       </div>
-      <div className="absolute inset-y-0 right-0 flex items-center gap-1 px-3 text-xs text-success">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 right-0 flex items-center gap-1 px-3 text-xs text-success"
+      >
         Mark done
         <Check size={16} strokeWidth={1.75} />
       </div>
