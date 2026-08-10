@@ -9042,6 +9042,10 @@
         time: c.time || '',
         duration: parseInt(c.duration, 10) || 0,
         followup: c.followup || null,
+        // Completing a follow-up sets this and preserves the date, so a date
+        // alone no longer means "still open". Strict === true, matching
+        // leadDiscarded below: a missing or null column must read as not-done.
+        followup_done: c.followup_done === true,
         notes: c.notes || '',
         leadDiscarded: c.lead_discarded === true,
         createdAt: c.createdat || c.createdAt || new Date().toISOString()
@@ -9189,18 +9193,25 @@
     
     // SYNC TO SUPABASE
     if(sbReady && sbClient){
-        sbClient.from('calls').upsert([{
+        const payload = {
         id: obj.id,
         prospect: obj.biz,   // biz stored in prospect column (actual DB column name)
         date: obj.date,
         time: obj.time,
         duration: obj.duration,
         outcome: obj.outcome,
-        followup: obj.followup || null,
         notes: obj.notes,
         rep: obj.rep,
         createdat: createdAtIso
-        }]).then(({ error }) => {
+        };
+        // Only send `followup` when there is a date to send. This used to be
+        // `followup: obj.followup || null`, which wrote null on every edit with
+        // an empty date field and destroyed the schedule. An upsert only
+        // updates the columns present in the payload, so omitting it leaves
+        // whatever is already stored untouched.
+        const fuDate = (obj.followup != null ? String(obj.followup) : '').trim();
+        if(fuDate) payload.followup = fuDate;
+        sbClient.from('calls').upsert([payload]).then(({ error }) => {
         if(error){
             console.error('❌ Call save failed:', error.message, '| code:', error.code);
             ls('calls', prevCalls);
@@ -10380,7 +10391,7 @@
     const today = (function(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
     const cutoff = (function(){ const d = new Date(); d.setDate(d.getDate()-14); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
     const calls = getCalls().filter(callVisibleToUser);
-    const withFU = calls.filter(c=>c.followup && c.biz && c.followup >= cutoff);
+    const withFU = calls.filter(c=>c.followup && !c.followup_done && c.biz && c.followup >= cutoff);
     return withFU.filter(c=>c.followup<today).length;
     }
 
@@ -10396,7 +10407,7 @@
         buckets[key][field]++;
     }
     getCalls().filter(callVisibleToUser)
-        .filter(function(c){ return c.followup && c.biz && c.followup >= cutoff && c.followup < today; })
+        .filter(function(c){ return c.followup && !c.followup_done && c.biz && c.followup >= cutoff && c.followup < today; })
         .forEach(function(c){ bump(canonicalRepKey(c.rep), c.rep, 'overdue'); });
     (getLeads() || []).filter(function(l){ return l.status === 'new'; })
         .forEach(function(l){ bump(canonicalRepKey(l.rep), l.rep, 'stuck'); });
@@ -10522,7 +10533,7 @@
         }</tbody></table></div>`;
     }
 
-    const upcoming = myCalls.filter(c=>c.followup && c.followup>=today && c.biz).sort((a,b)=>a.followup.localeCompare(b.followup)).slice(0,8);
+    const upcoming = myCalls.filter(c=>c.followup && !c.followup_done && c.followup>=today && c.biz).sort((a,b)=>a.followup.localeCompare(b.followup)).slice(0,8);
     document.getElementById('fu-count-badge').textContent = upcoming.length||'';
     const fuc = document.getElementById('dash-followups');
     if(!upcoming.length){ fuc.innerHTML=`<div class="empty-state" style="padding:24px 0;">No upcoming follow-ups.</div>`; }
@@ -10586,7 +10597,7 @@
     const cutoff = (function(){ const d = new Date(); d.setDate(d.getDate()-14); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
     const u = USERS[currentUser];
     let calls = getCalls().filter(callVisibleToUser);
-    const withFU = calls.filter(c=>c.followup && c.biz && c.followup >= cutoff).sort((a,b)=>a.followup.localeCompare(b.followup));
+    const withFU = calls.filter(c=>c.followup && !c.followup_done && c.biz && c.followup >= cutoff).sort((a,b)=>a.followup.localeCompare(b.followup));
     let overdue = withFU.filter(c=>c.followup<today);
     let dueToday = withFU.filter(c=>c.followup===today);
     let upcoming = withFU.filter(c=>c.followup>today);
@@ -10611,8 +10622,8 @@
     }
 
     const uniqueReps = [...new Set(withFU.map(c=>c.rep).filter(Boolean))];
-    const repDueCount = (rep)=>withFU.filter(c=>c.rep===rep && c.followup<=today).length;
-    const allDueCount = withFU.filter(c=>c.followup<=today).length;
+    const repDueCount = (rep)=>withFU.filter(c=>c.rep===rep && !c.followup_done && c.followup<=today).length;
+    const allDueCount = withFU.filter(c=>!c.followup_done && c.followup<=today).length;
     const chipBtnStyle = (active)=>active
         ? 'padding:8px 14px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0;cursor:pointer;border:1px solid var(--purple);background:var(--purple);color:#fff;font-family:inherit;'
         : 'padding:8px 14px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0;cursor:pointer;border:1px solid var(--border);background:var(--glass-card);color:var(--text);font-family:inherit;';
@@ -10717,7 +10728,7 @@
     const stats = reps.map(([uid,u])=>{
         const rc = rangeCalls.filter(c=>canonicalRepKey(c.rep)===canonicalRepKey(uid));
         const int = rc.filter(c=>c.outcome==='Interested').length;
-        const fu = rc.filter(c=>c.followup && c.followup>=today).length;
+        const fu = rc.filter(c=>c.followup && !c.followup_done && c.followup>=today).length;
         const tod = rc.filter(c=>c.date===today).length;
         return { uid, name:u.name, total:rc.length, int, fu, tod };
     }).sort((a,b)=>b.total-a.total);
@@ -10776,7 +10787,7 @@
     });
 
     const today = (function(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
-    const fuPending = calls.filter(c=>c.followup && c.followup>=today).length;
+    const fuPending = calls.filter(c=>c.followup && !c.followup_done && c.followup>=today).length;
 
     document.getElementById('revenue-content').innerHTML=`
         <div class="revenue-strip">
@@ -10938,12 +10949,12 @@
     const reps = Object.entries(USERS).filter(([,v])=>v.tier==='rep');
     const repStats = reps.map(([uid,u])=>{
         const rc=calls.filter(c=>c.rep===uid);
-        return `${u.name}: ${rc.length} total calls, ${rc.filter(c=>c.outcome==='Interested').length} interested, ${rc.filter(c=>c.followup&&c.followup>=today).length} follow-ups pending`;
+        return `${u.name}: ${rc.length} total calls, ${rc.filter(c=>c.outcome==='Interested').length} interested, ${rc.filter(c=>c.followup&&!c.followup_done&&c.followup>=today).length} follow-ups pending`;
     }).join('\n');
 
     const todayCalls = calls.filter(c=>c.date===today);
     const hotLeads = calls.filter(c=>c.outcome==='Interested').slice(-10).map(c=>`${c.biz} (rep: ${USERS[c.rep]?.name||c.rep})`);
-    const overdueFU = calls.filter(c=>c.followup&&c.followup<today);
+    const overdueFU = calls.filter(c=>c.followup&&!c.followup_done&&c.followup<today);
 
     const prompt = `You are the sales intelligence system for TecBlitzWeb, a Sri Lankan web design and AI automation agency. Today is ${today}.
 
@@ -11368,7 +11379,7 @@
     const reps = Object.entries(USERS).filter(([,v])=>v.tier==='rep');
     const repStats = reps.map(([uid,u])=>{
         const rc=calls.filter(c=>c.rep===uid);
-        return `${u.name}: ${rc.length} total calls, ${rc.filter(c=>c.outcome==='Interested').length} interested, ${rc.filter(c=>c.followup&&c.followup>=today).length} follow-ups pending`;
+        return `${u.name}: ${rc.length} total calls, ${rc.filter(c=>c.outcome==='Interested').length} interested, ${rc.filter(c=>c.followup&&!c.followup_done&&c.followup>=today).length} follow-ups pending`;
     }).join('\n');
     const todayCalls = calls.filter(c=>c.date===today);
 
@@ -11381,7 +11392,7 @@
     Today's calls (${todayCalls.length}): ${todayCalls.map(c=>`${USERS[c.rep]?.name||c.rep} called ${c.biz} → ${c.outcome}`).join(', ')||'None yet'}
     Total prospects: ${ps.length}
     Hot leads: ${calls.filter(c=>c.outcome==='Interested').length}
-    Overdue follow-ups: ${calls.filter(c=>c.followup&&c.followup<today).length}
+    Overdue follow-ups: ${calls.filter(c=>c.followup&&!c.followup_done&&c.followup<today).length}
 
     PACKAGES: Landing Page Rs.65,000 | Business Website Rs.120,000 | eCommerce Rs.240,000
     TARGET MARKET: Car dealerships, auto repair shops, spare parts shops, vehicle rental businesses in Sri Lanka.
