@@ -50,10 +50,8 @@ export function FollowupsPage() {
     upcoming: false,
   })
 
-  const { buckets, reps, unlinkedCount, total, isLoading, error, refetch } = useFollowups(
-    repFilter,
-    showUnlinked
-  )
+  const { buckets, reps, unlinkedCount, linkedCount, scopeTotal, total, isLoading, error, refetch } =
+    useFollowups(repFilter, showUnlinked)
 
   /**
    * `snooze` carries the new date; `done` carries no date at all, so this path
@@ -96,9 +94,23 @@ export function FollowupsPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
+        {/*
+          The count is every open follow-up in scope, not the subset the list is
+          showing. The breakdown spells out the split because the unlinked rows
+          are hidden by default — without it the header reported 146 while 175
+          were open, under-stating the real workload by 16%.
+        */}
         <p className="mr-auto text-sm text-text-muted">
-          <span className="tabular-nums text-text">{total.toLocaleString('en-US')}</span>{' '}
-          {total === 1 ? 'follow-up' : 'follow-ups'}
+          <span className="tabular-nums text-text">{scopeTotal.toLocaleString('en-US')}</span>{' '}
+          {scopeTotal === 1 ? 'follow-up' : 'follow-ups'}
+          {unlinkedCount > 0 && (
+            <>
+              {' · '}
+              <span className="tabular-nums">{linkedCount.toLocaleString('en-US')}</span> linked
+              {' · '}
+              <span className="tabular-nums">{unlinkedCount.toLocaleString('en-US')}</span> unlinked
+            </>
+          )}
         </p>
       </div>
 

@@ -134,6 +134,15 @@ export function useFollowups(repFilter: string | null, showUnlinked: boolean) {
     buckets,
     reps,
     unlinkedCount,
+    /**
+     * Every open follow-up in the current rep scope, orphans included — what
+     * `total` would be if `showUnlinked` were on. The header reports this so
+     * the count doesn't move when the chip is toggled: hiding orphans is a view
+     * choice, and a header that silently shrinks by 29 reads as data loss.
+     */
+    scopeTotal: repFiltered.length,
+    linkedCount: repFiltered.length - unlinkedCount,
+    /** What the list below actually renders — drives the empty state. */
     total: filtered.length,
     isLoading: calls.isLoading || prospectsLoading,
     error: calls.error ?? prospectsError ?? null,
