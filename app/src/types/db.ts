@@ -32,6 +32,24 @@ export interface ProspectRow {
   deleted_at: string | null
 }
 
+/**
+ * There is no `title` column — the body is the whole announcement. Confirmed
+ * against production 11 Aug 2026; anything rendering a heading here is inventing
+ * one.
+ *
+ * `id` is a bigint, so it arrives as a JS number, unlike prospects' text ids.
+ * `author_id` is an auth user uuid and joins `sales_users.auth_user_id`, not
+ * `sales_users.id`.
+ */
+export interface AnnouncementRow {
+  id: number
+  body: string
+  author_id: string | null
+  created_at: string | null
+}
+
+export const ANNOUNCEMENT_COLUMNS = 'id,body,author_id,created_at'
+
 export interface CallRow {
   id: string
   /** Joins prospects.name by text. No FK, duplicates exist. */

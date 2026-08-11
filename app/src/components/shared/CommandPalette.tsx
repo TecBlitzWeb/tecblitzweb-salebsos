@@ -39,8 +39,11 @@ const DEBOUNCE_MS = 150
  * screen is worse than not offering one, so they are excluded by name here even
  * though their NAV_ITEMS entries are otherwise reachable. Delete a name from
  * this set the phase its page is built.
+ *
+ * Empty as of 11 Aug 2026 — 'Announcements' came out when that page was built.
+ * The mechanism stays for the next placeholder.
  */
-const UNBUILT_PAGES = new Set(['Announcements'])
+const UNBUILT_PAGES = new Set<string>([])
 
 /**
  * A query with no letters in it is a phone query. Without this, typing a

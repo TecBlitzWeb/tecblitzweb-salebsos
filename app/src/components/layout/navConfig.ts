@@ -74,6 +74,18 @@ export const NAV_ITEMS: NavItem[] = [
     page: FollowupsPage,
   },
   {
+    // Everyone reads announcements — the SELECT policy is `true` for all
+    // authenticated users, and only the compose box and per-item delete are
+    // gated to CEO/Co-CEO inside the page. Lives in Work, not Admin: a rep has
+    // no business seeing an Admin group.
+    label: 'Announcements',
+    path: '/announcements',
+    icon: Megaphone,
+    group: 'work',
+    roles: ALL_ROLES,
+    page: AnnouncementsPage,
+  },
+  {
     label: 'Settings',
     path: '/settings',
     icon: Settings,
@@ -125,14 +137,6 @@ export const NAV_ITEMS: NavItem[] = [
     roles: MANAGER_ROLES,
     page: TrashPage,
     hidden: true,
-  },
-  {
-    label: 'Announcements',
-    path: '/announcements',
-    icon: Megaphone,
-    group: 'admin',
-    roles: MANAGER_ROLES,
-    page: AnnouncementsPage,
   },
 ]
 
