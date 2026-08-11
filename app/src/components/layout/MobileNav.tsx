@@ -27,6 +27,15 @@ export function MobileNav() {
   )
   const overflowItems = items.filter((item) => !TAB_PATHS.includes(item.path))
 
+  /*
+    Messages lives in the overflow sheet, not the tab bar, so its unread count
+    would be invisible on a phone until someone opened the menu. Any badge from a
+    hidden-behind-Menu item is mirrored onto the Menu button itself. Each badge
+    decides whether it has anything to show and renders null when it does not, so
+    this needs no knowledge of what the count is.
+  */
+  const overflowBadges = overflowItems.filter((item) => item.badge)
+
   return (
     <>
       <nav className="fixed inset-x-0 bottom-0 z-30 flex h-16 border-t border-border bg-surface lg:hidden">
@@ -59,10 +68,16 @@ export function MobileNav() {
         <button
           type="button"
           onClick={() => setMenuOpen(true)}
-          className="focus-ring flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 border-t-2 border-transparent"
+          className="focus-ring relative flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 border-t-2 border-transparent"
         >
           <Menu size={20} strokeWidth={1.75} className="text-text-muted" />
           <span className="whitespace-nowrap text-2xs text-text-muted">Menu</span>
+          <span className="absolute right-1/2 top-1.5 translate-x-3.5">
+            {overflowBadges.map((item) => {
+              const Badge = item.badge!
+              return <Badge key={item.path} />
+            })}
+          </span>
         </button>
       </nav>
 
@@ -91,6 +106,7 @@ export function MobileNav() {
                     <div className="px-2 pb-1 text-2xs text-text-subtle">{group.label}</div>
                     {groupItems.map((item) => {
                       const Icon = item.icon
+                      const Badge = item.badge
                       return (
                         <NavLink
                           key={item.path}
@@ -100,6 +116,7 @@ export function MobileNav() {
                         >
                           <Icon size={16} strokeWidth={1.75} />
                           {item.label}
+                          {Badge && <Badge />}
                         </NavLink>
                       )
                     })}

@@ -80,6 +80,7 @@ export function Sidebar() {
               <div className="flex flex-col gap-0.5">
                 {groupItems.map((item) => {
                   const Icon = item.icon
+                  const Badge = item.badge
                   return (
                     <NavLink
                       key={item.path}
@@ -102,7 +103,10 @@ export function Sidebar() {
                       }
                     >
                       <Icon size={16} strokeWidth={1.75} />
+                      {/* Collapsed to 14px there is no room for a count; the
+                          label is already a title tooltip in that state. */}
                       {!collapsed && item.label}
+                      {!collapsed && Badge && <Badge />}
                     </NavLink>
                   )
                 })}

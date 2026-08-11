@@ -4,6 +4,7 @@ import {
   Flame,
   Home,
   Megaphone,
+  MessageCircle,
   Phone,
   Settings,
   Trash2,
@@ -22,6 +23,8 @@ import { PerformancePage } from '../../features/performance/PerformancePage'
 import { RevenuePage } from '../../features/revenue/RevenuePage'
 import { TeamPage } from '../../features/team/TeamPage'
 import { AnnouncementsPage } from '../../features/announcements/AnnouncementsPage'
+import { MessagesPage } from '../../features/messages/MessagesPage'
+import { MessagesNavBadge } from '../../features/messages/MessagesNavBadge'
 import { TrashPage } from '../../features/prospects/TrashPage'
 import { SettingsPage } from '../../features/settings/SettingsPage'
 
@@ -44,6 +47,13 @@ export interface NavItem {
    * have no declared audience and so be denied by `RequireRole`.
    */
   hidden?: boolean
+  /**
+   * Optional trailing slot rendered after the label in the sidebar and the mobile
+   * menu — an unread count, say. Declared here so the nav components render
+   * whatever a page needs without importing that page's data hooks or matching on
+   * a path literal.
+   */
+  badge?: ComponentType
 }
 
 const ALL_ROLES: Role[] = ['Sales', 'Co-CEO', 'CEO']
@@ -72,6 +82,15 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'work',
     roles: ALL_ROLES,
     page: FollowupsPage,
+  },
+  {
+    label: 'Messages',
+    path: '/messages',
+    icon: MessageCircle,
+    group: 'work',
+    roles: ALL_ROLES,
+    page: MessagesPage,
+    badge: MessagesNavBadge,
   },
   {
     // Everyone reads announcements — the SELECT policy is `true` for all

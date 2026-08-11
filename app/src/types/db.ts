@@ -50,6 +50,28 @@ export interface AnnouncementRow {
 
 export const ANNOUNCEMENT_COLUMNS = 'id,body,author_id,created_at'
 
+/**
+ * A direct message between two staff members.
+ *
+ * `sender_id` and `recipient_id` are auth user uuids, joining
+ * `sales_users.auth_user_id` — not the bigint `sales_users.id`. `id` is a uuid
+ * the client generates, so a send can be optimistic without guessing a sequence.
+ *
+ * `read_at` is null until the *recipient* opens the thread; the UPDATE policy
+ * lets only the recipient set it, so a sender can never mark their own message
+ * read.
+ */
+export interface MessageRow {
+  id: string
+  sender_id: string
+  recipient_id: string
+  body: string
+  created_at: string | null
+  read_at: string | null
+}
+
+export const MESSAGE_COLUMNS = 'id,sender_id,recipient_id,body,created_at,read_at'
+
 export interface CallRow {
   id: string
   /** Joins prospects.name by text. No FK, duplicates exist. */
