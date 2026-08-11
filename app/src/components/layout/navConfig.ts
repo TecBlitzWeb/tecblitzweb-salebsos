@@ -6,6 +6,7 @@ import {
   Megaphone,
   Phone,
   Settings,
+  Trash2,
   TrendingUp,
   UserCog,
   Users,
@@ -21,6 +22,7 @@ import { PerformancePage } from '../../features/performance/PerformancePage'
 import { RevenuePage } from '../../features/revenue/RevenuePage'
 import { TeamPage } from '../../features/team/TeamPage'
 import { AnnouncementsPage } from '../../features/announcements/AnnouncementsPage'
+import { TrashPage } from '../../features/prospects/TrashPage'
 import { SettingsPage } from '../../features/settings/SettingsPage'
 
 export type NavGroupKey = 'work' | 'pipeline' | 'insights' | 'admin'
@@ -33,6 +35,15 @@ export interface NavItem {
   group: NavGroupKey
   roles: Role[]
   page: ComponentType
+  /**
+   * A real route with a declared audience that is not advertised in the sidebar,
+   * the mobile nav or the command palette — reached from inside another page.
+   *
+   * It still belongs in this list: routing, the top bar's title and
+   * `canAccessPath` all read from here, and a route defined anywhere else would
+   * have no declared audience and so be denied by `RequireRole`.
+   */
+  hidden?: boolean
 }
 
 const ALL_ROLES: Role[] = ['Sales', 'Co-CEO', 'CEO']
@@ -105,6 +116,17 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { label: 'Team', path: '/team', icon: UserCog, group: 'admin', roles: CEO_ONLY, page: TeamPage },
   {
+    // Reached from Settings, not the sidebar — deleting is rare and the trash is
+    // not somewhere anyone needs to be able to land on by accident.
+    label: 'Trash',
+    path: '/trash',
+    icon: Trash2,
+    group: 'admin',
+    roles: MANAGER_ROLES,
+    page: TrashPage,
+    hidden: true,
+  },
+  {
     label: 'Announcements',
     path: '/announcements',
     icon: Megaphone,
@@ -116,7 +138,7 @@ export const NAV_ITEMS: NavItem[] = [
 
 export function visibleNavItems(role: string | null): NavItem[] {
   if (!role) return []
-  return NAV_ITEMS.filter((item) => item.roles.includes(role as Role))
+  return NAV_ITEMS.filter((item) => !item.hidden && item.roles.includes(role as Role))
 }
 
 /**

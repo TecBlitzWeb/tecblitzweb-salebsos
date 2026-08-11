@@ -23,6 +23,13 @@ export interface ProspectRow {
   updated_at: string | null
   createdby: string | null
   createdBy: string | null
+  /**
+   * Soft-delete tombstone, added 11 Aug 2026. Non-null means the row sits in the
+   * trash and must not appear in any list, count, stat, filter or search — every
+   * read goes through `isLive` in api/prospects.ts. Nullable with no default, so
+   * a row inserted without it is live.
+   */
+  deleted_at: string | null
 }
 
 export interface CallRow {
@@ -136,7 +143,7 @@ export interface InterestedLeadRow {
 }
 
 export const PROSPECT_COLUMNS =
-  'id,name,type,area,phone,assignedto,pkg,pain,script,favourite,created_at,updated_at,createdby,createdBy'
+  'id,name,type,area,phone,assignedto,pkg,pain,script,favourite,created_at,updated_at,createdby,createdBy,deleted_at'
 
 export const CALL_COLUMNS =
   'id,prospect,rep,outcome,notes,phone,date,time,duration,followup,followup_done,createdat'

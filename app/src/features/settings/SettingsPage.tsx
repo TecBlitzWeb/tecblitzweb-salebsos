@@ -1,8 +1,10 @@
 import { useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/shared/EmptyState'
 import { Skeleton } from '../../components/ui/Skeleton'
 import { useAuth } from '../../auth/useAuth'
+import { canAccessPath } from '../../components/layout/navConfig'
 
 /** One read-only fact about the signed-in user. Text, never a control. */
 function Row({ label, value, hint }: { label: string; value: ReactNode; hint?: string }) {
@@ -94,6 +96,31 @@ export function SettingsPage() {
           <EmptyState message="You're signed in, but no sales_users row matches your account, so your role and data access can't be determined. Ask the CEO to link your account." />
         )}
       </section>
+
+      {/*
+        The only way into the trash. Its audience is declared once in navConfig
+        and enforced by RequireRole, so this link asks that same source instead of
+        comparing the role to a literal here.
+      */}
+      {canAccessPath(role, '/trash') && (
+        <section className="flex max-w-xl flex-col gap-2">
+          <h2 className="font-display text-lg text-text">Prospects</h2>
+          <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-3.5 py-3">
+            <div className="min-w-0">
+              <p className="text-sm text-text">Trash</p>
+              <p className="text-2xs text-text-subtle">
+                Deleted prospects, with restore. Hidden from every list until restored.
+              </p>
+            </div>
+            <Link
+              to="/trash"
+              className="focus-ring shrink-0 rounded-sm text-sm text-brand hover:text-brand-hover"
+            >
+              Open
+            </Link>
+          </div>
+        </section>
+      )}
 
       <section className="flex max-w-xl flex-col gap-2">
         <h2 className="font-display text-lg text-text">Session</h2>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Copy, Maximize2, MessageCircle, Phone } from 'lucide-react'
+import { Copy, Maximize2, MessageCircle, Phone, Trash2 } from 'lucide-react'
 import { SlideOver } from '../../components/ui/SlideOver'
 import { ScriptReader } from './ScriptReader'
 import { Button } from '../../components/ui/Button'
@@ -14,7 +14,7 @@ import { canonicalRepKey, displayRepName } from '../../lib/repKey'
 import { useAuth } from '../../auth/useAuth'
 import { assignedtoSpelling, salesUserKey, useSalesUsers } from '../../api/users'
 import { describeWriteError } from '../../api/writeError'
-import { resolveCreatedBy, useBulkReassign } from '../../api/prospects'
+import { resolveCreatedBy, useBulkReassign, useSoftDeleteProspect } from '../../api/prospects'
 import { timeOf } from '../../api/calls'
 import { NEEDS_FOLLOWUP, type CanonicalOutcome } from '../../api/outcomes'
 import { toOutcome } from './ProspectRow'
@@ -33,9 +33,11 @@ const UNASSIGNED = '__unassigned__'
 export function ProspectDetail({ view, onClose, onLogCall }: ProspectDetailProps) {
   const [scriptOpen, setScriptOpen] = useState(false)
   const [readerOpen, setReaderOpen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const { role } = useAuth()
   const salesUsers = useSalesUsers()
   const reassign = useBulkReassign()
+  const softDelete = useSoftDeleteProspect()
   const { showToast } = useToast()
 
   // §6c step 7: CEO and Co-CEO choose an owner; a rep never sees the control.
@@ -93,6 +95,20 @@ export function ProspectDetail({ view, onClose, onLogCall }: ProspectDetailProps
       })
     } catch (error) {
       showToast({ message: describeWriteError(error, 'reassign this prospect'), tone: 'error' })
+    }
+  }
+
+  async function deleteProspect() {
+    const name = row.name?.trim() || 'Prospect'
+    try {
+      await softDelete.mutateAsync({ id: row.id })
+      setConfirmDelete(false)
+      // Closing is the honest outcome: the row this panel describes is no longer
+      // in any list behind it.
+      onClose()
+      showToast({ message: `${name} moved to trash`, tone: 'success' })
+    } catch (error) {
+      showToast({ message: describeWriteError(error, 'delete this prospect'), tone: 'error' })
     }
   }
 
@@ -306,6 +322,46 @@ export function ProspectDetail({ view, onClose, onLogCall }: ProspectDetailProps
             Added {row.created_at ? formatDetailDate(new Date(row.created_at)) : 'unknown'} by{' '}
             {resolveCreatedBy(row)}
           </p>
+
+          {canAssign && (
+            <section className="border-t border-border pt-4">
+              {confirmDelete ? (
+                <div className="rounded-sm border border-danger/30 bg-danger/10 p-3">
+                  <p className="text-sm text-text">
+                    Move <span className="font-medium">{row.name?.trim() || 'this prospect'}</span>{' '}
+                    to the trash?
+                  </p>
+                  <p className="mt-1 text-xs text-text-muted">
+                    It leaves every list, count and search. Nothing is destroyed — you can restore it
+                    from Trash in Settings.
+                  </p>
+                  <div className="mt-3 flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      loading={softDelete.isPending}
+                      onClick={() => void deleteProspect()}
+                    >
+                      Move to trash
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={softDelete.isPending}
+                      onClick={() => setConfirmDelete(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button size="sm" variant="destructive" onClick={() => setConfirmDelete(true)}>
+                  <Trash2 size={16} strokeWidth={1.75} />
+                  Delete prospect
+                </Button>
+              )}
+            </section>
+          )}
         </div>
       </SlideOver>
       {/*

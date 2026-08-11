@@ -214,6 +214,9 @@ export function CommandPalette({
 
     const nav = NAV_ITEMS.filter(
       (item) =>
+        // `hidden` items are reached from inside another page on purpose; the
+        // palette is an advertisement surface like the sidebar, so it skips them.
+        !item.hidden &&
         !UNBUILT_PAGES.has(item.label) &&
         canAccessPath(role, item.path) &&
         item.label.toLowerCase().includes(text)

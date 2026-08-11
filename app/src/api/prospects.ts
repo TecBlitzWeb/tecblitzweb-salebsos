@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ProspectRow } from '../types/db'
 import { PROSPECT_COLUMNS } from '../types/db'
 import { fetchAllRows, toSupabaseError } from './supabaseQuery'
+import { PALETTE_PROSPECTS_KEY } from './palette'
 import { supabase } from '../lib/supabase'
 
 /**
@@ -14,11 +15,49 @@ import { supabase } from '../lib/supabase'
  * `max(calls.createdat)`, which is not a column on prospects — that sort runs
  * client-side after the join. See SPEC §5.2.
  */
+export const PROSPECTS_QUERY_KEY = ['prospects', 'all'] as const
+
+/**
+ * A row is live unless it carries a `deleted_at`. Truthiness, not `=== null`:
+ * an optimistically inserted row can arrive before the column is echoed back,
+ * and `undefined` must read as live rather than as trash.
+ */
+export function isLive(row: Pick<ProspectRow, 'deleted_at'>): boolean {
+  return !row.deleted_at
+}
+
+const fetchProspects = () =>
+  fetchAllRows<ProspectRow>('prospects', PROSPECT_COLUMNS, 'created_at')
+
+/**
+ * Every live prospect. This is the only full read of the table, so filtering the
+ * trash out here is what keeps it out of every list, count, stat card, filter,
+ * sort and rep queue in the app — they all derive from this one hook.
+ *
+ * The filter is a `select`, not part of `queryFn`: the cache holds the unfiltered
+ * table under one key, so [useDeletedProspects] renders the trash from the same
+ * fetch instead of a second one, and the optimistic writers below keep mutating
+ * whole rows rather than a filtered view.
+ */
 export function useProspects() {
   return useQuery({
-    queryKey: ['prospects', 'all'],
-    queryFn: () => fetchAllRows<ProspectRow>('prospects', PROSPECT_COLUMNS, 'created_at'),
+    queryKey: PROSPECTS_QUERY_KEY,
+    queryFn: fetchProspects,
     staleTime: 30_000,
+    select: (rows: ProspectRow[]) => rows.filter(isLive),
+  })
+}
+
+/** The trash: the same cached fetch, inverted. Newest deletion first. */
+export function useDeletedProspects() {
+  return useQuery({
+    queryKey: PROSPECTS_QUERY_KEY,
+    queryFn: fetchProspects,
+    staleTime: 30_000,
+    select: (rows: ProspectRow[]) =>
+      rows
+        .filter((row) => !isLive(row))
+        .sort((a, b) => (b.deleted_at ?? '').localeCompare(a.deleted_at ?? '')),
   })
 }
 
@@ -77,8 +116,6 @@ export function resolveCreatedBy(row: Pick<ProspectRow, 'createdby' | 'createdBy
 
 /* ------------------------------------------------------------------ writes */
 
-export const PROSPECTS_QUERY_KEY = ['prospects', 'all'] as const
-
 export interface AddProspectInput {
   name: string
   /** Already joined with "/" — one free-text column holds both numbers. */
@@ -121,6 +158,7 @@ export function buildProspectRow(
     updated_at: iso,
     createdby: null,
     createdBy: author,
+    deleted_at: null,
   }
 }
 
@@ -242,5 +280,125 @@ export function useBulkReassign() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: PROSPECTS_QUERY_KEY })
     },
+  })
+}
+
+/* ------------------------------------------------------------------- trash */
+
+/**
+ * Both trash writes and the purge have to reach the palette's session-cached
+ * search index as well as the main list, or a deleted prospect stays findable
+ * in the palette for the rest of the session.
+ */
+function invalidateProspectReads(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: PROSPECTS_QUERY_KEY })
+  void queryClient.invalidateQueries({ queryKey: PALETTE_PROSPECTS_KEY })
+}
+
+/**
+ * Moves a prospect to the trash by stamping `deleted_at`. Nothing is destroyed:
+ * the row keeps its calls, its script and its owner, and [useRestoreProspect]
+ * puts it back untouched.
+ *
+ * Optimistic — the row carries its tombstone in the cache immediately, so it
+ * leaves every list and appears in the trash on the same frame. `updated_at` is
+ * written alongside because it is the authoritative last-modified column (§7).
+ */
+export function useSoftDeleteProspect() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const iso = new Date().toISOString()
+      const { error, status } = await supabase
+        .from('prospects')
+        .update({ deleted_at: iso, updated_at: iso })
+        .eq('id', id)
+      if (error) throw toSupabaseError(error, status)
+      return { id, deleted_at: iso }
+    },
+
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: PROSPECTS_QUERY_KEY })
+      const previous = queryClient.getQueryData<ProspectRow[]>(PROSPECTS_QUERY_KEY)
+      const iso = new Date().toISOString()
+      queryClient.setQueryData<ProspectRow[]>(PROSPECTS_QUERY_KEY, (old) =>
+        (old ?? []).map((p) => (p.id === id ? { ...p, deleted_at: iso } : p))
+      )
+      return { previous }
+    },
+
+    onError: (_error, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(PROSPECTS_QUERY_KEY, context.previous)
+    },
+
+    onSuccess: () => invalidateProspectReads(queryClient),
+  })
+}
+
+/** Clears the tombstone. The row returns to every list exactly as it left. */
+export function useRestoreProspect() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const { error, status } = await supabase
+        .from('prospects')
+        .update({ deleted_at: null, updated_at: new Date().toISOString() })
+        .eq('id', id)
+      if (error) throw toSupabaseError(error, status)
+      return { id }
+    },
+
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: PROSPECTS_QUERY_KEY })
+      const previous = queryClient.getQueryData<ProspectRow[]>(PROSPECTS_QUERY_KEY)
+      queryClient.setQueryData<ProspectRow[]>(PROSPECTS_QUERY_KEY, (old) =>
+        (old ?? []).map((p) => (p.id === id ? { ...p, deleted_at: null } : p))
+      )
+      return { previous }
+    },
+
+    onError: (_error, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(PROSPECTS_QUERY_KEY, context.previous)
+    },
+
+    onSuccess: () => invalidateProspectReads(queryClient),
+  })
+}
+
+/**
+ * A real `DELETE`. Irreversible, and deliberately not offered anywhere except
+ * the trash behind a second confirmation.
+ *
+ * `calls` joins prospects by name text with no foreign key, so the call history
+ * for this business survives this delete and becomes unlinked — it keeps
+ * counting on Performance and My Calls while belonging to no prospect row. The
+ * confirmation copy has to say so; see TrashPage.
+ */
+export function usePurgeProspect() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const { error, status } = await supabase.from('prospects').delete().eq('id', id)
+      if (error) throw toSupabaseError(error, status)
+      return { id }
+    },
+
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: PROSPECTS_QUERY_KEY })
+      const previous = queryClient.getQueryData<ProspectRow[]>(PROSPECTS_QUERY_KEY)
+      queryClient.setQueryData<ProspectRow[]>(PROSPECTS_QUERY_KEY, (old) =>
+        (old ?? []).filter((p) => p.id !== id)
+      )
+      return { previous }
+    },
+
+    onError: (_error, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(PROSPECTS_QUERY_KEY, context.previous)
+    },
+
+    onSuccess: () => invalidateProspectReads(queryClient),
   })
 }

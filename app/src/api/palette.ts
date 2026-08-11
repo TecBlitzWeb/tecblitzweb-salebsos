@@ -22,6 +22,8 @@ export interface PaletteProspect {
   id: string
   name: string | null
   phone: string | null
+  /** Selected only so trashed rows can be dropped. Never rendered. */
+  deleted_at: string | null
 }
 
 /** No `lead` column exists on this table — the business name is `biz`. */
@@ -44,12 +46,22 @@ export interface PalettePerson {
  */
 const SESSION_CACHE = { staleTime: Infinity, gcTime: Infinity } as const
 
+/**
+ * Exported because the trash mutations must invalidate it. This index is held
+ * for the whole session (`staleTime: Infinity`), so without that invalidation a
+ * prospect deleted after the palette's first open would stay searchable until
+ * the page reloaded.
+ */
+export const PALETTE_PROSPECTS_KEY = ['palette', 'prospects'] as const
+
 export function usePaletteProspects(enabled: boolean) {
   return useQuery({
-    queryKey: ['palette', 'prospects'],
-    queryFn: () => fetchAllRows<PaletteProspect>('prospects', 'id,name,phone'),
+    queryKey: PALETTE_PROSPECTS_KEY,
+    queryFn: () => fetchAllRows<PaletteProspect>('prospects', 'id,name,phone,deleted_at'),
     enabled,
     ...SESSION_CACHE,
+    // The trash is not searchable. Same rule as every other prospect read.
+    select: (rows: PaletteProspect[]) => rows.filter((row) => !row.deleted_at),
   })
 }
 
