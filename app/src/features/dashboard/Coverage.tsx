@@ -8,6 +8,7 @@ import { useToast } from '../../components/ui/Toast'
 import { describeWriteError } from '../../api/writeError'
 import { displayRepName, canonicalRepKey } from '../../lib/repKey'
 import { useAuth } from '../../auth/useAuth'
+import { isSalesRole } from '../../components/layout/navConfig'
 
 interface PendingReassign {
   key: string
@@ -45,10 +46,7 @@ export function Coverage() {
     [counts.byAssigneeNeverCalled]
   )
 
-  const reps = useMemo(
-    () => (salesUsers ?? []).filter((u) => (u.role ?? '').trim() === 'Sales'),
-    [salesUsers]
-  )
+  const reps = useMemo(() => (salesUsers ?? []).filter((u) => isSalesRole(u.role)), [salesUsers])
 
   function stage(key: string, spelling: string, targetUsername: string) {
     const ids = views

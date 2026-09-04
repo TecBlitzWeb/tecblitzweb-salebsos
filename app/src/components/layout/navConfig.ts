@@ -29,7 +29,26 @@ import { TrashPage } from '../../features/prospects/TrashPage'
 import { SettingsPage } from '../../features/settings/SettingsPage'
 
 export type NavGroupKey = 'work' | 'pipeline' | 'insights' | 'admin'
-export type Role = 'Sales' | 'Co-CEO' | 'CEO'
+// 'sales_rep' is a second spelling for the same base tier as 'Sales' — some
+// reps' sales_users.role was seeded with one literal, some with the other.
+// RLS already treats anything that isn't CEO/Co-CEO as "plain rep, own rows
+// only" regardless of spelling (see supabase/rls_step3_policies.sql), so
+// widening the base tier here just makes the frontend match what the
+// database already grants; it does not add any new privilege.
+export type Role = 'Sales' | 'sales_rep' | 'Co-CEO' | 'CEO'
+
+/**
+ * True for either spelling of the ordinary rep tier, false for everyone else
+ * (including null/unknown). The one place code outside this file should ask
+ * "is this an ordinary sales rep" instead of re-listing both literals.
+ *
+ * Trims internally so callers can pass a raw `sales_users.role` value
+ * straight through, the same way `my_role()` is compared to on the RLS side.
+ */
+export function isSalesRole(role: string | null | undefined): boolean {
+  const normalized = role?.trim()
+  return normalized === 'Sales' || normalized === 'sales_rep'
+}
 
 export interface NavItem {
   label: string
@@ -56,7 +75,7 @@ export interface NavItem {
   badge?: ComponentType
 }
 
-const ALL_ROLES: Role[] = ['Sales', 'Co-CEO', 'CEO']
+const ALL_ROLES: Role[] = ['Sales', 'sales_rep', 'Co-CEO', 'CEO']
 const MANAGER_ROLES: Role[] = ['Co-CEO', 'CEO']
 const CEO_ONLY: Role[] = ['CEO']
 
